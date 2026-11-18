@@ -4,27 +4,27 @@
 # 由 install.sh 与 gnome-config-center.sh source
 # 支持两套方案：
 #   macos26  -> MacTahoe-gtk-theme   (macOS 26 Tahoe 液态玻璃)
-#   macos16  -> WhiteSur-gtk-theme   (经典 Big Sur / Sequoia 风格)
+#   macos15  -> WhiteSur-gtk-theme   (经典 Big Sur / Sequoia 风格)
 # =============================================================================
 
 GN_ROOT="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 GN_SRC_DIR="${GN_SRC_DIR:-$HOME/.local/src/desktop-toolkit-gnome}"
 
 # 版本 -> 仓库 / 主题名 映射
-gn_version_info() { # macos26|macos16  -> 输出 "gtk_repo gtk_branch gtk_theme icon_repo icon_branch icon_theme cursor_theme"
+gn_version_info() { # macos26|macos15  -> 输出 "gtk_repo gtk_branch gtk_theme icon_repo icon_branch icon_theme cursor_theme"
     case "$1" in
         macos26)
             echo "vinceliuice/MacTahoe-gtk-theme main  MacTahoe  vinceliuice/MacTahoe-icon-theme main MacTahoe MacTahoe-cursor" ;;
-        macos16)
+        macos15)
             echo "vinceliuice/WhiteSur-gtk-theme master WhiteSur  vinceliuice/WhiteSur-icon-theme master WhiteSur WhiteSur-cursors" ;;
         *) return 1 ;;
     esac
 }
 
-gn_version_label() { # macos26|macos16 -> 中文标签
+gn_version_label() { # macos26|macos15 -> 中文标签
     case "$1" in
         macos26) echo "macOS 26 (Tahoe 液态玻璃)" ;;
-        macos16) echo "macOS 16 (经典 Sequoia 风格)" ;;
+        macos15) echo "macOS 15 (经典 Sequoia 风格)" ;;
         *)      echo "未知版本" ;;
     esac
 }

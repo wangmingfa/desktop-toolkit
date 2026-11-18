@@ -23,9 +23,9 @@ main() {
     while true; do
         local c
         c=$(dt_menu "GNOME macOS 外观配置中心" \
-            "选择要执行的操作（本模块支持 macOS 26 Tahoe 与 macOS 16 经典两套）：" \
+            "选择要执行的操作（本模块支持 macOS 26 Tahoe 与 macOS 15 经典两套）：" \
             "install26|① 安装 macOS 26 (Tahoe 液态玻璃)|最新液态玻璃风格 (MacTahoe-gtk-theme)" \
-            "install16|② 安装 macOS 16 (经典 Sequoia 风格)|经典大苏尔/索诺玛风格 (WhiteSur-gtk-theme)" \
+            "install15|② 安装 macOS 15 (经典 Sequoia 风格)|经典大苏尔/索诺玛风格 (WhiteSur-gtk-theme)" \
             "status|③ 查看当前应用的主题|gsettings 当前值" \
             "dark|④ 切换深色模式|prefer-dark" \
             "light|⑤ 切换浅色模式|prefer-light" \
@@ -33,8 +33,8 @@ main() {
             "back|← 返回|") || return 0
         [ "$c" = back ] && return 0
         case "$c" in
-            install26|install16)
-                local v=$([ "$c" = install26 ] && echo macos26 || echo macos16)
+            install26|install15)
+                local v=$([ "$c" = install26 ] && echo macos26 || echo macos15)
                 if dt_confirm "安装 $(gn_version_label "$v") 风格到 GNOME？（需要网络 + git，安装过程几分钟）"; then
                     bash "$GN_DIR/install.sh" "$v"
                     dt_info "$(gn_version_label "$v") 安装流程结束。\n若 Shell 未变，启用 user-themes 扩展后注销重登。"

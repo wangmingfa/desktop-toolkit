@@ -3,7 +3,7 @@
 # KDE Plasma macOS 外观方案统一入口
 # 支持两套（二选一，会互相覆盖）：
 #   macOS 26 (Tahoe 液态玻璃)  -> MacTahoe Liquid KDE
-#   macOS 16 (经典 Sequoia)    -> WhiteSur-kde
+#   macOS 15 (经典 Sequoia)    -> WhiteSur-kde
 # 安装后可用对应方案的微调工具；本入口在 main.sh「外观美化 -> KDE 外观美化」。
 # =============================================================================
 set -euo pipefail
@@ -30,7 +30,7 @@ main() {
         c=$(dt_menu "KDE 外观美化" \
             "KDE Plasma 的 macOS 风格方案。安装前先选版本，两套会互相覆盖（二选一）：" \
             "install26|① 安装 macOS 26 (Tahoe 液态玻璃)|MacTahoe Liquid KDE，当前默认方案" \
-            "install16|② 安装 macOS 16 (经典 Sequoia)|WhiteSur-kde" \
+            "install15|② 安装 macOS 15 (经典 Sequoia)|WhiteSur-kde" \
             "config|③ 桌面外观配置中心|macOS 26 微调：圆角/透明度/Dock/Logo/窗口动画" \
             "mode-perf|④ 切换到性能模式|关闭液态玻璃，软件渲染流畅（VMware 推荐）" \
             "mode-full|⑤ 切换到完整模式|恢复液态玻璃特效（需硬件加速）" \
@@ -45,8 +45,8 @@ main() {
                     bash "$APPEARANCE/install-theme.sh"
                     dt_info "macOS 26 安装流程已结束。"
                 fi ;;
-            install16)
-                if dt_confirm "安装 macOS 16 经典 (WhiteSur-kde)？需要网络 + git。"; then
+            install15)
+                if dt_confirm "安装 macOS 15 经典 (WhiteSur-kde)？需要网络 + git。"; then
                     bash "$APPEARANCE/install-kde-sequoia.sh"
                     dt_info "WhiteSur 安装流程已结束。去 系统设置->外观 选择 WhiteSur 应用。"
                 fi ;;

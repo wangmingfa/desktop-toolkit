@@ -18,9 +18,9 @@ APPEARANCE="$DT_ROOT/modules/appearance"
 sub_appearance() {
     while true; do
         local c
-        c=$(dt_menu "外观美化" "桌面环境与 macOS 版本方案（KDE / GNOME 均支持 macOS 26 与 16）：" \
-            "kde|① KDE 外观美化|macOS 26 Tahoe / 16 经典 安装切换 + 微调工具" \
-            "gnome|② GNOME 外观美化|macOS 26 / 16 方案（适用于 GNOME 系统）" \
+        c=$(dt_menu "外观美化" "桌面环境与 macOS 版本方案（KDE / GNOME 均支持 macOS 26 与 15）：" \
+            "kde|① KDE 外观美化|macOS 26 Tahoe / 15 经典 安装切换 + 微调工具" \
+            "gnome|② GNOME 外观美化|macOS 26 / 15 方案（适用于 GNOME 系统）" \
             "list|③ 查看当前所有配置|打印可调项清单" \
             "back|← 返回主菜单|") || return 0
         [ "$c" = back ] && return 0

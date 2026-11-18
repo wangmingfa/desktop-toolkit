@@ -1,6 +1,6 @@
 #!/usr/bin/env bash
 # =============================================================================
-# KDE Plasma macOS 16 (经典 Sequoia 风格) 安装器 —— WhiteSur-kde
+# KDE Plasma macOS 15 (经典 Sequoia 风格) 安装器 —— WhiteSur-kde
 # 在 KDE Plasma 的宿主机终端运行： bash install-kde-sequoia.sh
 # 与 macOS 26 (MacTahoe Liquid KDE) 不同，这套是经典 Big Sur/Sequoia 外观。
 # 注意：两套主题会互相覆盖，二选一使用。
@@ -31,7 +31,7 @@ fi
 
 echo
 echo "============================================================"
-echo "完成！已安装 macOS 16 经典 (WhiteSur) 到 KDE Plasma。"
+echo "完成！已安装 macOS 15 经典 (WhiteSur) 到 KDE Plasma。"
 echo "在 系统设置 -> 外观 里选择 WhiteSur / WhiteSur-dark 即可应用。"
 echo "Kvantum 若未生效：系统设置 -> 颜色 -> Kvantum -> 选 WhiteSur。"
 echo "============================================================"

@@ -36,11 +36,11 @@ desktop-toolkit/
 │   │   ├── config-center.sh      # 桌面外观配置中心（macOS 26 微调）
 │   │   ├── adjust-window.sh      # 底层调节工具（圆角/透明度/Dock/Logo/动画…）
 │   │   ├── install-theme.sh      # 安装 macOS 26 Tahoe Liquid KDE 主题
-│   │   ├── install-kde-sequoia.sh # KDE 安装 macOS 16 经典 (WhiteSur-kde)
+│   │   ├── install-kde-sequoia.sh # KDE 安装 macOS 15 经典 (WhiteSur-kde)
 │   │   ├── toggle-glass.sh       # 性能 / 完整模式切换
 │   │   ├── install-logo.sh       # 安装纯白 CachyOS 顶部栏 Logo
 │   │   └── gnome/                # GNOME 桌面 macOS 美化
-│   │       ├── install.sh              # 安装器：macos26 / macos16
+│   │       ├── install.sh              # 安装器：macos26 / macos15
 │   │       ├── gnome-config-center.sh  # GNOME 配置中心（GUI）
 │   │       └── lib-gnome.sh            # GNOME 公共库
 │   ├── system/              # 系统配置（待扩展）
@@ -81,17 +81,17 @@ source "$DT_ROOT/lib/ui.sh"
 
 ## 支持的桌面环境与 macOS 版本
 
-| 桌面环境 | macOS 26 (Tahoe 液态玻璃) | macOS 16 (经典 Sequoia) |
+| 桌面环境 | macOS 26 (Tahoe 液态玻璃) | macOS 15 (经典 Sequoia) |
 |----------|---------------------------|-------------------------|
 | KDE Plasma | `MacTahoe Liquid KDE`（默认方案） | `WhiteSur-kde` |
 | GNOME      | `MacTahoe-gtk-theme` | `WhiteSur-gtk-theme` |
 
 - **macOS 26（Tahoe）**：最新液态玻璃风格，对应上游仓库 `vinceliuice/MacTahoe-*`。
-- **macOS 16（经典）**：Big Sur / Sequoia 风格（注：Apple 版本号由 15 直接跳到 26，这里沿用「16」称呼经典系列），对应 `vinceliuice/WhiteSur-*`。
+- **macOS 15（经典 Sequoia）**：Big Sur / Sequoia 风格，对应 `vinceliuice/WhiteSur-*`。（说明：Apple 版本号由 15 直接跳到 26，**不存在 macOS 16~25**；「经典」指 Sequoia 及之前的连续版本系列。）
 
 GNOME 侧使用：
 ```bash
-./modules/appearance/gnome/install.sh macos26   # 或 macos16
+./modules/appearance/gnome/install.sh macos26   # 或 macos15
 ./modules/appearance/gnome/gnome-config-center.sh   # 交互式
 ```
 

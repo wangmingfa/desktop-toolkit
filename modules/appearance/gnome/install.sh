@@ -3,7 +3,7 @@
 # GNOME macOS 美化安装器
 # 用法:
 #   ./install.sh macos26   安装 macOS 26 (Tahoe 液态玻璃)
-#   ./install.sh macos16   安装 macOS 16 (经典 Sequoia 风格)
+#   ./install.sh macos15   安装 macOS 15 (经典 Sequoia 风格)
 #   ./install.sh           不带参数则显示用法
 # 在 GNOME 桌面的终端中运行；需已装 git。
 # =============================================================================
@@ -14,13 +14,13 @@ source "$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)/lib-gnome.sh"
 VERSION="${1:-}"
 
 case "$VERSION" in
-    macos26|macos16) ;;
+    macos26|macos15) ;;
     *)
         cat <<'EOF'
-用法: ./install.sh <macos26|macos16>
+用法: ./install.sh <macos26|macos15>
 
   macos26  安装 macOS 26 (Tahoe 液态玻璃)  -> MacTahoe-gtk-theme
-  macos16  安装 macOS 16 (经典 Sequoia 风格) -> WhiteSur-gtk-theme
+  macos15  安装 macOS 15 (经典 Sequoia 风格) -> WhiteSur-gtk-theme
 
 示例:
   ./install.sh macos26
