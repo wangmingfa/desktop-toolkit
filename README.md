@@ -7,8 +7,8 @@
 ## 快速开始
 
 ```bash
-# 克隆（换成你自己的仓库地址）
-git clone https://github.com/<你的账号>/desktop-toolkit.git ~/code/desktop-toolkit
+# 克隆
+git clone https://github.com/wangmingfa/desktop-toolkit.git ~/code/desktop-toolkit
 cd ~/code/desktop-toolkit
 
 # 唯一入口：图形菜单，选择对应选项即可
@@ -44,6 +44,20 @@ desktop-toolkit/
 └── assets/                  # 图标、SVG 等资源
     ├── cachyos-logo-symbolic.svg
     └── cachyos-logo-symbolic-dark.svg
+```
+
+## 推送改动（凭据）
+
+容器里没有可直接用的 git 凭据助手，本仓库提供了一个：用 `gh auth token` 自动提供 token。
+
+```bash
+# 换机器后执行一次
+cp lib/git-credential-dt ~/.local/bin/
+chmod +x ~/.local/bin/git-credential-dt
+git config --global credential.helper dt
+
+# 之后正常 push 即可，无需手动带 token
+git add -A && git commit -m "..." && git push
 ```
 
 ## 如何新增脚本
