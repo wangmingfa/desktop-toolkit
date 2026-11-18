@@ -8,6 +8,10 @@
 # =============================================================================
 
 GN_ROOT="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+# 公共库（镜像加速等）——避免重复 source
+if [ -z "${DT_ROOT:-}" ]; then
+    source "$GN_ROOT/../../../lib/common.sh"
+fi
 GN_SRC_DIR="${GN_SRC_DIR:-$HOME/.local/src/desktop-toolkit-gnome}"
 
 # 版本 -> 仓库 / 主题名 映射
@@ -38,7 +42,7 @@ gn_is_gnome() {
     return 1
 }
 
-# 克隆主题仓库（带浅克隆 + 失败重试）
+# 克隆主题仓库（复用 dt_clone，自动国内镜像回退）
 gn_clone() { # repo branch
     local repo="$1" branch="$2"
     local dir="$GN_SRC_DIR/$(basename "$repo")"
@@ -47,15 +51,7 @@ gn_clone() { # repo branch
         echo "  [git] $repo 已存在，跳过克隆"
         echo "$dir"; return 0
     fi
-    local ok=0
-    for i in 1 2 3; do
-        echo "  [git] 克隆 $repo (尝试 $i/3)"
-        if git clone --depth 1 -b "$branch" "https://github.com/$repo.git" "$dir" >/dev/null 2>&1; then
-            ok=1; break
-        fi
-        rm -rf "$dir"
-    done
-    [ "$ok" = 1 ] || { echo "克隆失败: $repo" >&2; return 1; }
+    dt_clone "https://github.com/$repo.git" "$dir" "$branch" || return 1
     echo "$dir"
 }
 

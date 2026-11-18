@@ -7,6 +7,9 @@
 # =============================================================================
 set -euo pipefail
 
+# 公共库：提供 dt_clone（国内镜像回退）
+source "$(cd "$(dirname "${BASH_SOURCE[0]}")/../.." && pwd)/lib/common.sh"
+
 REPO="vinceliuice/WhiteSur-kde"
 BRANCH="master"
 SRC_DIR="${SRC_DIR:-$HOME/.local/src/desktop-toolkit-kde}"
@@ -17,7 +20,7 @@ mkdir -p "$SRC_DIR"
 if [ -d "$DEST/.git" ]; then
     echo "    已存在，跳过克隆"
 else
-    git clone --depth 1 -b "$BRANCH" "https://github.com/$REPO.git" "$DEST"
+    dt_clone "https://github.com/$REPO.git" "$DEST" "$BRANCH"
 fi
 
 echo "==> [2/2] 运行安装器（安装全部颜色变体 + 圆角模糊窗口）"

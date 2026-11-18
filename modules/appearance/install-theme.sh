@@ -11,6 +11,9 @@
 # ============================================================
 set -euo pipefail
 
+# 公共库：提供 dt_clone（国内镜像回退）
+source "$(cd "$(dirname "${BASH_SOURCE[0]}")/../.." && pwd)/lib/common.sh"
+
 REPO_DIR="$HOME/macos-tahoe-liquid-kde"
 
 echo "==> [1/3] 安装缺少的构建依赖 (cmake / extra-cmake-modules)"
@@ -20,23 +23,11 @@ echo "==> [2/3] 获取主题仓库 (宿主机已开 FlClash TUN，克隆应该�
 if git -C "$REPO_DIR" rev-parse HEAD >/dev/null 2>&1; then
   echo "    仓库已存在且完好，跳过克隆"
 else
-  echo "    清理残留并重新克隆 (强制 HTTP/1.1，避免 HTTP/2 流被代理重置)"
-  rm -rf "$REPO_DIR"
-  ok=0
-  for i in 1 2 3; do
-    echo "    ---- 克隆尝试 $i/3 ----"
-    if git -c http.version=HTTP/1.1 clone --depth 1 \
-         https://github.com/lestercorderomurillo/macos-tahoe-liquid-kde.git \
-         "$REPO_DIR"; then
-      ok=1
-      break
-    fi
-    rm -rf "$REPO_DIR"
-  done
-  if [ "$ok" -ne 1 ]; then
-    echo "克隆连续失败 3 次。请检查 FlClash 节点后重跑本脚本。" >&2
+  echo "    清理残留并重新克隆（自动国内镜像回退：直连 -> ghproxy -> gitclone）"
+  dt_clone "https://github.com/lestercorderomurillo/macos-tahoe-liquid-kde.git" "$REPO_DIR" || {
+    echo "克隆失败。可设 DT_MIRROR=ghproxy 或换 GH_PROXY 后重跑；已开代理的可检查节点。" >&2
     exit 1
-  fi
+  }
 fi
 cd "$REPO_DIR"
 

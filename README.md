@@ -44,7 +44,8 @@ desktop-toolkit/
 │   │       ├── gnome-config-center.sh  # GNOME 配置中心（GUI）
 │   │       └── lib-gnome.sh            # GNOME 公共库
 │   ├── system/              # 系统配置（待扩展）
-│   ├── network/             # 网络工具（待扩展）
+│   ├── network/
+│   │   └── github-mirror.sh      # GitHub 国内镜像一键配置（全局 git）
 │   ├── dev/                 # 开发环境（待扩展）
 │   └── backup/              # 备份与恢复（待扩展）
 └── assets/                  # 图标、SVG 等资源
@@ -102,6 +103,41 @@ KDE 侧统一入口（安装时选版本，两套二选一）：
 ```
 
 > 注意：同一桌面环境里两套主题会互相覆盖，请二选一。
+
+## 国内网络 / 镜像加速
+
+大陆网络下，**GitHub 仓库克隆**（主题 / 图标 / 光标）可能很慢或不可达。本项目已内置镜像回退，无需手动改 remote。
+
+### 自动回退（默认）
+
+所有克隆走 `lib/common.sh` 的 `dt_clone`，默认 `DT_MIRROR=auto`：**先直连，失败自动切国内镜像**（`ghproxy` → `gitclone`）。
+
+```bash
+# 可覆盖镜像与策略（环境变量）
+DT_MIRROR=auto       # auto(默认) | ghproxy | gitclone | off
+GH_PROXY=https://mirror.ghproxy.com   # ghproxy 镜像前缀，失效时更换
+```
+
+例：强制走 ghproxy 镜像安装 GNOME Tahoe：
+```bash
+DT_MIRROR=ghproxy ./modules/appearance/gnome/install.sh macos26
+```
+
+### 一键全局镜像（更省心）
+
+想让**所有** `git clone https://github.com/...`（含仓库外的）都走镜像，用：
+```bash
+./modules/network/github-mirror.sh on    # 启用（写入 ~/.gitconfig）
+./modules/network/github-mirror.sh off   # 关闭
+./modules/network/github-mirror.sh status
+```
+或在 `main.sh -> 网络工具 -> GitHub 国内镜像一键配置` 里操作。它会写入 git 的 `url.<镜像>/https://github.com/.insteadOf` 重写规则。
+
+### 注意事项
+
+- `ghproxy` 类镜像站地址会变动，失效时换 `GH_PROXY`（如 `https://ghproxy.net`、`https://ghfast.top`）。
+- `extensions.gnome.org`（GNOME 扩展）**没有稳定国内镜像**，安装扩展时如卡顿，建议开启代理（如 FlClash）。
+- 已开代理且直连顺畅的机器，保持默认 `auto` 即可，直连优先不额外绕路。
 
 ## 主要可调项（在「桌面外观配置中心」里）
 

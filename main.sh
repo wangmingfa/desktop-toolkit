@@ -42,7 +42,31 @@ sub_appearance() {
 }
 
 # ---------------------------------------------------------------------------
-# 子菜单：系统配置 / 网络 / 开发 / 备份（预留分类，后续往对应目录加脚本即可）
+# 子菜单：网络工具
+# ---------------------------------------------------------------------------
+sub_network() {
+    while true; do
+        local c
+        c=$(dt_menu "网络工具" "网络相关脚本：" \
+            "mirror|① GitHub 国内镜像一键配置|对大陆网络下 github 慢/不通的场景" \
+            "back|← 返回主菜单|") || return 0
+        [ "$c" = back ] && return 0
+        case "$c" in
+            mirror)
+                local action
+                action=$(dt_menu "GitHub 镜像" "当前配置：" \
+                    "on|① 启用镜像|把 github.com 重写到国内镜像（全局 git）" \
+                    "off|② 关闭镜像|移除重写" \
+                    "status|③ 查看状态|") || continue
+                bash "$DT_ROOT/modules/network/github-mirror.sh" "$action"
+                dt_info "完成。查看/修改: 换 GH_PROXY 前缀后重跑 on。"
+                ;;
+        esac
+    done
+}
+
+# ---------------------------------------------------------------------------
+# 子菜单：系统配置 / 开发 / 备份（预留分类，后续往对应目录加脚本即可）
 # ---------------------------------------------------------------------------
 sub_placeholder() { # title
     local title="$1" dir="$2"
@@ -72,7 +96,8 @@ main() {
         case "$c" in
             exit) exit 0 ;;
             appearance) sub_appearance ;;
-            system|network|dev|backup) sub_placeholder "$c" "$c" ;;
+            network) sub_network ;;
+            system|dev|backup) sub_placeholder "$c" "$c" ;;
             about)
                 dt_info "desktop-toolkit\n\n仓库目录：$DT_ROOT\n\n用法：\n1) git clone 本仓库\n2) cd desktop-toolkit && ./main.sh\n3) 菜单选择对应分类，选中即开始\n\n脚本按分类放在 modules/ 下，公共库在 lib/，资源在 assets/。" ;;
         esac
