@@ -18,45 +18,17 @@ APPEARANCE="$DT_ROOT/modules/appearance"
 sub_appearance() {
     while true; do
         local c
-        c=$(dt_menu "外观美化" "macOS Tahoe 风格的桌面美化与实时调节：" \
-            "config|① 桌面外观配置中心|最常用：圆角/透明度/Dock/Logo/窗口动画 等全部集中在这里" \
-            "install|② 安装 macOS Tahoe 主题|首次部署用：拉取主题仓库并安装（跳过 SDDM/Plymouth）" \
-            "mode-perf|③ 切换到性能模式|关闭液态玻璃，软件渲染流畅（VMware 推荐）" \
-            "mode-full|④ 切换到完整模式|恢复液态玻璃特效（需硬件加速）" \
-            "window-gui|⑤ 窗口调整滑块|单独打开圆角/透明度滑块界面" \
-            "logo|⑥ 安装白色 CachyOS Logo|把 logo 资源装进主题图标目录并应用" \
-            "gnome|⑦ GNOME 外观美化|GNOME 桌面版 macOS 26 / 16 方案（适用于 GNOME 系统）" \
-            "kde16|⑧ KDE 安装 macOS 16 经典主题|WhiteSur-kde（macOS 26 之外的另一套 KDE 方案）" \
-            "list|⑨ 查看当前所有配置|打印可调项清单" \
+        c=$(dt_menu "外观美化" "桌面环境与 macOS 版本方案（KDE / GNOME 均支持 macOS 26 与 16）：" \
+            "kde|① KDE 外观美化|macOS 26 Tahoe / 16 经典 安装切换 + 微调工具" \
+            "gnome|② GNOME 外观美化|macOS 26 / 16 方案（适用于 GNOME 系统）" \
+            "list|③ 查看当前所有配置|打印可调项清单" \
             "back|← 返回主菜单|") || return 0
         [ "$c" = back ] && return 0
         case "$c" in
-            config)
-                [ -x "$APPEARANCE/config-center.sh" ] && "$APPEARANCE/config-center.sh" \
-                    || dt_err_gui "缺少 $APPEARANCE/config-center.sh" ;;
-            install)
-                if dt_confirm "将安装 macOS Tahoe Liquid KDE 主题（需要 sudo，跳过 SDDM/Plymouth）。继续？"; then
-                    bash "$APPEARANCE/install-theme.sh"
-                    dt_info "主题安装流程已结束。"
-                fi ;;
-            mode-perf|mode-full)
-                local mode=$([ "$c" = mode-perf ] && echo perf || echo full)
-                if dt_confirm "切换到 $([ "$mode" = perf ] && echo 性能模式 || echo 完整模式)？"; then
-                    bash "$APPEARANCE/toggle-glass.sh" "$mode"
-                    dt_info "已切换。KWin 配置通常重新登录一次后完全生效。"
-                fi ;;
-            window-gui)
-                "$APPEARANCE/adjust-window.sh" gui ;;
-            logo)
-                bash "$APPEARANCE/install-logo.sh"
-                dt_info "白色 CachyOS Logo 已安装并应用。" ;;
+            kde)
+                bash "$APPEARANCE/kde-scheme.sh" ;;
             gnome)
                 bash "$APPEARANCE/gnome/gnome-config-center.sh" ;;
-            kde16)
-                if dt_confirm "安装 macOS 16 经典 (WhiteSur-kde) 到 KDE Plasma？"; then
-                    bash "$APPEARANCE/install-kde-sequoia.sh"
-                    dt_info "WhiteSur 安装流程结束，去 系统设置->外观 选择 WhiteSur。"
-                fi ;;
             list)
                 "$APPEARANCE/adjust-window.sh" list > /tmp/dt-config-list.txt 2>&1 || true
                 if [ "$GUI" = zenity ]; then

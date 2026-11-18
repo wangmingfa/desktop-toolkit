@@ -32,7 +32,8 @@ desktop-toolkit/
 │   └── ui.sh                # 通用菜单/滑块/确认框（zenity/kdialog 自适应）
 ├── modules/
 │   ├── appearance/          # 外观美化
-│   │   ├── config-center.sh      # 桌面外观配置中心（除安装外都在这里调）
+│   │   ├── kde-scheme.sh         # KDE 统一入口：macOS 26 / 16 安装切换 + 微调
+│   │   ├── config-center.sh      # 桌面外观配置中心（macOS 26 微调）
 │   │   ├── adjust-window.sh      # 底层调节工具（圆角/透明度/Dock/Logo/动画…）
 │   │   ├── install-theme.sh      # 安装 macOS 26 Tahoe Liquid KDE 主题
 │   │   ├── install-kde-sequoia.sh # KDE 安装 macOS 16 经典 (WhiteSur-kde)
@@ -94,9 +95,10 @@ GNOME 侧使用：
 ./modules/appearance/gnome/gnome-config-center.sh   # 交互式
 ```
 
-KDE 侧 macOS 16 使用：
+KDE 侧统一入口（安装时选版本，两套二选一）：
 ```bash
-./modules/appearance/install-kde-sequoia.sh
+./modules/appearance/kde-scheme.sh
+# 或从 main.sh：外观美化 -> KDE 外观美化
 ```
 
 > 注意：同一桌面环境里两套主题会互相覆盖，请二选一。
