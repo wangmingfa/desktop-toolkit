@@ -25,7 +25,9 @@ sub_appearance() {
             "mode-full|④ 切换到完整模式|恢复液态玻璃特效（需硬件加速）" \
             "window-gui|⑤ 窗口调整滑块|单独打开圆角/透明度滑块界面" \
             "logo|⑥ 安装白色 CachyOS Logo|把 logo 资源装进主题图标目录并应用" \
-            "list|⑦ 查看当前所有配置|打印可调项清单" \
+            "gnome|⑦ GNOME 外观美化|GNOME 桌面版 macOS 26 / 16 方案（适用于 GNOME 系统）" \
+            "kde16|⑧ KDE 安装 macOS 16 经典主题|WhiteSur-kde（macOS 26 之外的另一套 KDE 方案）" \
+            "list|⑨ 查看当前所有配置|打印可调项清单" \
             "back|← 返回主菜单|") || return 0
         [ "$c" = back ] && return 0
         case "$c" in
@@ -48,6 +50,13 @@ sub_appearance() {
             logo)
                 bash "$APPEARANCE/install-logo.sh"
                 dt_info "白色 CachyOS Logo 已安装并应用。" ;;
+            gnome)
+                bash "$APPEARANCE/gnome/gnome-config-center.sh" ;;
+            kde16)
+                if dt_confirm "安装 macOS 16 经典 (WhiteSur-kde) 到 KDE Plasma？"; then
+                    bash "$APPEARANCE/install-kde-sequoia.sh"
+                    dt_info "WhiteSur 安装流程结束，去 系统设置->外观 选择 WhiteSur。"
+                fi ;;
             list)
                 "$APPEARANCE/adjust-window.sh" list > /tmp/dt-config-list.txt 2>&1 || true
                 if [ "$GUI" = zenity ]; then
