@@ -1,0 +1,16 @@
+# 临时文件 / 编辑备份
+*~
+*.swp
+*.bak
+.bak-dt-*
+*.bak-*
+/tmp/
+*.log
+
+# 系统/编辑器
+.DS_Store
+.idea/
+.vscode/
+
+# 本工具箱不纳入外部主题仓库（由 install-theme.sh 自行克隆）
+macos-tahoe-liquid-kde/
