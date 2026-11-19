@@ -39,6 +39,9 @@ dt_detect_gui() {
 #   可用国内镜像加速。通过环境变量控制，方便复用：
 #     DT_MIRROR=auto|ghproxy|ghfast|fastgit|off   (默认 auto: 先直连, 失败自动走镜像)
 #     GH_PROXY=<https://xxx>                (ghproxy 类镜像前缀, 可换)
+#     DT_GIT_STALL=<秒>                        (某源传输停滞多少秒后放弃, 默认 20)
+#     DT_GIT_CONNECT=<秒>                     (连接/握手超时, 默认 10)
+#     DT_GIT_KILL=<秒>                       (单源硬上限, 到点强制中止该源, 默认 60)
 #   注意: 这类镜像站地址会变动, 失效时改 GH_PROXY 即可。
 # 已验证可用(2026-11): gh-proxy.com / ghfast.top；直连 github.com 在部分网络下超时。
 # =============================================================================
@@ -48,6 +51,12 @@ GH_PROXY="${GH_PROXY:-https://gh-proxy.com}"
 DT_GHFAST="${DT_GHFAST:-https://ghfast.top}"
 # 路径式镜像: https://fastgit.org/github.com/owner/repo.git
 DT_FASTGIT="${DT_FASTGIT:-https://fastgit.org/github.com/}"
+# 传输停滞超时(秒): 某个源传输中长时间无数据则中止, 快速轮到下一源
+DT_GIT_STALL="${DT_GIT_STALL:-20}"
+# 连接/TLS 握手超时(秒): lowSpeedTime 管不到握手阶段的死等, 需单独限
+DT_GIT_CONNECT="${DT_GIT_CONNECT:-10}"
+# 单个源的硬上限(秒): 到点强制中止该源, 这是 dt_clone 超时行为的真正保证
+DT_GIT_KILL="${DT_GIT_KILL:-60}"
 
 # 路径式镜像地址: https://fastgit.org/github.com/owner/repo.git
 dt_fastgit_url() { # https://github.com/owner/repo(.git)
@@ -79,18 +88,33 @@ dt_clone() {
     rm -rf "$dest" 2>/dev/null || true
 
     local errf; errf=$(mktemp)
-    local m rc=1
+    local m rc=1 st=0
+    # 单源硬上限: git 的 lowSpeed/connectTimeout 在中途断连时会内部重试, 实测仍会
+    # 拖到 160s 才返回, 不可靠。故用 timeout 兜底——到点必杀, 保证尽快轮到下一源。
+    local -a gcopts=(-c http.version=HTTP/1.1
+                     -c http.lowSpeedLimit=1000
+                     -c "http.lowSpeedTime=${DT_GIT_STALL:-20}"
+                     -c "http.connectTimeout=${DT_GIT_CONNECT:-10}")
     for m in "${candidates[@]}"; do
         echo "  [git] 尝试: $m"
         # 强制 HTTP/1.1: 规避部分代理/镜像对 HTTP/2 流的重置
+        # GIT_TERMINAL_PROMPT=0: 卡住时别去弹密码/凭据提示, 直接判失败走下一源
+        # -k 5: 到点先 TERM, 再等 5s 后 KILL
+        st=0
         if [ -n "$branch" ]; then
-            git -c http.version=HTTP/1.1 clone --depth 1 -b "$branch" "$m" "$dest" 2>"$errf" && rc=0 || true
+            GIT_TERMINAL_PROMPT=0 timeout -k 5 "${DT_GIT_KILL:-60}" git "${gcopts[@]}" \
+                clone --depth 1 -b "$branch" "$m" "$dest" 2>"$errf" || st=$?
         else
-            git -c http.version=HTTP/1.1 clone --depth 1 "$m" "$dest" 2>"$errf" && rc=0 || true
+            GIT_TERMINAL_PROMPT=0 timeout -k 5 "${DT_GIT_KILL:-60}" git "${gcopts[@]}" \
+                clone --depth 1 "$m" "$dest" 2>"$errf" || st=$?
         fi
+        [ "$st" = 0 ] && rc=0
         [ "$rc" = 0 ] && break
-        # 打印 git 的真实报错(最后一行)，否则只能看到"克隆失败"无从排查
-        if [ -s "$errf" ]; then
+        # 超时被杀的源: git 最后写的是进度行, 打印出来没意义, 直接说明是超时
+        if [ "$st" = 124 ] || [ "$st" = 137 ]; then
+            echo "  [git]   (超过 ${DT_GIT_KILL:-60}s 无进展, 已强制中止该源; 可调小 DT_GIT_KILL)"
+        elif [ -s "$errf" ]; then
+            # 否则打印 git 的真实报错(最后一行)，避免只看到"克隆失败"无从排查
             sed -n '$p' "$errf" | sed 's/^/  [git]   /'
         fi
         rm -rf "$dest" 2>/dev/null || true
