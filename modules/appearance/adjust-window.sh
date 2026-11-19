@@ -494,10 +494,11 @@ cmd_winanimi() {
              local p="${1:-}"
              case "$p" in
                  macos)    anim_effect_set magiclamp on; anim_effect_set glide on; anim_speed_set 1.0; echo "预设: macOS 风格 (神灯最小化+滑入+标准速度)" ;;
+                 windows)  anim_effect_set magiclamp off; anim_effect_set glide on; anim_speed_set 1.0; echo "预设: Windows 11 (无神灯, 滑入+标准速度)" ;;
                  balanced) anim_effect_set magiclamp on; anim_effect_set glide off; anim_speed_set 0.8; echo "预设: 均衡 (神灯+稍快)" ;;
                  fast)     anim_effect_set magiclamp off; anim_effect_set glide off; anim_speed_set 0.5; echo "预设: 快速 (关动画, 性能优先)" ;;
                  off)      anim_effect_set magiclamp off; anim_effect_set glide off; anim_effect_set slide off; echo "预设: 全部关闭" ;;
-                 *) echo "用法: winanim preset <macos|balanced|fast|off>" >&2; return 1 ;;
+                 *) echo "用法: winanim preset <macos|windows|balanced|fast|off>" >&2; return 1 ;;
              esac ;;
          *) echo "用法: winanim <status|genie|glide|slide|speed|preset> [参数]" >&2; return 1 ;;
      esac
@@ -601,7 +602,7 @@ macOS Tahoe 窗口外观调整工具
   winanim glide <on|off>       窗口打开/关闭滑入动画
   winanim slide <on|off>       桌面切换滑动动画
   winanim speed <0.25-2.0>     全局动画速度 (0.25快/1.0标准/2.0慢)
-  winanim preset <macos|balanced|fast|off>  一键动画预设
+  winanim preset <macos|windows|balanced|fast|off>  一键动画预设
   transparency <0-100>         全部组件透明度 (liquidglass)
   launcher-transparency <0-100|default>  启动器/弹窗背景透明度 (0=不透明,100=透明)
   transparency <组件> <0-100>  单组件透明度

@@ -541,18 +541,20 @@ sub_winanimi() {
         speed=$(echo "$st"  | sed -n 's/.*全局动画速度 *= //p' | head -1 | cut -dx -f1)
         local c
         c=$(menu "窗口动画" "当前: 神灯最小化=${genie} 滑入=${glide} 桌面滑动=${slide} 速度=${speed}x。（软件渲染下已强制开启动画，极少数场景可能轻微掉帧）" \
-            "preset-macos|① 预设 · macOS 风格|神灯最小化 + 滑入 + 标准速度(推荐)" \
-            "preset-balanced|② 预设 · 均衡|神灯 + 稍快速度" \
-            "preset-fast|③ 预设 · 快速|关闭动画, 性能优先" \
-            "preset-off|④ 预设 · 全部关闭|关闭所有窗口动画" \
-            "genie|⑤ 最小化神灯 genie (单独)|当前 ${genie} — macOS 的神奇效果" \
-            "glide|⑥ 窗口打开/关闭滑入 (单独)|当前 ${glide}" \
-            "slide|⑦ 桌面切换滑动 (单独)|当前 ${slide}" \
-            "speed|⑧ 全局动画速度|当前 ${speed}x" \
+            "preset-macos|① 预设 · macOS 风格|神灯最小化 + 滑入 + 标准速度" \
+            "preset-windows|② 预设 · Windows 11|无神灯, 滑入 + 标准速度 (Fluent 推荐)" \
+            "preset-balanced|③ 预设 · 均衡|神灯 + 稍快速度" \
+            "preset-fast|④ 预设 · 快速|关闭动画, 性能优先" \
+            "preset-off|⑤ 预设 · 全部关闭|关闭所有窗口动画" \
+            "genie|⑥ 最小化神灯 genie (单独)|当前 ${genie} — macOS 的神奇效果" \
+            "glide|⑦ 窗口打开/关闭滑入 (单独)|当前 ${glide}" \
+            "slide|⑧ 桌面切换滑动 (单独)|当前 ${slide}" \
+            "speed|⑨ 全局动画速度|当前 ${speed}x" \
             "back|← 返回主菜单|") || return 0
         [ "$c" = back ] && return 0
         case "$c" in
             preset-macos)    "$ADJUST" winanim preset macos; info "已应用 macOS 风格动画（神灯最小化已开启）" ;;
+            preset-windows)  "$ADJUST" winanim preset windows; info "已应用 Windows 11 动画（无神灯, 保留滑入）" ;;
             preset-balanced) "$ADJUST" winanim preset balanced; info "已应用均衡动画" ;;
             preset-fast)     "$ADJUST" winanim preset fast; info "已应用快速动画" ;;
             preset-off)      "$ADJUST" winanim preset off; info "已关闭所有窗口动画" ;;
@@ -570,11 +572,39 @@ sub_winanimi() {
     done
 }
 
+# ---------- 检测当前 KDE 风格 ----------
+# 依据已安装的 Plasma 桌面主题目录判断当前风格（配置中心对 KWin/Plasma 是通用的，
+# 这里让界面能感知主题，Fluent 等非 macOS 风格也得到合适的预设/提示）。
+kde_active_style() { # -> 输出 "key|label"，如 "fluent|Windows 11 (Fluent)"
+    local d base
+    for d in "$HOME/.local/share/plasma/desktoptheme/"*; do
+        base=$(basename "$d")
+        case "$base" in
+            MacTahoeLiquidKde*) echo "macos26|macOS 26 (Tahoe 液态玻璃)"; return 0 ;;
+        esac
+    done
+    for d in "$HOME/.local/share/plasma/desktoptheme/"*; do
+        base=$(basename "$d")
+        case "$base" in
+            Fluent*) echo "fluent|Windows 11 (Fluent)"; return 0 ;;
+        esac
+    done
+    for d in "$HOME/.local/share/plasma/desktoptheme/"*; do
+        base=$(basename "$d")
+        case "$base" in
+            WhiteSur*) echo "macos15|macOS 15 (Sequoia)"; return 0 ;;
+        esac
+    done
+    echo "unknown|未知"
+}
+kde_style_label() { kde_active_style | cut -d'|' -f2; }
+kde_style_key()   { kde_active_style | cut -d'|' -f1; }
+
 # ---------- 主菜单 ----------
 main() {
     while true; do
         local c
-        c=$(menu "桌面外观配置中心" "全部配置都在这里交互式调整，无需记命令：" \
+        c=$(menu "桌面外观配置中心" "全部配置都在这里交互式调整，无需记命令。当前风格：$(kde_style_label)" \
             "corner|① 窗口圆角|窗口/ Dock / 弹窗圆角半径" \
             "transparency|② 透明度|全局与 10 个组件的透明程度" \
             "glass|③ 玻璃质感|模糊/折射/色散等（完整模式可见）" \
