@@ -19,14 +19,16 @@ import sys
 import gi
 
 gi.require_version("Gtk", "4.0")
-from gi.repository import GLib, Gtk, Pango  # noqa: E402
+gi.require_version("Gdk", "4.0")
+from gi.repository import Gdk, GLib, Gtk, Pango  # noqa: E402
 
 HOME = os.path.expanduser("~")
 SCRIPT_DIR = os.path.dirname(os.path.abspath(__file__))
 KWINRC = os.path.join(HOME, ".config", "kwinrc")
 PLASMASHELLRC = os.path.join(HOME, ".config", "plasmashellrc")
 APPLETSRC = os.path.join(HOME, ".config", "plasma-org.kde.plasma.desktop-appletsrc")
-GTK4_CSS = os.path.join(HOME, ".config", "gtk-4.0", "gtk.css")
+GTK4_DIR = os.path.join(HOME, ".config", "gtk-4.0")
+GTK4_CSS = os.path.join(GTK4_DIR, "gtk.css")
 GTK3_CSS = os.path.join(HOME, ".config", "gtk-3.0", "gtk.css")
 DBUS_ENV = {
     "DBUS_SESSION_BUS_ADDRESS": "unix:path=/run/user/1000/bus",
@@ -196,8 +198,45 @@ def gtk_opacity_get():
         s = open(GTK4_CSS, encoding="utf-8", errors="replace").read()
     except FileNotFoundError:
         return "?"
+    m = re.search(r"alpha\(@window_bg_color,\s*([0-9.]+)\)", s)
+    if m:
+        return str(round(float(m.group(1)) * 100))
     m = re.search(r"@window_bg_color (\d+)%", s)
     return m.group(1) if m else "?"
+
+
+def theme_color(name, default):
+    """从当前 GTK4 主题的 CSS 里取 @define-color 的字面颜色值。"""
+    for fn in ("gtk-Dark.css", "gtk-Light.css"):
+        try:
+            s = open(os.path.join(GTK4_DIR, fn), encoding="utf-8", errors="replace").read()
+        except FileNotFoundError:
+            continue
+        m = re.search(r"@define-color\s+" + re.escape(name) + r"\s+(#[0-9a-fA-F]{3,8})\s*;", s)
+        if m:
+            return m.group(1)
+    return default
+
+
+def install_ui_css():
+    """给配置中心自己一套实心配色，避免 GTK 主题损坏时窗口变全透明。"""
+    bg = theme_color("window_bg_color", "#232329")
+    fg = theme_color("window_fg_color", "#e8e8e8")
+    side = theme_color("sidebar_bg_color", bg)
+    head = theme_color("headerbar_bg_color", bg)
+    provider = Gtk.CssProvider()
+    provider.load_from_data(f"""
+    window, .background {{ background-color: {bg}; color: {fg}; }}
+    headerbar {{ background-color: {head}; color: {fg}; }}
+    .navigation-sidebar {{ background-color: {side}; }}
+    list > row {{ border-bottom: 1px solid rgba(127, 127, 127, 0.22); }}
+    .error {{ color: #e06c75; }}
+    """.encode("utf-8"))
+    display = Gdk.Display.get_default()
+    if display is not None:
+        # 比 ~/.config/gtk-4.0/gtk.css（USER=800）更高，保证窗口背景不透明
+        Gtk.StyleContext.add_provider_for_display(
+            display, provider, Gtk.STYLE_PROVIDER_PRIORITY_USER + 1)
 
 
 def gtk_opacity_set(value):
@@ -209,11 +248,15 @@ def gtk_opacity_set(value):
             r"(color-mix\(in srgb, " + re.escape(color) + r" )\d+(%)",
             lambda m: m.group(1) + str(value) + m.group(2), s,
         )
+        s = re.sub(
+            r"(alpha\(" + re.escape(color) + r",\s*)0?\.\d+",
+            lambda m: m.group(1) + f"{int(value) / 100:.2f}", s,
+        )
         if "macos-config" not in s:
             s += (
                 "\n/* == macos-config: GTK 窗口不透明度 == */\n"
-                ".window-bg, .sidebar, .sidebar-bg, GtkPlacesSidebar {\n"
-                f"  background-color: color-mix(in srgb, {color} {value}%, transparent);\n"
+                ".window-bg, .sidebar, .sidebar-bg, GtkPlacesSidebar, .background {\n"
+                f"  background-color: alpha({color}, {int(value) / 100:.2f});\n"
                 "}\n/* == end macos-config == */\n"
             )
         open(path, "w", encoding="utf-8").write(s)
@@ -428,6 +471,8 @@ class Center(Gtk.ApplicationWindow):
         self.timers = set()
         self._status_timer = 0
         self.nav_rows = {}
+        self.page_widgets = {}
+        self._seq = 0
         self.builders = {
             "corner": self.build_corner,
             "transparency": self.build_transparency,
@@ -484,7 +529,10 @@ class Center(Gtk.ApplicationWindow):
         scroller = Gtk.ScrolledWindow()
         scroller.set_policy(Gtk.PolicyType.NEVER, Gtk.PolicyType.AUTOMATIC)
         scroller.set_child(page)
-        self.stack.add_named(scroller, key)
+        # 每次都用唯一名字，重建页面时不会和旧页冲突
+        self._seq += 1
+        self.stack.add_named(scroller, f"{key}#{self._seq}")
+        self.page_widgets[key] = scroller
 
         # 只在首次注册时添加左侧分类项，刷新页面时不会重复
         if self.nav_rows.get(key):
@@ -505,8 +553,9 @@ class Center(Gtk.ApplicationWindow):
     def on_select(self, _lb, row):
         if row is None:
             return
-        self.stack.set_visible_child_name(row.page_key)
-        self.rebuild(row.page_key)
+        widget = self.page_widgets.get(row.page_key)
+        if widget is not None:
+            self.stack.set_visible_child(widget)
 
     def register(self, key, name, builder):
         page = builder()
@@ -551,6 +600,8 @@ class Center(Gtk.ApplicationWindow):
                                                lambda v: self.report(*run_adjust("corner", v),
                                                                      f"圆角已设为 {v}px")))])
 
+        return p
+
     def build_transparency(self):
         p = Page(self, "透明度",
                  "0 = 完全不透明，100 = 完全透明。修改后由 adjust-window.sh 重生成主题，稍等片刻生效。")
@@ -583,6 +634,8 @@ class Center(Gtk.ApplicationWindow):
                    ("启动器恢复默认", "恢复背景 SVG 原始不透明度",
                     lambda: self.report(*run_adjust("launcher-transparency", "default"), "启动器已恢复默认"))])
 
+        return p
+
     def build_glass(self):
         p = Page(self, "玻璃质感",
                  "仅在完整模式（liquidglass 开启）下可见；性能模式下数值会保存但不渲染。")
@@ -596,6 +649,8 @@ class Center(Gtk.ApplicationWindow):
                 self.report(ok, out, f"{lbl} = {v}")
 
             p.scale(label, desc, lo, hi, step, cur, apply, digits)
+
+        return p
 
     def build_effects(self):
         p = Page(self, "特效开关", "性能模式请保持液态玻璃关闭，软件渲染下开启会明显卡顿。")
@@ -623,6 +678,8 @@ class Center(Gtk.ApplicationWindow):
                  toggle_corner)
         p.note("切换后若个别效果没变化，注销并重新登录一次即可完全生效。")
 
+        return p
+
     def build_gradient(self):
         p = Page(self, "渐变与装饰", "玻璃表面的渐变强度与模糊覆盖范围。")
         for key, label, lo, hi, step in GRAD_PARAMS:
@@ -646,6 +703,8 @@ class Center(Gtk.ApplicationWindow):
         bool_row("BlurDecorations", "装饰栏模糊", "标题栏 / 工具栏参与模糊")
         bool_row("BlurNonMatching", "非匹配窗口模糊", "不匹配玻璃材质的窗口也模糊")
 
+        return p
+
     def build_gtk(self):
         p = Page(self, "GTK 应用透明度",
                  "Nautilus 等 GTK 应用的窗口与侧栏，独立于 Plasma 的 Qt 透明度。"
@@ -658,6 +717,8 @@ class Center(Gtk.ApplicationWindow):
 
         p.scale("窗口 / 侧栏不透明度", f"当前 {cur}%（100 = 完全不透明）",
                 0, 100, 1, str_or(cur, 90), apply, 0, " %")
+
+        return p
 
     def build_dock(self):
         p = Page(self, "Dock 尺寸", "修改后等离子桌面会重启一次（约 2 秒），属于正常现象。")
@@ -675,6 +736,8 @@ class Center(Gtk.ApplicationWindow):
 
         p.scale("Dock 栏高度", "默认 68，建议 56-96（px）", 40, 140, 4, cur_h, apply_h, 0, " px")
         p.scale("图标悬停放大", "100 = 不放大，建议 110-135（%）", 100, 150, 5, cur_z, apply_z, 0, " %")
+
+        return p
 
     def build_logo(self):
         p = Page(self, "顶部任务栏 Logo", "左上角菜单按钮图标，切换后桌面自动重启。")
@@ -702,6 +765,8 @@ class Center(Gtk.ApplicationWindow):
                  lambda: choose("start-here-kde-plasma-symbolic"))
         p.button("自定义图标名", "输入图标主题 places/scalable 下的图标名（不含 .svg）", "输入…",
                  lambda: self.prompt_text("自定义 Logo", "图标名", cur, choose))
+
+        return p
 
     def build_winanim(self):
         p = Page(self, "窗口动画",
@@ -750,6 +815,8 @@ class Center(Gtk.ApplicationWindow):
 
         p.scale("全局动画速度", "0.25 = 快，1.0 = 标准，2.0 = 慢", 0.25, 2.0, 0.05,
                 speed, apply_speed, 2, "x")
+
+        return p
 
     def build_misc(self):
         p = Page(self, "其他", "查看当前配置、恢复默认、切换性能 / 完整模式。")
@@ -806,6 +873,8 @@ class Center(Gtk.ApplicationWindow):
                  "启用", lambda: self.report(*run_kwin_rule("install"), "已启用弹窗不进 Dock"))
 
     # ---- 小工具 ----
+        return p
+
     def prompt_number(self, title, lo, hi, step, current, cb):
         win = Gtk.Window(transient_for=self, modal=True, title=title)
         win.set_default_size(420, -1)
@@ -893,23 +962,32 @@ class Center(Gtk.ApplicationWindow):
         win.present()
 
     def rebuild(self, key):
-        """切换分类时只重建这个页面，窗口本身不关闭（Dock 只有一个图标）。"""
+        """重建页面：先建新页并显示，再删旧页，避免出现空白。"""
         for t in list(self.timers):
             GLib.source_remove(t)
         self.timers.clear()
-        old = self.stack.get_child_by_name(key)
-        if old is not None:
-            self.stack.remove(old)
         builder = self.builders.get(key)
         if builder is None:
             return
-        self.register(key, self.page_names[key], builder)
-        self.stack.set_visible_child_name(key)
+        old = self.page_widgets.get(key)
+        was_visible = old is not None and self.stack.get_visible_child() is old
+        new_widget = None
+        page = builder()
+        self._seq += 1
+        new_widget = Gtk.ScrolledWindow()
+        new_widget.set_policy(Gtk.PolicyType.NEVER, Gtk.PolicyType.AUTOMATIC)
+        new_widget.set_child(page)
+        self.stack.add_named(new_widget, f"{key}#{self._seq}")
+        self.page_widgets[key] = new_widget
+        if was_visible:
+            self.stack.set_visible_child(new_widget)
+        if old is not None and old is not new_widget:
+            self.stack.remove(old)
 
     def refresh(self):
-        key = self.stack.get_visible_child_name()
-        if key:
-            self.rebuild(key)
+        row = self.sidebar.get_selected_row()
+        if row is not None:
+            self.rebuild(row.page_key)
 
 
 def read_plasmashell_thickness():
@@ -944,6 +1022,7 @@ class App(Gtk.Application):
         super().__init__(application_id="io.github.desktoptoolkit.ConfigCenter")
 
     def do_activate(self):
+        install_ui_css()
         win = self.props.active_window or Center(self)
         win.present()
 

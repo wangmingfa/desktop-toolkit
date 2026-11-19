@@ -35,6 +35,9 @@ echo "==> [3/3] 应用主题：全套 / 自动明暗 / 排除 SDDM 与 Plymouth"
 sudo ./src/scripts/installer_backend.py install \
   --auto --no-sddm --no-plymouth
 
+# GTK 4.14 兼容修复（@media/@import 与 color-mix），否则 GTK4 窗口会全透明
+bash "$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)/fix-gtk-theme.sh" fix || true
+
 echo
 echo "============================================================"
 echo "完成。KWin / Plasma 会自动重启生效。"

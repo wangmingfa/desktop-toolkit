@@ -14,6 +14,10 @@ DBUS_ENV="DBUS_SESSION_BUS_ADDRESS=unix:path=/run/user/1000/bus XDG_RUNTIME_DIR=
 
 [ -x "$ADJUST" ] || { echo "缺少 $ADJUST" >&2; exit 1; }
 
+# 修复 GTK 主题在 GTK 4.14 下的 @media/@import 与 color-mix 兼容问题
+# （否则 GTK4 应用窗口会完全透明）
+[ -x "$SCRIPT_DIR/fix-gtk-theme.sh" ] && "$SCRIPT_DIR/fix-gtk-theme.sh" fix >/dev/null 2>&1 || true
+
 # ---------------------------------------------------------------------------
 # 优先使用 GTK 单窗口版：切换分类只换页面，不会关窗/开新窗，
 # Dock / 任务栏上始终只有一个图标。GTK4 不可用时自动退回下面的
@@ -387,7 +391,18 @@ sub_gradient() {
 GTK4_CSS="$HOME/.config/gtk-4.0/gtk.css"
 GTK3_CSS="$HOME/.config/gtk-3.0/gtk.css"
 gtk_opacity_get() {
-    grep -oE '@window_bg_color [0-9]+%' "$GTK4_CSS" 2>/dev/null | head -1 | grep -oE '[0-9]+' || echo "?"
+    python3 - "$GTK4_CSS" <<'PY'
+import sys, re
+try:
+    s = open(sys.argv[1], encoding="utf-8", errors="replace").read()
+except FileNotFoundError:
+    print("?"); raise SystemExit
+m = re.search(r"alpha\(@window_bg_color,\s*([0-9.]+)\)", s)
+if m:
+    print(round(float(m.group(1)) * 100)); raise SystemExit
+m = re.search(r"@window_bg_color (\d+)%", s)
+print(m.group(1) if m else "?")
+PY
 }
 gtk_opacity_set() { # 0-100
     local v="$1"
@@ -397,11 +412,17 @@ gtk_opacity_set() { # 0-100
         python3 - "$f" "$color" "$v" <<'PY'
 import sys, re
 p, color, v = sys.argv[1], sys.argv[2], sys.argv[3]
+frac = "{:.2f}".format(int(v) / 100)
 s = open(p, encoding="utf-8").read()
+# 兼容旧写法 color-mix() 与新写法 alpha()
 s = re.sub(r'(color-mix\(in srgb, ' + re.escape(color) + r' )\d+(%', r'\g<1>' + v + r'\g<2>', s)
+s = re.sub(r'(alpha\(' + re.escape(color) + r',\s*)0?\.\d+', r'\g<1>' + frac, s)
 # 若缺少受管标记则追加一段覆盖规则
 if 'macos-config' not in s:
-    s += "\n/* == macos-config: GTK 窗口不透明度 == */\n.window-bg, .sidebar, .sidebar-bg, GtkPlacesSidebar {\n  background-color: color-mix(in srgb, " + color + " " + v + "%, transparent);\n}\n/* == end macos-config == */\n"
+    s += ("\n/* == macos-config: GTK 窗口不透明度 == */\n"
+          ".window-bg, .sidebar, .sidebar-bg, GtkPlacesSidebar, .background {\n"
+          "  background-color: alpha(" + color + ", " + frac + ");\n"
+          "}\n/* == end macos-config == */\n")
 open(p, "w", encoding="utf-8").write(s)
 PY
     done

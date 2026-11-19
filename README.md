@@ -39,6 +39,7 @@ desktop-toolkit/
 │   │   ├── kde-scheme.sh         # KDE 统一入口：macOS 26 / 15 安装切换 + 微调
 │   │   ├── config-center.sh      # 桌面外观配置中心入口（优先 GTK 单窗口版）
 │   │   ├── config-center-gtk.py  # 单窗口版配置中心（GTK4，切换分类不开新窗）
+│   │   ├── fix-gtk-theme.sh      # 修复 GTK 4.14 主题兼容（@media/color-mix）
 │   │   ├── kwin-rule.sh          # 让弹窗不进任务栏/Dock（KWin 规则）
 │   │   ├── adjust-window.sh      # 底层调节工具（圆角/透明度/Dock/Logo/动画…）
 │   │   ├── install-theme.sh      # 安装 macOS 26 Tahoe Liquid KDE 主题
@@ -161,6 +162,25 @@ DT_MIRROR=ghproxy ./modules/appearance/gnome/install.sh macos26
 ## 关于性能
 
 VMware `vmwgfx` + `llvmpipe` 软件渲染下，液态玻璃全屏模糊会让 plasmashell CPU 飙到 ~67%。工具箱默认使用**性能模式**（关闭 liquidglass）。窗口动画依赖 KWin 的 `KWIN_EFFECTS_FORCE_ANIMATIONS=1`（由脚本写入 systemd drop-in），因为是按需动画，平时不耗资源。
+
+## 常见问题
+
+**GTK4 应用窗口完全透明（只剩文字）？**
+GTK 4.14 不支持 `@import` 写在 `@media` 里，也不支持 `color-mix()`。主题生成的
+`~/.config/gtk-4.0/gtk.css` 一旦用了这两种写法，整个主题不会加载，窗口就没有背景。
+运行一次即可修复（配置中心启动时也会自动执行）：
+
+```bash
+./modules/appearance/fix-gtk-theme.sh fix     # 修复
+./modules/appearance/fix-gtk-theme.sh status  # 检查
+```
+
+原文件会备份为 `gtk.css.bak-gtkfix`。
+
+**Dock 上配置窗口图标来回闪？**
+旧菜单版每翻一页都会开新窗口。现在默认使用单窗口版；如需旧版可用
+`DT_CONFIG_CLI=1` 启动，并已通过 KWin 规则让这些弹窗不计入任务栏
+（`./modules/appearance/kwin-rule.sh install|remove|status`）。
 
 ## 环境
 
