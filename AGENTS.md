@@ -36,6 +36,10 @@ desktop-toolkit/
 1. **放对位置**：`modules/<分类>/<名字>.sh`（分类：appearance / system / network / dev / backup）。
 2. **取公共能力**：开头 `source "$DT_ROOT/lib/common.sh"` 和 `source "$DT_ROOT/lib/ui.sh"`；如依赖模块内公共库（如 GNOME 的 `lib-gnome.sh`）也要 source。
 3. **GUI 自适应**：交互一律走 `dt_detect_gui` + `dt_menu` / `dt_confirm` / `dt_info` / `dt_ask_num` / `dt_ask_text`；**不要直接调 zenity/kdialog**（容器/宿主机两套工具要通用）。纯终端兜底用 `read -p`。
+   - **TUI 兜底已内置**：`dt_detect_gui` 找不到 zenity/kdialog 时（`GUI=none`），`ui.sh` 的 `dt_menu`/`dt_confirm`/`dt_info`/`dt_ask_*` 自动退化为**文本交互**，无需额外 `read -p` 分支。
+   - **菜单行第 4 字段 `|gui`**：表示"需要 GUI 环境"的选项，TUI 下由 `dt_menu` 自动隐藏（如 `main.sh` 的"外观美化"）。新增 GUI 专属菜单项时**必须**加 `|gui` 后缀，否则 headless 机器上会误显示。
+   - **stdout/stderr**：TUI 的菜单文本/提示一律走 **stderr**，`dt_menu` 的 stdout 只输出所选 key（它常被 `c=$(dt_menu ...)` 捕获；若提示打到 stdout 会被吞掉，且前导换行会让 `case` 匹配失败）。
+   - **取消语义**：TUI 下回车/无效/EOF 返回**非零**（与 GUI 分支 zenity 取消一致），调用方用 `|| return 0`（回上级）/ `|| exit 0`（退出）；`|| continue` 在 `while true` 菜单循环里会死循环，**不要用**。
 4. **注册入口**：在 `main.sh` 对应分类菜单加一个选项；需要自动扫描的放对应目录。
 5. **可执行**：`chmod +x`（`.desktop` 启动器/`main.sh` 调用需要）。
 6. **自检后再提交**：`bash -n <file>` 语法通过，且跑一次关键路径验证，再 `git commit` + `push`。

@@ -11,11 +11,17 @@
 git clone https://github.com/wangmingfa/desktop-toolkit.git ~/code/desktop-toolkit
 cd ~/code/desktop-toolkit
 
-# 唯一入口：图形菜单，选择对应选项即可
+# 唯一入口：图形菜单，选择对应选项即可（无 GUI 时自动转为命令行 TUI）
 ./main.sh
 ```
 
 脚本会自动识别 GUI 工具：**容器里用 zenity，宿主机 KDE 上用 kdialog**。菜单里选中「外观美化 → 桌面外观配置中心」就能交互式调整全部配置，不需要记命令。
+
+> **无 GUI（headless/SSH/纯 TTY）自动进入命令行(TUI)模式**：检测不到 zenity/kdialog 时，
+> `main.sh` 不再退出，而是用文本菜单，并把**需要 GUI 的选项（外观美化等）自动隐藏**，
+> 只保留纯命令行可用的（网络镜像、Niri+DMS、占位分类、关于）。所有交互在终端完成。
+> 判定为"GUI 环境"的依据是 zenity/kdialog 是否存在；有 GUI 但没装它们时也会走 TUI，
+> 装任一即可恢复图形菜单（`sudo dnf install zenity` / `sudo pacman -S zenity`）。
 
 > 配置中心现在默认打开**单窗口版（GTK4）**：左侧分类、右侧内容，切换分类只换页面，
 > 窗口不会关闭重开，Dock 上始终只有一个图标。GTK4 不可用时自动退回 zenity/kdialog 菜单版

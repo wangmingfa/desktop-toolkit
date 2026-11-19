@@ -7,24 +7,59 @@
 
 GUI="$(dt_detect_gui)"
 
-dt_menu() { # title text "key|label|desc" ...
+# dt_menu：GUI 用 zenity/kdialog；GUI=none 时退化为文本菜单(TUI)。
+# 行格式: "key|label|desc[|gui]" —— 第 4 字段为 gui 表示"需要 GUI 环境"，
+# 在 TUI(GUI=none)下自动隐藏该行。
+dt_menu() { # title text "key|label|desc[|gui]" ...
     local title="$1" text="$2"; shift 2
+    local -a rows=()
+    local row key label desc needgui
+    for row in "$@"; do
+        IFS='|' read -r key label desc needgui <<< "$row"
+        [ "$GUI" = none ] && [ "$needgui" = gui ] && continue   # TUI 隐藏 GUI 专属项
+        rows+=("$row")
+    done
     if [ "$GUI" = zenity ]; then
-        local args=() row key label desc
-        for row in "$@"; do
-            IFS='|' read -r key label desc <<< "$row"
+        local args=()
+        for row in "${rows[@]}"; do
+            IFS='|' read -r key label desc _ <<< "$row"
             args+=("$key" "$label" "$desc")
         done
         zenity --list --title="$title" --text="$text" --width=560 --height=560 \
             --column="编号" --column="选项" --column="说明" \
             --print-column=1 "${args[@]}" 2>/dev/null
     elif [ "$GUI" = kdialog ]; then
-        local args=() row key label desc
-        for row in "$@"; do
-            IFS='|' read -r key label desc <<< "$row"
+        local args=()
+        for row in "${rows[@]}"; do
+            IFS='|' read -r key label desc _ <<< "$row"
             [ -n "$desc" ] && args+=("$key" "$label — $desc") || args+=("$key" "$label")
         done
         kdialog --title "$title" --menu "$text" "${args[@]}" 2>/dev/null
+    else
+        # TUI：编号文本菜单。菜单/提示走 stderr（dt_menu 常被 $( ) 捕获返回值，
+        # stdout 只输出所选 key；否则菜单文本会被命令替换吞掉，用户看不到）。
+        echo >&2
+        echo "──────────────── $title ────────────────" >&2
+        [ -n "$text" ] && echo "$text" >&2
+        local i=0 choice
+        for row in "${rows[@]}"; do
+            IFS='|' read -r key label desc _ <<< "$row"
+            i=$((i+1))
+            if [ -n "$desc" ]; then
+                printf '  %2d) %-28s %s\n' "$i" "$label" "($desc)" >&2
+            else
+                printf '  %2d) %s\n' "$i" "$label" >&2
+            fi
+        done
+        [ "$i" -eq 0 ] && { echo "  （无可用选项，本菜单在 TUI 模式下为空）" >&2; return 0; }
+        printf '请选择 [1-%d]（回车取消）: ' "$i" >&2
+        # 回车/无效/EOF 均视为"取消"(返回非零)，与 GUI 分支 zenity 取消一致；
+        # 调用方用 || return 0 / || exit 0 处理回退或退出，避免无输入时菜单死循环。
+        read -r choice || return 1
+        [[ "$choice" =~ ^[0-9]+$ ]] || return 1
+        [ "$choice" -ge 1 ] && [ "$choice" -le "$i" ] || return 1
+        IFS='|' read -r key _ _ _ <<< "${rows[$((choice-1))]}"
+        echo "$key"
     fi
 }
 
@@ -34,6 +69,12 @@ dt_ask_num() { # title text value min max step
             --min-value="$4" --max-value="$5" --step="$6" --width=480 2>/dev/null
     elif [ "$GUI" = kdialog ]; then
         kdialog --title "$1" --inputbox "$2 ($4-$5)" "$3" 2>/dev/null
+    else
+        local v
+        printf '%s [%s]（%s-%s）: ' "$1" "$3" "$4" "$5" >&2
+        read -r v || return 0
+        [ -n "$v" ] || v="$3"
+        echo "$v"
     fi
 }
 
@@ -42,6 +83,14 @@ dt_ask_text() { # title text default_value
         zenity --entry --title="$1" --text="$2" --entry-text="${3:-}" 2>/dev/null
     elif [ "$GUI" = kdialog ]; then
         kdialog --title "$1" --inputbox "$2" "${3:-}" 2>/dev/null
+    else
+        local v
+        printf '%s' "$1" >&2
+        [ -n "${3:-}" ] && printf ' [%s]' "$3" >&2
+        printf ': ' >&2
+        read -r v || return 0
+        [ -n "$v" ] || v="${3:-}"
+        echo "$v"
     fi
 }
 
@@ -50,6 +99,11 @@ dt_confirm() {
         zenity --question --title="确认" --text="$1" 2>/dev/null
     elif [ "$GUI" = kdialog ]; then
         kdialog --title "确认" --yesno "$1" 2>/dev/null
+    else
+        local ans
+        printf '%s [y/N] ' "$1" >&2
+        read -r ans || return 1
+        case "${ans:-}" in y|Y|yes|YES|是) return 0 ;; *) return 1 ;; esac
     fi
 }
 
@@ -58,6 +112,8 @@ dt_info() {
         zenity --info --title="完成" --text="$1" 2>/dev/null || true
     elif [ "$GUI" = kdialog ]; then
         kdialog --title "完成" --msgbox "$1" 2>/dev/null || true
+    else
+        printf '%b\n' "$1"
     fi
 }
 
@@ -66,5 +122,7 @@ dt_err_gui() {
         zenity --error --title="错误" --text="$1" 2>/dev/null || true
     elif [ "$GUI" = kdialog ]; then
         kdialog --title "错误" --error "$1" 2>/dev/null || true
+    else
+        echo "错误: $1" >&2
     fi
 }

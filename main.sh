@@ -20,8 +20,8 @@ sub_appearance() {
     while true; do
         local c
         c=$(dt_menu "外观美化" "桌面环境与 macOS 版本方案（KDE / GNOME 均支持 macOS 26 与 15）：" \
-            "kde|① KDE 外观美化|macOS 26 Tahoe / 15 经典 安装切换 + 微调工具" \
-            "gnome|② GNOME 外观美化|macOS 26 / 15 方案（适用于 GNOME 系统）" \
+            "kde|① KDE 外观美化|macOS 26 Tahoe / 15 经典 安装切换 + 微调工具|gui" \
+            "gnome|② GNOME 外观美化|macOS 26 / 15 方案（适用于 GNOME 系统）|gui" \
             "list|③ 查看当前所有配置|打印可调项清单" \
             "back|← 返回主菜单|") || return 0
         [ "$c" = back ] && return 0
@@ -37,6 +37,8 @@ sub_appearance() {
                         --width=760 --height=640 2>/dev/null || true
                 elif [ "$GUI" = kdialog ]; then
                     kdialog --title "当前配置" --textbox /tmp/dt-config-list.txt 760 640 2>/dev/null || true
+                else
+                    cat /tmp/dt-config-list.txt   # TUI: 直接终端打印
                 fi ;;
         esac
     done
@@ -58,7 +60,7 @@ sub_network() {
                 action=$(dt_menu "GitHub 镜像" "当前配置：" \
                     "on|① 启用镜像|把 github.com 重写到国内镜像（全局 git）" \
                     "off|② 关闭镜像|移除重写" \
-                    "status|③ 查看状态|") || continue
+                    "status|③ 查看状态|") || return 0
                 bash "$DT_ROOT/modules/network/github-mirror.sh" "$action"
                 dt_info "完成。查看/修改: 换 GH_PROXY 前缀后重跑 on。"
                 ;;
@@ -91,7 +93,9 @@ sub_wm() {
 # ---------------------------------------------------------------------------
 sub_placeholder() { # title
     local title="$1" dir="$2"
-    local count; count=$(find "$DT_ROOT/modules/$dir" -maxdepth 1 -name '*.sh' 2>/dev/null | wc -l)
+    # pipefail 下 find 对不存在的占位目录会返回非零，须容错，否则 set -e 直接退出
+    local count
+    count=$(find "$DT_ROOT/modules/$dir" -maxdepth 1 -name '*.sh' 2>/dev/null | wc -l) || true
     dt_info "$title\n\n该分类目前有 ${count} 个脚本。\n把新脚本放进 modules/$dir/ 后，这里会自动出现（后续可扩展自动扫描）。"
 }
 
@@ -158,15 +162,17 @@ dt_resume_gnome() {
 # ---------------------------------------------------------------------------
 main() {
     dt_resume_gnome
+    # TUI 模式提示（GUI=none 时 dt_menu 自动退化为文本菜单，不再需要 zenity/kdialog）
     if [ "$GUI" = none ]; then
-        echo "未检测到 zenity / kdialog，无法打开图形菜单。"
-        echo "请安装其一后重试：sudo pacman -S zenity   (或 kdialog)"
-        exit 1
+        echo "未检测到 zenity / kdialog，已进入命令行(TUI)模式："
+        echo "  - 需要 GUI 的选项已自动隐藏（如外观美化）"
+        echo "  - 所有交互在终端完成"
+        echo
     fi
     while true; do
         local c
         c=$(dt_menu "desktop-toolkit" "选择要执行的分类（脚本集中管理，拉下来即可用）：" \
-            "appearance|① 外观美化|macOS 美化 / 主题 / 配置中心 / 性能模式" \
+            "appearance|① 外观美化|macOS 美化 / 主题 / 配置中心 / 性能模式|gui" \
             "wm|② 窗口管理器 / 桌面方案|Niri + DMS 等平铺 Wayland 方案" \
             "system|③ 系统配置|系统优化与服务配置（待扩展）" \
             "network|④ 网络工具|代理 / 网络相关脚本（待扩展）" \
