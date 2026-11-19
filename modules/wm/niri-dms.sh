@@ -27,6 +27,12 @@ done
 log() { echo "  [niri-dms] $*"; }
 err() { echo "  [niri-dms] 错误: $*" >&2; }
 
+# dnf 下载参数：COPR 的大包(dms-cli ~83MB)在网络慢时极易失败——dnf 内部按
+# "30 秒内少于 1000 B/s" 判死(low-speed)，这个阈值 dnf 不暴露、改不了。
+# 能做的是：把总传输时限放宽(timeout=0 不限时)、把每次下载的重试次数调高(retries)，
+# 再叠加本脚本的重跑(见 dnf_install_retry)。仍慢就换网/稍后重跑续装。
+DT_DNF_OPTS=(--setopt=timeout="${DT_DNF_TIMEOUT:-0}" --setopt=retries="${DT_DNF_RETRIES:-10}")
+
 echo "══════════════════════════════════════════"
 echo " 安装 Niri + DMS (Dux Modular Shell)"
 echo "══════════════════════════════════════════"
@@ -34,6 +40,23 @@ echo "════════════════════════�
 # ---------------------------------------------------------------------------
 # 1) 安装包（发行版自适应）
 # ---------------------------------------------------------------------------
+# 带重试的 dnf 安装：COPR 源(copr-pulp-prod.s3.amazonaws.com)下载大包偶发超时/中断，
+# 重跑即可续装（已装好的包自动跳过）。
+dnf_install_retry() { # <包名>...
+    local attempt
+    local -a pkgs=("$@")
+    for (( attempt=1; attempt<=3; attempt++ )); do
+        [ "$attempt" -gt 1 ] && log "第 ${attempt} 次重试安装（上次下载失败/中断，已装好的会自动跳过）…"
+        if sudo dnf install -y "${DT_DNF_OPTS[@]}" "${pkgs[@]}"; then
+            return 0
+        fi
+        err "第 ${attempt} 次安装失败"
+    done
+    err "安装仍未成功。可稍后重跑本脚本续装，或手动执行："
+    err "  sudo dnf install ${DT_DNF_OPTS[*]} ${pkgs[*]}"
+    return 1
+}
+
 install_pkgs() {
     if command -v dnf >/dev/null 2>&1; then
         echo "==> 检测到 Fedora/dnf"
@@ -41,8 +64,8 @@ install_pkgs() {
         # 幂等：已启用时 enable 是 no-op
         sudo dnf copr enable -y duxlabs/dms 2>/dev/null \
             || log "COPR duxlabs/dms 启用未确认(可手动: sudo dnf copr enable duxlabs/dms)，继续"
-        echo "  安装 niri + dms + 配套(需 sudo 密码)…"
-        sudo dnf install -y niri dms quickshell xwayland-satellite \
+        echo "  安装 niri + dms + 配套(需 sudo 密码；dms-cli 约 83MB，网络慢时请耐心等待)…"
+        dnf_install_retry niri dms quickshell xwayland-satellite \
             xdg-desktop-portal-gnome xdg-desktop-portal-gtk \
             "$TERMINAL" fuzzel mako waybar playerctl
     elif command -v pacman >/dev/null 2>&1; then
@@ -124,7 +147,18 @@ EOF
     log "已创建用户级 Niri 登录项：~/.local/share/wayland-sessions/niri.desktop"
 }
 
-install_pkgs
+# 安装是前置条件：失败则不生成配置，明确提示续装，避免看似"完成"实则装了一半
+if ! install_pkgs; then
+    echo
+    echo "============================================================"
+    echo "❌ 包安装未成功，已中止（未生成 DMS 配置）。"
+    echo "  常见原因：COPR 大包(dms-cli ~83MB)下载太慢被判超时。"
+    echo "  请重跑本脚本续装（已装好的包会自动跳过，只重试缺的部分）："
+    echo "  bash modules/wm/niri-dms.sh"
+    echo "  想给更多重试次数: DT_DNF_RETRIES=20 bash modules/wm/niri-dms.sh"
+    echo "============================================================"
+    exit 1
+fi
 setup_dms
 bind_systemd
 strip_waybar
