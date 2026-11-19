@@ -18,9 +18,9 @@ GN_SRC_DIR="${GN_SRC_DIR:-$HOME/.local/src/desktop-toolkit-gnome}"
 gn_version_info() { # macos26|macos15  -> 输出 "gtk_repo gtk_branch gtk_theme icon_repo icon_branch icon_theme cursor_theme"
     case "$1" in
         macos26)
-            echo "vinceliuice/MacTahoe-gtk-theme main  MacTahoe  vinceliuice/MacTahoe-icon-theme main MacTahoe MacTahoe-cursor" ;;
+            echo "vinceliuice/MacTahoe-gtk-theme main  MacTahoe  vinceliuice/MacTahoe-icon-theme main MacTahoe vinceliuice/MacTahoe-icon-theme" ;;
         macos15)
-            echo "vinceliuice/WhiteSur-gtk-theme master WhiteSur  vinceliuice/WhiteSur-icon-theme master WhiteSur WhiteSur-cursors" ;;
+            echo "vinceliuice/WhiteSur-gtk-theme master WhiteSur  vinceliuice/WhiteSur-icon-theme master WhiteSur vinceliuice/WhiteSur-cursors" ;;
         *) return 1 ;;
     esac
 }
@@ -117,7 +117,10 @@ gn_install_cursors() { # icon_repo_dir cursor_repo
     local branch=master
     case "$cursor_repo" in *MacTahoe*) branch=main ;; esac
     local cdir; cdir=$(gn_clone "$cursor_repo" "$branch") || return 1
-    if [ -x "$cdir/install.sh" ]; then
+    # 回退仓库里可能自带 cursors/ 子目录(如 MacTahoe), 优先用它
+    if [ -d "$cdir/cursors" ] && [ -x "$cdir/cursors/install.sh" ]; then
+        ( cd "$cdir/cursors" && ./install.sh ) || return 1
+    elif [ -x "$cdir/install.sh" ]; then
         ( cd "$cdir" && ./install.sh ) || return 1
     fi
 }
