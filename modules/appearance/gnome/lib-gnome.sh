@@ -161,21 +161,68 @@ gn_apply() { # version
     echo "  [apply] 完成（Shell 主题需启用 user-themes 扩展才生效）"
 }
 
+# 下载并安装 GNOME 扩展 zip（尽力而为，成功返回 0）
+gn_ext_install_zip() { # url name
+    local url="$1" name="$2" tmp
+    tmp=$(mktemp --suffix="-$name.zip")
+    if curl -fsSL -m 60 -o "$tmp" "$url" 2>/dev/null && [ -s "$tmp" ]; then
+        if gnome-extensions install "$tmp" 2>/dev/null; then
+            rm -f "$tmp"; return 0
+        fi
+    fi
+    rm -f "$tmp"; return 1
+}
+
 # 安装 GNOME 扩展（user-themes / dash-to-dock / blur-my-shell）
+# user-themes 是 GNOME 自带的系统扩展(gnome-shell-extensions 包)，无需联网下载；
+# dash-to-dock / blur-my-shell 需联网从 extensions.gnome.org 下载，尽力而为。
 gn_install_extensions() { # version
     local version="$1"
+    local ut_dir ut_uuid="user-themes@gnome-shell-extensions.gnome.org"
     echo "  [ext] 安装 GNOME 扩展…"
-    # user-themes: 让 Shell 主题可切换
-    gn-extensions install "https://extensions.gnome.org/extension-data/19/user-themes.v*.shell-extension.zip" 2>/dev/null \
-        || gn-extensions install "https://extensions.gnome.org/extension-data/19/user-themes.zip" 2>/dev/null || true
-    # dash-to-dock: macOS 风格 Dock
-    gn-extensions install "https://extensions.gnome.org/extension-data/307/dash-to-dock.zip" 2>/dev/null || true
-    # blur-my-shell: Tahoe 液态玻璃感（仅 macos26 建议）
-    if [ "$version" = macos26 ]; then
-        gn-extensions install "https://extensions.gnome.org/extension-data/3193/blur-my-shell.zip" 2>/dev/null || true
+
+    # --- user-themes: Shell 主题切换的基础（系统包, 不依赖 extensions.gnome.org）---
+    ut_dir=$(ls -d /usr/share/gnome-shell/extensions/user-themes* 2>/dev/null | head -1)
+    if [ -z "$ut_dir" ]; then
+        echo "  [ext] 安装 gnome-shell-extensions 包（提供 user-themes，需 sudo）…"
+        if command -v dnf >/dev/null 2>&1; then
+            sudo dnf install -y gnome-shell-extensions
+        elif command -v apt-get >/dev/null 2>&1; then
+            sudo apt-get install -y gnome-shell-extensions
+        elif command -v pacman >/dev/null 2>&1; then
+            sudo pacman -S --needed --noconfirm gnome-shell-extensions
+        elif command -v zypper >/dev/null 2>&1; then
+            sudo zypper in -y gnome-shell-extensions
+        else
+            echo "  [ext] 未识别的包管理器，请手动安装 gnome-shell-extensions" >&2
+        fi
+        ut_dir=$(ls -d /usr/share/gnome-shell/extensions/user-themes* 2>/dev/null | head -1)
     fi
-    gn-extensions enable user-themes 2>/dev/null || true
-    gn-extensions enable dash-to-dock 2>/dev/null || true
-    gn-extensions enable blur-my-shell 2>/dev/null || true
-    echo "  [ext] 完成（可到 GNOME Extensions 商店手动补齐依赖）"
+
+    if [ -n "$ut_dir" ]; then
+        # user-themes 现在存在(架构可用), 重设 Shell 主题。
+        # 此前 gn_apply(第4步)设置时 schema 还不存在会静默失败, 这里补上。
+        local gtk_theme
+        read -r _ _ gtk_theme < <(gn_version_info "$version")
+        gn_gs org.gnome.shell.extensions.user-theme name "$gtk_theme" || true
+        if gnome-extensions enable "$ut_uuid" 2>/dev/null; then
+            echo "  [ext] user-themes 已启用 ✅（Shell 主题已设为 $gtk_theme）"
+        else
+            echo "  [ext] user-themes 已安装，但需注销重登一次才能生效"
+        fi
+    else
+        echo "  [ext] 未找到 user-themes 扩展（包未装成功），Shell 主题暂无法切换" >&2
+    fi
+
+    # --- dash-to-dock: macOS 风格 Dock（需联网，尽力而为）---
+    if ! gnome-extensions list 2>/dev/null | grep -q dash-to-dock; then
+        gn_ext_install_zip "https://extensions.gnome.org/extension-data/307/dash-to-dock.zip" dash-to-dock \
+            || echo "  [ext] dash-to-dock 下载失败（网络不通，可稍后到 extensions.gnome.org 手动装）"
+    fi
+    # --- blur-my-shell: Tahoe 液态玻璃感（仅 macos26，需联网，尽力而为）---
+    if [ "$version" = macos26 ] && ! gnome-extensions list 2>/dev/null | grep -q blur; then
+        gn_ext_install_zip "https://extensions.gnome.org/extension-data/3193/blur-my-shell.zip" blur-my-shell \
+            || echo "  [ext] blur-my-shell 下载失败（网络不通，可稍后到 extensions.gnome.org 手动装）"
+    fi
+    echo "  [ext] 完成（dash-to-dock / blur-my-shell 需联网，失败可到 extensions.gnome.org 手动装）"
 }

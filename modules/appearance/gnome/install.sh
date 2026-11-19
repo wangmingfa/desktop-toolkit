@@ -158,12 +158,10 @@ for (( n = START_STEP; n <= 5; n++ )); do
 done
 gn_state_clear
 
+GREEN=$'\033[0;32m'; NC=$'\033[0m'
 echo
-echo "============================================================"
-echo "完成！已应用 $(gn_version_label "$VERSION") 风格。"
-echo "若 Shell/顶栏未变化："
-echo "  1) 安装并启用 user-themes 扩展（GNOME Extensions 商店搜 'User Themes'）"
-echo "  2) 在 设置->外观 里把 Shell 主题选为 $GTK_THEME"
-echo "  3) 注销重登一次"
+echo -e "${GREEN}════════════════════════════════════════════════════════════════${NC}"
+echo -e "${GREEN}✅ 完成！已应用 $(gn_version_label "$VERSION") 风格。${NC}"
+echo -e "${GREEN}════════════════════════════════════════════════════════════════${NC}"
+echo "Shell 主题: 若顶栏/Shell 未变化，注销重登一次即可（user-themes 已由脚本处理）。"
 echo "手动重跑: $0 $VERSION"
-echo "============================================================"
