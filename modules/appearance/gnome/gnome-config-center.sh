@@ -17,6 +17,7 @@ gn_current() {
     echo "当前光标主题  : $(gsettings get org.gnome.desktop.interface cursor-theme 2>/dev/null || echo '?')"
     echo "当前 Shell 主题: $(gsettings get org.gnome.shell.extensions.user-theme name 2>/dev/null || echo '(未启用 user-themes)')"
     echo "当前颜色方案  : $(gsettings get org.gnome.desktop.interface color-scheme 2>/dev/null || echo '?')"
+    echo "当前窗口按钮  : $(gsettings get org.gnome.desktop.wm.preferences button-layout 2>/dev/null || echo '?')"
 }
 
 main() {
@@ -30,6 +31,7 @@ main() {
             "dark|④ 切换深色模式|prefer-dark" \
             "light|⑤ 切换浅色模式|prefer-light" \
             "ext|⑥ 安装 GNOME 扩展|user-themes / dash-to-dock / blur-my-shell" \
+            "buttons|⑦ 窗口按钮位置|macOS 红黄绿在左 / GNOME 默认在右" \
             "back|← 返回|") || return 0
         [ "$c" = back ] && return 0
         case "$c" in
@@ -48,6 +50,18 @@ main() {
                     gn_install_extensions "${LAST_VER:-macos26}"
                     dt_info "扩展安装完成"
                 fi ;;
+            buttons)
+                local bl choice
+                bl=$(gn_button_layout)
+                choice=$(dt_menu "窗口按钮位置" \
+                    "当前: $([ "$bl" = left ] && echo '左侧 (macOS 红黄绿)' || echo '右侧 (GNOME 默认)')" \
+                    "left|左侧 (macOS)|红黄绿 close,minimize,maximize 在左上角" \
+                    "right|右侧 (GNOME)|appmenu:minimize,maximize,close 在右上角" \
+                    "back|← 返回|") || continue
+                [ -z "$choice" ] || [ "$choice" = back ] && continue
+                gn_set_button_layout "$choice"
+                dt_info "窗口按钮已设为$([ "$choice" = left ] && echo '左侧 (macOS 红黄绿)' || echo '右侧 (GNOME 默认)')。\n已打开的窗口需重开或注销重登后生效。"
+                ;;
         esac
     done
 }

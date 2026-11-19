@@ -195,6 +195,25 @@ gn_switch_color_scheme() { # dark|light
     echo "  主题: $cur -> $target (color-scheme=prefer-$mode)"
 }
 
+# 设置窗口按钮布局: left = macOS 红黄绿在左; right = GNOME 默认在右
+gn_set_button_layout() { # left|right
+    local mode="$1"
+    case "$mode" in
+        left)  gn_gs org.gnome.desktop.wm.preferences button-layout "close,minimize,maximize:" || true ;;
+        right) gn_gs org.gnome.desktop.wm.preferences button-layout "appmenu:minimize,maximize,close" || true ;;
+        *) return 1 ;;
+    esac
+    echo "  窗口按钮: $(gsettings get org.gnome.desktop.wm.preferences button-layout 2>/dev/null)"
+}
+
+# 查询当前窗口按钮布局 -> left|right
+gn_button_layout() {
+    local v l
+    v=$(gsettings get org.gnome.desktop.wm.preferences button-layout 2>/dev/null | tr -d "'")
+    l="${v%%:*}"
+    case "$l" in *close*) echo "left" ;; *) echo "right" ;; esac
+}
+
 # 应用主题到 GNOME 各组件
 gn_apply() { # version
     local version="$1"
