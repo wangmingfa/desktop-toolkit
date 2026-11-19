@@ -51,17 +51,6 @@ ICON_DIR="$GN_SRC_DIR/$(basename "$ICON_REPO")"
 # ---------------------------------------------------------------------------
 GN_STATE_FILE="$GN_SRC_DIR/.install-state-$VERSION"
 
-gn_step_label() {
-    case "$1" in
-        1) echo "安装 GTK 主题" ;;
-        2) echo "安装图标主题" ;;
-        3) echo "安装光标主题" ;;
-        4) echo "应用主题设置 (gsettings)" ;;
-        5) echo "安装 GNOME 扩展" ;;
-        *) echo "" ;;
-    esac
-}
-
 gn_state_next() { # -> 下一步骤号(无状态则 1)
     [ -f "$GN_STATE_FILE" ] || { echo 1; return 0; }
     local n
@@ -142,7 +131,11 @@ run_step() { # n fn
 START_STEP=1
 SAVED_NEXT=$(gn_state_next)
 if [ "$SAVED_NEXT" -gt 1 ]; then
-    if gn_resume_confirm "$SAVED_NEXT"; then
+    if [ "${GN_FORCE_RESUME:-0}" = 1 ]; then
+        # main.sh 已让用户确认过恢复, 这里不再重复询问
+        START_STEP="$SAVED_NEXT"
+        echo "==> 继续上次进度：从步骤 $START_STEP/5（$(gn_step_label "$START_STEP")）开始"
+    elif gn_resume_confirm "$SAVED_NEXT"; then
         START_STEP="$SAVED_NEXT"
         echo "==> 继续上次进度：从步骤 $START_STEP/5（$(gn_step_label "$START_STEP")）开始"
     else

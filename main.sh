@@ -9,6 +9,7 @@ set -euo pipefail
 DT_ROOT="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 source "$DT_ROOT/lib/common.sh"
 source "$DT_ROOT/lib/ui.sh"
+source "$DT_ROOT/modules/appearance/gnome/lib-gnome.sh"
 
 APPEARANCE="$DT_ROOT/modules/appearance"
 
@@ -75,9 +76,58 @@ sub_placeholder() { # title
 }
 
 # ---------------------------------------------------------------------------
+# 启动时检测 GNOME 安装进度: 有未完成步骤则直接在终端列出, 可一键恢复,
+# 避免还要进 GUI 菜单逐层选择后才看到"可以恢复"。
+# ---------------------------------------------------------------------------
+dt_resume_gnome() {
+    local -a pending=()          # 交替存放: version next_step
+    local f ver next
+    for f in "$GN_SRC_DIR"/.install-state-macos*; do
+        [ -f "$f" ] || continue
+        ver=$(sed -n 's/^version=//p' "$f" | head -1)
+        next=$(sed -n 's/^next_step=//p' "$f" | head -1)
+        case "$ver" in macos26|macos15) ;; *) continue ;; esac
+        case "$next" in [2-5]) ;; *) continue ;; esac   # 只列真正未完成的
+        pending+=("$ver" "$next")
+    done
+    [ "${#pending[@]}" -eq 0 ] && return 0
+
+    echo
+    echo "──────────────────────────────────────────────"
+    echo "发现未完成的安装进度："
+    local i=1 idx
+    for (( idx=0; idx<${#pending[@]}; idx+=2 )); do
+        ver="${pending[idx]}"; next="${pending[idx+1]}"
+        echo "  [$i] $(gn_version_label "$ver")  —— 第 $next/5 步（$(gn_step_label "$next")）"
+        i=$((i+1))
+    done
+    local gui_opt=$i
+    echo "  [$gui_opt] 进入 GUI 菜单"
+    echo "──────────────────────────────────────────────"
+    local choice
+    read -r -p "选择操作（回车 = $gui_opt 进入 GUI 菜单）: " choice || true
+    choice="${choice:-$gui_opt}"
+    if [[ "$choice" =~ ^[0-9]+$ ]] && [ "$choice" -ge 1 ] && [ "$choice" -lt "$gui_opt" ]; then
+        ver="${pending[$(( (choice-1)*2 ))]}"
+        next="${pending[$(( (choice-1)*2 + 1 ))]}"
+        echo
+        echo "==> 继续 $(gn_version_label "$ver") 安装：从步骤 $next/5（$(gn_step_label "$next")）"
+        # 用户已在终端确认, 传给 install.sh 跳过其内部重复的"继续?"询问
+        # || true: 安装失败也不能让 main.sh(set -e) 直接退出, 回提示让用户再选
+        GN_FORCE_RESUME=1 bash "$DT_ROOT/modules/appearance/gnome/install.sh" "$ver" || true
+        echo
+        # 安装结束后重新检测(可能还有另一版本未完成, 或已全部完成)
+        dt_resume_gnome
+        return 0
+    fi
+    return 0   # 无效输入或选择进 GUI 菜单
+}
+
+# ---------------------------------------------------------------------------
 # 主菜单
 # ---------------------------------------------------------------------------
 main() {
+    dt_resume_gnome
     if [ "$GUI" = none ]; then
         echo "未检测到 zenity / kdialog，无法打开图形菜单。"
         echo "请安装其一后重试：sudo pacman -S zenity   (或 kdialog)"

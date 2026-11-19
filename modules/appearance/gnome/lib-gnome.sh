@@ -33,6 +33,18 @@ gn_version_label() { # macos26|macos15 -> 中文标签
     esac
 }
 
+# 步骤号 -> 中文说明 (供断点续装提示用)
+gn_step_label() { # 1..5
+    case "$1" in
+        1) echo "安装 GTK 主题" ;;
+        2) echo "安装图标主题" ;;
+        3) echo "安装光标主题" ;;
+        4) echo "应用主题设置 (gsettings)" ;;
+        5) echo "安装 GNOME 扩展" ;;
+        *) echo "" ;;
+    esac
+}
+
 # 是否在 GNOME 环境
 gn_is_gnome() {
     if command -v gnome-shell >/dev/null 2>&1; then return 0; fi
