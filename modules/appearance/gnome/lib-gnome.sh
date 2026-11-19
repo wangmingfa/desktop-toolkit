@@ -140,6 +140,61 @@ gn_install_cursors() { # icon_repo_dir cursor_repo
 # gsettings 统一封装
 gn_gs() { gsettings set "$@" 2>/dev/null || { echo "  gsettings 失败: $*" >&2; return 1; }; }
 
+# 剥离主题名的变体后缀，得到基础名（如 WhiteSur-Dark-solid -> WhiteSur）
+gn_theme_base() { # theme_name
+    local t="$1" prev=""
+    while [ "$t" != "$prev" ]; do
+        prev="$t"
+        t="$(echo "$t" | sed -E 's/-([Ll]ight|[Dd]ark|[Ss]olid|[Hh][Dd]pi|[Xx][Hh][Dd]pi)$//')"
+    done
+    echo "$t"
+}
+
+# 解析实际安装的主题目录名。
+# 主题安装器生成的是带变体后缀的目录（WhiteSur-Dark / WhiteSur-Light），
+# 基础名（WhiteSur）通常不存在；若把 gsettings 设成不存在的名字，
+# user-theme 扩展会回退到默认 Adwaita -> 顶栏/窗口不变。故需解析真实目录。
+# 用法: gn_resolve_theme_name <base> [dark|light]  -> 输出真实主题名
+gn_resolve_theme_name() { # base [dark|light]
+    local base="$1" pref="${2:-dark}" d
+    [ -d "$HOME/.themes/$base/gnome-shell" ] && { echo "$base"; return 0; }
+    # 目标色普通变体（优先）
+    local -a suf
+    if [ "$pref" = light ]; then suf=("$HOME/.themes/$base-Light" "$HOME/.themes/$base-light"); else suf=("$HOME/.themes/$base-Dark" "$HOME/.themes/$base-dark"); fi
+    for d in "${suf[@]}"; do
+        [ -d "$d/gnome-shell" ] && { echo "$(basename "$d")"; return 0; }
+    done
+    # 任意目标色变体，排除 solid/hdpi/xhdpi
+    local pglob; pglob="$HOME/.themes/$base-Dark* $HOME/.themes/$base-dark*"; [ "$pref" = light ] && pglob="$HOME/.themes/$base-Light* $HOME/.themes/$base-light*"
+    for d in $pglob; do
+        [ -d "$d/gnome-shell" ] || continue
+        case "$(basename "$d")" in *solid*|*hdpi*|*xhdpi*) continue ;; esac
+        echo "$(basename "$d")"; return 0
+    done
+    # 任意变体（排除 solid/hdpi/xhdpi）
+    for d in "$HOME/.themes/${base}"*; do
+        [ -d "$d/gnome-shell" ] || continue
+        case "$(basename "$d")" in *solid*|*hdpi*|*xhdpi*) continue ;; esac
+        echo "$(basename "$d")"; return 0
+    done
+    echo "$base"
+}
+
+# 切换主题深浅色：同时切换 color-scheme 与实际的 GTK/Shell 主题变体。
+# 依据当前 gtk-theme 解析基础名，再解析出对应深/浅变体（存在才切）。
+gn_switch_color_scheme() { # dark|light
+    local mode="$1"
+    local cur base target=""
+    cur=$(gsettings get org.gnome.desktop.interface gtk-theme 2>/dev/null | tr -d "'")
+    [ -z "$cur" ] && return 0
+    base="$(gn_theme_base "$cur")"
+    target="$(gn_resolve_theme_name "$base" "$mode")"
+    gn_gs org.gnome.desktop.interface color-scheme "prefer-$mode" || true
+    [ -n "$target" ] && gn_gs org.gnome.desktop.interface gtk-theme "$target" || true
+    [ -n "$target" ] && gn_gs org.gnome.shell.extensions.user-theme name "$target" || true
+    echo "  主题: $cur -> $target (color-scheme=prefer-$mode)"
+}
+
 # 应用主题到 GNOME 各组件
 gn_apply() { # version
     local version="$1"
@@ -149,16 +204,19 @@ gn_apply() { # version
     # 光标实际安装名可能带 -cursors 后缀差异，自动探测
     local found; found=$(ls -d "$HOME/.local/share/icons/"*[Cc]ursor* 2>/dev/null | head -1 || true)
     [ -n "$found" ] && cursor_actual="$(basename "$found")"
+    # GTK/Shell 主题目录实际带变体后缀，须用真实存在的名字（默认深色）
+    local theme_actual
+    theme_actual="$(gn_resolve_theme_name "$gtk_theme" dark)"
 
     echo "  [apply] 应用 GTK/图标/光标/Shell 主题…"
-    gn_gs org.gnome.desktop.interface gtk-theme   "$gtk_theme" || true
+    gn_gs org.gnome.desktop.interface gtk-theme   "$theme_actual" || true
     gn_gs org.gnome.desktop.interface icon-theme  "$icon_theme" || true
     gn_gs org.gnome.desktop.interface cursor-theme "$cursor_actual" || true
     # GNOME Shell 主题（需要 user-themes 扩展）
-    gn_gs org.gnome.shell.extensions.user-theme name "$gtk_theme" || true
+    gn_gs org.gnome.shell.extensions.user-theme name "$theme_actual" || true
     # 深浅色
     gn_gs org.gnome.desktop.interface color-scheme prefer-dark || true
-    echo "  [apply] 完成（Shell 主题需启用 user-themes 扩展才生效）"
+    echo "  [apply] 完成（主题名=$theme_actual；Shell 主题需启用 user-themes 扩展才生效）"
 }
 
 # 下载并安装 GNOME 扩展 zip（尽力而为，成功返回 0）
@@ -231,13 +289,15 @@ gn_install_extensions() { # version
         [ -z "$ut_uuid" ] && ut_uuid="user-themes@gnome-shell-extensions.gnome.org"
         # user-themes 现在存在(架构可用), 重设 Shell 主题。
         # 此前 gn_apply(第4步)设置时 schema 还不存在会静默失败, 这里补上。
-        local gtk_theme
+        # 主题目录实际带变体后缀, 用真实存在的名字, 否则顶栏回退默认 Adwaita。
+        local gtk_theme theme_actual
         read -r _ _ gtk_theme < <(gn_version_info "$version")
-        gn_gs org.gnome.shell.extensions.user-theme name "$gtk_theme" || true
+        theme_actual="$(gn_resolve_theme_name "$gtk_theme" dark)"
+        gn_gs org.gnome.shell.extensions.user-theme name "$theme_actual" || true
         if gnome-extensions enable "$ut_uuid" 2>/dev/null; then
-            echo "  [ext] user-themes 已启用 ✅（Shell 主题已设为 $gtk_theme）"
+            echo "  [ext] user-themes 已启用 ✅（Shell 主题已设为 $theme_actual）"
         elif gn_ext_force_enable "$ut_uuid"; then
-            echo "  [ext] user-themes 已登记为启用（注销重登一次后生效，Shell 主题=$gtk_theme）"
+            echo "  [ext] user-themes 已登记为启用（注销重登一次后生效，Shell 主题=$theme_actual）"
         else
             echo "  [ext] user-themes 已安装，但需注销重登一次才能启用"
         fi

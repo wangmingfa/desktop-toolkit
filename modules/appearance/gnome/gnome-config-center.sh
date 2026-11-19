@@ -41,8 +41,8 @@ main() {
                 fi ;;
             status)
                 dt_info "$(gn_current)" ;;
-            dark)  gn_gs org.gnome.desktop.interface color-scheme prefer-dark;  dt_info "已切换到深色模式" ;;
-            light) gn_gs org.gnome.desktop.interface color-scheme prefer-light; dt_info "已切换到浅色模式" ;;
+            dark)  gn_switch_color_scheme dark;  dt_info "已切换到深色模式" ;;
+            light) gn_switch_color_scheme light; dt_info "已切换到浅色模式" ;;
             ext)
                 if dt_confirm "安装并启用 user-themes / dash-to-dock / blur-my-shell？"; then
                     gn_install_extensions "${LAST_VER:-macos26}"
