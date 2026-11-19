@@ -186,6 +186,61 @@ set_glass_param() {
     esac
 }
 
+# =============================================================================
+# 启动器 / 弹窗背景透明度 (Plasma 桌面主题 dialogs/background.svgz)
+#   语义与其它透明度一致: 0 = 完全不透明, 100 = 完全透明。默认约 52%/45%。
+#   同时作用于 Dark / Light 两套主题；首次修改自动备份 *.bak-dialogopacity。
+# =============================================================================
+DIALOG_THEME_GLOB="$HOME/.local/share/plasma/desktoptheme/MacTahoeLiquidKde-*"
+
+launcher_transparency_get() {
+    python3 - "$DIALOG_THEME_GLOB" <<'PY'
+import sys, glob, gzip, re, os
+for d in sorted(glob.glob(os.path.expanduser(sys.argv[1]))):
+    p=os.path.join(d,'dialogs','background.svgz')
+    if not os.path.exists(p): continue
+    try: data=gzip.open(p,'rt',encoding='utf-8',errors='replace').read()
+    except Exception: continue
+    m=re.search(r'id="center"[^>]*style="opacity:([0-9.]+)', data)
+    if m:
+        op=float(m.group(1))
+        name=os.path.basename(d).replace('MacTahoeLiquidKde-','')
+        print(f"{name}: 不透明度 {op*100:.0f}% / 透明度 {(1-op)*100:.0f}%")
+PY
+}
+
+launcher_transparency_set() { # 0-100 (0=不透明, 100=完全透明) | default
+    local v="$1"
+    if [ "$v" = default ]; then
+        python3 - "$DIALOG_THEME_GLOB" <<'PY'
+import sys, glob, os, shutil
+for d in sorted(glob.glob(os.path.expanduser(sys.argv[1]))):
+    p=os.path.join(d,'dialogs','background.svgz'); b=p+'.bak-dialogopacity'
+    if os.path.exists(b):
+        shutil.copy2(b,p); print(f"  恢复 {os.path.basename(d)}")
+PY
+        reload_plasma; echo "已恢复主题默认启动器透明度"; return 0
+    fi
+    [[ "$v" =~ ^([0-9]+([.][0-9]*)?|[.][0-9]+)$ ]] || { echo "错误: 透明度需为 0-100 数字" >&2; return 1; }
+    python3 -c "import sys; sys.exit(0 if 0<=float('$v')<=100 else 1)" || { echo "错误: 透明度需在 0-100 之间" >&2; return 1; }
+    python3 - "$v" "$DIALOG_THEME_GLOB" <<'PY'
+import sys, glob, gzip, re, os, shutil
+frac=(100.0-float(sys.argv[1]))/100.0   # 换算为不透明度
+pat=re.compile(r'(<[^>]*id="(?:center|rect4152|rect4159)"[^>]*style="opacity:)[0-9.]+(;)')
+for d in sorted(glob.glob(os.path.expanduser(sys.argv[2]))):
+    p=os.path.join(d,'dialogs','background.svgz')
+    if not os.path.exists(p): continue
+    b=p+'.bak-dialogopacity'
+    if not os.path.exists(b): shutil.copy2(p,b)
+    data=gzip.open(p,'rt',encoding='utf-8',errors='replace').read()
+    new,n=pat.subn(lambda m: f"{m.group(1)}{frac:.2f}{m.group(2)}", data)
+    gzip.open(p,'wt',encoding='utf-8').write(new)
+    print(f"  {os.path.basename(d)}: {n} 处 -> 不透明度 {frac*100:.0f}%")
+PY
+    reload_plasma
+    echo "启动器/弹窗透明度 = ${v}% (0=不透明,100=透明；plasmashell 重启中)"
+}
+
 PLASMASHELLRC="$HOME/.config/plasmashellrc"
 APPLETSRC="$HOME/.config/plasma-org.kde.plasma.desktop-appletsrc"
 DOCK_PANEL_ID=124
@@ -472,6 +527,8 @@ for k in ("general","finder","menus","popups","apps","search","control-center","
     if k in m:
         print(f"  {k:<15} Light={m[k].get('SurfaceTransparencyLight')!s:<6} Dark={m[k].get('SurfaceTransparencyDark')}")
 PY
+    echo "  ── 启动器 / 弹窗背景 (Plasma 主题, 独立于 liquidglass) ──"
+    launcher_transparency_get | sed 's/^/  /'
     echo
     echo "══════════════ 玻璃质感参数 (仅 full 模式 liquidglass 开启时可见) ══════════════"
     for k in BlurStrength RefractionWidth RgbDriftStrength MagnifyGlassStrength HighlightWidth HighlightStrength Saturation Brightness Contrast NoiseStrength BlurCoverage; do
@@ -545,7 +602,8 @@ macOS Tahoe 窗口外观调整工具
   winanim slide <on|off>       桌面切换滑动动画
   winanim speed <0.25-2.0>     全局动画速度 (0.25快/1.0标准/2.0慢)
   winanim preset <macos|balanced|fast|off>  一键动画预设
-  transparency <0-100>         全部组件透明度
+  transparency <0-100>         全部组件透明度 (liquidglass)
+  launcher-transparency <0-100|default>  启动器/弹窗背景透明度 (0=不透明,100=透明)
   transparency <组件> <0-100>  单组件透明度
   transparency default         恢复主题默认透明度
   glass <参数> <值>            调整玻璃质感参数（full 模式可见）
@@ -577,6 +635,9 @@ case "$cmd" in
     list|show)      cmd_list ;;
     corner)         [ "$#" -ge 1 ] || { echo "缺少圆角参数" >&2; exit 1; }; set_corner "$@" ;;
     transparency)   [ "$#" -ge 1 ] || { echo "缺少透明度参数" >&2; exit 1; }; set_transparency "$@" ;;
+    launcher-transparency)
+        if [ "${1:-}" = get ]; then launcher_transparency_get
+        else [ "$#" -ge 1 ] || { echo "缺少透明度参数 (0-100 或 default)" >&2; exit 1; }; launcher_transparency_set "$@"; fi ;;
     dock)           [ "$#" -ge 1 ] || { echo "缺少透明度参数" >&2; exit 1; }; set_transparency dock "$@" ;;
     dock-height)    [ "$#" -ge 1 ] || { echo "缺少高度参数" >&2; exit 1; }; dock_height_set "$@" ;;
     dock-zoom)      [ "$#" -ge 1 ] || { echo "缺少放大参数" >&2; exit 1; }; dock_zoom_set "$@" ;;

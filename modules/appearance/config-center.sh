@@ -195,7 +195,8 @@ print(m.get("general",{}).get("SurfaceTransparencyLight","?"))
 PY
 )
     while true; do
-        local c
+        local c tr_cur
+        tr_cur=$("$ADJUST" launcher-transparency get 2>/dev/null | sed -n 's/.*透明度 \([0-9][0-9]*\)%.*/\1/p' | head -1 || true)
         c=$(menu "透明度" "0 = 完全不透明，100 = 完全透明。选择组件调整：" \
             "dock|① Dock 栏透明度|当前 $(mat_val dock)% (已调低40%→58.5)" \
             "all|全部组件统一|当前常规窗口: ${mats_cur}" \
@@ -209,6 +210,7 @@ PY
             "control-center|控制中心 control-center|$(mat_val control-center)" \
             "about|关于 about|$(mat_val about)" \
             "panel|顶部菜单栏 panel|$(mat_val panel)" \
+            "launcher|启动器/弹窗背景|当前 ${tr_cur:-?}% (0=不透明,100=透明)" \
             "default|恢复主题默认|各组件恢复原始值" \
             "back|← 返回主菜单|") || return 0
         case "$c" in
@@ -226,6 +228,9 @@ PY
                     kw_set 'Effect-liquidglass' 'SurfaceTransparencyDark' "$v"
                 fi
                 info "透明度已设为 $v" ;;
+            launcher)
+                local v; v=$(ask_num "启动器/弹窗透明度" "0=完全不透明, 100=完全透明 (建议 0-20)：" "${tr_cur:-10}" 0 100 1) || continue
+                "$ADJUST" launcher-transparency "$v"; info "启动器/弹窗透明度 = ${v}% (100=透明)" ;;
             *)
                 local v; v=$(ask_num "透明度 - $c" "组件 [$c] 透明度 (0-100)：" "$(mat_val "$c")" 0 100 5) || continue
                 "$ADJUST" transparency "$c" "$v"; info "组件 [$c] 透明度 = $v" ;;
