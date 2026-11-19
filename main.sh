@@ -91,7 +91,7 @@ dt_resume_gnome() {
             ver=$(sed -n 's/^version=//p' "$f" | head -1)
             next=$(sed -n 's/^next_step=//p' "$f" | head -1)
             case "$ver" in macos26|macos15) ;; *) continue ;; esac
-            case "$next" in [2-5]) ;; *) continue ;; esac   # 只列真正未完成的
+            case "$next" in [2-6]) ;; *) continue ;; esac   # 只列真正未完成的
             pending+=("$ver" "$next")
         done
     }
@@ -104,7 +104,7 @@ dt_resume_gnome() {
     i=1
     for (( idx=0; idx<${#pending[@]}; idx+=2 )); do
         ver="${pending[idx]}"; next="${pending[idx+1]}"
-        echo "  [$i] $(gn_version_label "$ver")  —— 第 $next/5 步（$(gn_step_label "$next")）"
+        echo "  [$i] $(gn_version_label "$ver")  —— 第 $next/6 步（$(gn_step_label "$next")）"
         i=$((i+1))
     done
     gui_opt=$i
@@ -116,7 +116,7 @@ dt_resume_gnome() {
         ver="${pending[$(( (choice-1)*2 ))]}"
         next="${pending[$(( (choice-1)*2 + 1 ))]}"
         echo
-        echo "==> 继续 $(gn_version_label "$ver") 安装：从步骤 $next/5（$(gn_step_label "$next")）"
+        echo "==> 继续 $(gn_version_label "$ver") 安装：从步骤 $next/6（$(gn_step_label "$next")）"
         # 用户已在终端确认, 传给 install.sh 跳过其内部重复的"继续?"询问
         # || true: 安装失败也不能让 main.sh(set -e) 直接退出, 回提示让用户再选
         GN_FORCE_RESUME=1 bash "$DT_ROOT/modules/appearance/gnome/install.sh" "$ver" || true

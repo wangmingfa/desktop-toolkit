@@ -56,7 +56,7 @@ gn_state_next() { # -> 下一步骤号(无状态则 1)
     local n
     n=$(sed -n 's/^next_step=//p' "$GN_STATE_FILE" | head -1)
     case "${n:-}" in
-        [2-5]) echo "$n" ;;
+        [2-6]) echo "$n" ;;
         *) echo 1 ;;
     esac
 }
@@ -72,7 +72,7 @@ gn_state_clear() {
 gn_resume_confirm() { # saved_next -> 0 继续, 1 重头
     local n="$1" label msg
     label=$(gn_step_label "$n")
-    msg="检测到上次 $(gn_version_label "$VERSION") 安装进行到步骤 $n/5（$label）。\n\n是否继续上次进度？\n（选“否”则从头重新开始）"
+    msg="检测到上次 $(gn_version_label "$VERSION") 安装进行到步骤 $n/6（$label）。\n\n是否继续上次进度？\n（选“否”则从头重新开始）"
     GUI="$(dt_detect_gui)"
     if [ "$GUI" = zenity ]; then
         zenity --question --title="继续上次安装？" --text="$msg" 2>/dev/null && return 0 || return 1
@@ -80,7 +80,7 @@ gn_resume_confirm() { # saved_next -> 0 继续, 1 重头
         kdialog --title "继续上次安装？" --yesno "$msg" 2>/dev/null && return 0 || return 1
     else
         local ans
-        read -r -p "继续上次进度(步骤 $n/5: $label)? [Y/n] " ans || true
+        read -r -p "继续上次进度(步骤 $n/6: $label)? [Y/n] " ans || true
         case "${ans:-y}" in y|Y|"") return 0 ;; *) return 1 ;; esac
     fi
 }
@@ -114,8 +114,13 @@ step_apply() {
 }
 
 step_ext() {
-    echo "==> [5/5] 安装 GNOME 扩展 (user-themes / dash-to-dock / blur-my-shell)"
+    echo "==> [5/6] 安装 GNOME 扩展 (user-themes / dash-to-dock / blur-my-shell)"
     gn_install_extensions "$VERSION"
+}
+
+step_launcher() {
+    echo "==> [6/6] 创建桌面启动器"
+    gn_install_launcher "$VERSION"
 }
 
 run_step() { # n fn
@@ -147,13 +152,14 @@ fi
 # ---------------------------------------------------------------------------
 # 执行
 # ---------------------------------------------------------------------------
-for (( n = START_STEP; n <= 5; n++ )); do
+for (( n = START_STEP; n <= 6; n++ )); do
     case "$n" in
         1) run_step 1 step_gtk ;;
         2) run_step 2 step_icons ;;
         3) run_step 3 step_cursors ;;
         4) run_step 4 step_apply ;;
         5) run_step 5 step_ext ;;
+        6) run_step 6 step_launcher ;;
     esac
 done
 gn_state_clear
@@ -164,4 +170,5 @@ echo -e "${GREEN}═════════════════════
 echo -e "${GREEN}✅ 完成！已应用 $(gn_version_label "$VERSION") 风格。${NC}"
 echo -e "${GREEN}════════════════════════════════════════════════════════════════${NC}"
 echo "Shell 主题: 若顶栏/Shell 未变化，注销重登一次即可（user-themes 已由脚本处理）。"
+echo "快速打开 : 应用列表搜“GNOME macOS 美化”或桌面图标，无需再进终端。"
 echo "手动重跑: $0 $VERSION"

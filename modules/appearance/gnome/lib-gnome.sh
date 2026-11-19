@@ -34,13 +34,14 @@ gn_version_label() { # macos26|macos15 -> 中文标签
 }
 
 # 步骤号 -> 中文说明 (供断点续装提示用)
-gn_step_label() { # 1..5
+gn_step_label() { # 1..6
     case "$1" in
         1) echo "安装 GTK 主题" ;;
         2) echo "安装图标主题" ;;
         3) echo "安装光标主题" ;;
         4) echo "应用主题设置 (gsettings)" ;;
         5) echo "安装 GNOME 扩展" ;;
+        6) echo "创建桌面启动器" ;;
         *) echo "" ;;
     esac
 }
@@ -212,6 +213,53 @@ gn_button_layout() {
     v=$(gsettings get org.gnome.desktop.wm.preferences button-layout 2>/dev/null | tr -d "'")
     l="${v%%:*}"
     case "$l" in *close*) echo "left" ;; *) echo "right" ;; esac
+}
+
+# 创建桌面启动器(.desktop): 应用列表 + 桌面, 供一键打开 GNOME 配置中心,
+# 避免每次都要去终端敲命令。Terminal=true 让 sudo/安装进度有终端可用。
+gn_install_launcher() {
+    local script="$GN_ROOT/gnome-config-center.sh"
+    local apps="$HOME/.local/share/applications"
+    local iconfile="$HOME/.local/share/icons/hicolor/scalable/apps/desktop-toolkit-gnome.svg"
+    local desktop="$apps/desktop-toolkit-gnome.desktop"
+    [ -x "$script" ] || chmod +x "$script" 2>/dev/null || true
+
+    # 自定义图标: macOS 风格窗口 + 红黄绿按钮
+    mkdir -p "$(dirname "$iconfile")"
+    cat > "$iconfile" <<'SVG'
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 128 128">
+  <rect x="14" y="26" width="100" height="76" rx="14" fill="#1e1e2e" stroke="#313244" stroke-width="2"/>
+  <circle cx="30" cy="42" r="5.5" fill="#ff5f57"/>
+  <circle cx="45" cy="42" r="5.5" fill="#febc2e"/>
+  <circle cx="60" cy="42" r="5.5" fill="#28c840"/>
+  <rect x="28" y="60" width="72" height="7" rx="3.5" fill="#45475a"/>
+  <rect x="28" y="76" width="56" height="7" rx="3.5" fill="#45475a"/>
+</svg>
+SVG
+
+    mkdir -p "$apps"
+    cat > "$desktop" <<EOF
+[Desktop Entry]
+Type=Application
+Name=GNOME macOS 美化
+Name[zh_CN]=GNOME macOS 美化
+GenericName=macOS 外观配置中心
+Comment=打开 GNOME macOS 外观配置中心 (macOS 26 Tahoe / macOS 15 经典)
+Comment[zh_CN]=打开 GNOME macOS 外观配置中心 (macOS 26 Tahoe / macOS 15 经典)
+Exec=$script
+Icon=desktop-toolkit-gnome
+Terminal=true
+Categories=Settings;DesktopSettings;GTK;
+Keywords=macos;theme;gnome;美化;主题;
+StartupNotify=true
+EOF
+    chmod +x "$desktop"
+    if command -v update-desktop-database >/dev/null 2>&1; then
+        update-desktop-database "$apps" 2>/dev/null || true
+    fi
+    echo "  [launcher] 已创建启动器：GNOME macOS 美化"
+    echo "  [launcher] 应用列表搜索“GNOME macOS 美化”即可打开；右键可固定到 Dock。"
+    echo "  [launcher] 桌面图标(可选): cp \"$desktop\" ~/Desktop/ && gio set ~/Desktop/desktop-toolkit-gnome.desktop metadata::trusted true"
 }
 
 # 应用主题到 GNOME 各组件
