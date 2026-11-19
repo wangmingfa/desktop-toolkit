@@ -34,7 +34,7 @@ dt_menu() { # title text "key|label|desc[|gui]" ...
             IFS='|' read -r key label desc _ <<< "$row"
             [ -n "$desc" ] && args+=("$key" "$label — $desc") || args+=("$key" "$label")
         done
-        kdialog --title "$title" --menu "$text" "${args[@]}" 2>/dev/null
+        kdialog --title "$title" --geometry 760x640 --menu "$text" "${args[@]}" 2>/dev/null
     else
         # TUI：编号文本菜单。菜单/提示走 stderr（dt_menu 常被 $( ) 捕获返回值，
         # stdout 只输出所选 key；否则菜单文本会被命令替换吞掉，用户看不到）。

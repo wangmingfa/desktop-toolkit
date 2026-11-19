@@ -73,7 +73,7 @@ menu() { # title text "key|label|desc" ...
             IFS='|' read -r key label desc <<< "$row"
             [ -n "$desc" ] && args+=("$key" "$label — $desc") || args+=("$key" "$label")
         done
-        kdialog --title "$title" --menu "$text" "${args[@]}" 2>/dev/null
+        kdialog --title "$title" --geometry 760x640 --menu "$text" "${args[@]}" 2>/dev/null
     fi
 }
 
