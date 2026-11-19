@@ -186,7 +186,10 @@ gn_install_extensions() { # version
     if [ -z "$ut_dir" ]; then
         echo "  [ext] 安装 gnome-shell-extensions 包（提供 user-themes，需 sudo）…"
         if command -v dnf >/dev/null 2>&1; then
-            sudo dnf install -y gnome-shell-extensions
+            # Fedora 40+ 把扩展拆成独立包(gnome-shell-extension-user-theme);
+            # 老版 Fedora 用聚合包 gnome-shell-extensions。两者都试试。
+            sudo dnf install -y gnome-shell-extension-user-theme \
+                || sudo dnf install -y gnome-shell-extensions
         elif command -v apt-get >/dev/null 2>&1; then
             sudo apt-get install -y gnome-shell-extensions
         elif command -v pacman >/dev/null 2>&1; then
