@@ -174,24 +174,38 @@ desktop-toolkit/
 ## 10. GDM / Wayland 会话文件（"登录界面没有会话切换项"= 这几个坑）
 
 > 场景：装完 niri 等 Wayland 合成器，登录界面**连左下角的齿轮都没有**。
+> 结论经 GDM 51.1.1 源码（`libgdm/gdm-sessions.c` 的 `key_file_is_relevant`）逐条验证。
 
-- **会话文件必须放系统级目录**。GDM greeter 以 root/gdm 运行，只扫
-  `/usr/share/wayland-sessions`、`/usr/share/xsessions`、`/usr/share/gdm/greeter/wayland-sessions`
-  （`strings /usr/sbin/gdm | grep -E 'sessions'` 可确认）。
-  **用户级 `~/.local/share/wayland-sessions/` 对 greeter 无效**，别拿它当兜底
-  （`niri-dms.sh` 早期版本就踩过，现已改为写系统级）。
-- **`Exec` / `TryExec` 用绝对路径**：`Exec=/usr/bin/niri-session` + `TryExec=/usr/bin/niri-session`。
-  niri 官方 rpm 自带的是裸命令名（`Exec=niri-session`）且**没有 `TryExec`**；GDM 解析不到命令就跳过
-  该会话（二进制里有 `GdmSession: Command not found: %s`）。跳过后若登录界面只剩一个会话，
-  **齿轮按钮直接不显示**——这是"看不到任何切换项"的典型链路。
+- **必须先有 `X-GDM-CanRunHeadless=true`（niri 上游包缺失，这是根因）**。GDM 的过滤条件是：
+  ```c
+  only_headless_allowed = (get_systemd_seat() == NULL);
+  if (no_display || hidden || tryexec_failed ||
+      (only_headless_allowed && !can_run_headless))
+      return FALSE;                    /* 该会话被静默丢弃 */
+  ```
+  `gdm.service` 跑在 `system.slice`、**没有 logind session**（可用 `cat /proc/$(cat /run/gdm/gdm.pid)/cgroup`
+  与 `/run/systemd/sessions/*` 验证），所以 `get_systemd_seat()` 恒为 NULL → `only_headless_allowed`
+  **恒为 TRUE** → **只放行带该键的会话**。Fedora 的 `gnome.desktop` / `gnome-classic.desktop`
+  都带这个键，niri 上游的 `resources/niri.desktop` 不带，于是被丢弃；丢弃后若只剩一个会话，
+  **齿轮按钮整个不画**，现象就是"完全看不到任何切换项"。
+- **会话文件必须放系统级目录**。GDM 只扫 `<system_data_dir>/wayland-sessions` 与
+  `<system_data_dir>/xsessions`（`collect_sessions` 用 `g_get_system_data_dirs()` 拼，
+  **不含用户目录**）。用户级 `~/.local/share/wayland-sessions/` 对 greeter 无效，别拿它当兜底
+  （`niri-dms.sh` 早期版本踩过，现已改为写系统级）。
+- **`Exec` / `TryExec` 用绝对路径**：`g_find_program_in_path()` 对绝对路径只做 `access(X_OK)`，
+  裸命令名则依赖 PATH，绝对路径更稳。
 - **不要照抄 GNOME 的 `X-GDM-SessionRegisters=true`**：它表示"会话程序自己向 DisplayManager 注册"。
-  判定方法 `strings /usr/bin/<合成器> | grep -c DisplayManager`——niri 结果为 0（它从不注册），
-  照抄反而让 GDM 等一个永远不来的注册。
+  判定 `strings /usr/bin/<合成器> | grep -c DisplayManager`——niri 结果为 0（从不注册），
+  照抄反而让 GDM 空等一个永远不来的注册。
 - **改完必须 `sudo systemctl restart gdm`**：GDM 只在**启动时**扫一次会话文件，单纯"注销"无效。
-- 排查顺序：`rpm -q niri` → `command -v niri-session` → `cat /usr/share/wayland-sessions/niri.desktop`
-  → `systemctl show gdm -p ActiveEnterTimestamp`（会话文件时间必须早于 GDM 启动时间）
-  → 开调试确认：`/etc/gdm/custom.conf` 的 `[debug]` 下把 `#Enable=true` 取消注释后 restart gdm，
-  再看 `journalctl -u gdm | grep -iE 'session|Command not found'`。
+- 排查顺序：`cat /usr/share/wayland-sessions/niri.desktop` → `systemctl show gdm -p ActiveEnterTimestamp`
+  （会话文件必须早于 GDM 启动）→ `/etc/gdm/custom.conf` 的 `[debug]` 下开 `Enable=true` 后 restart，
+  看 `journalctl -u gdm | grep -iE 'session|headless|hidden|Command not found'`。
+- **拿源码一锤定音的办法**（本项目受限网络下实测可行，走 Fedora 镜像不走慢速 S3）：
+  ```bash
+  dnf5 download --source gdm && rpm2cpio gdm-*.src.rpm | cpio -idm && tar -xf gdm-*.tar.xz
+  grep -n 'key_file_is_relevant' -A 60 gdm-*/libgdm/gdm-sessions.c
+  ```
 
 ---
 
