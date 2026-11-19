@@ -173,16 +173,39 @@ gn_ext_install_zip() { # url name
     rm -f "$tmp"; return 1
 }
 
+# 把扩展 UUID 写入 org.gnome.shell enabled-extensions(保留现有)。
+# 用于扩展刚装、运行中的 shell 还不认识时, 注销重登后自动启用。
+gn_ext_force_enable() { # uuid
+    local uuid="$1" cur u joined=""
+    local -a list=()
+    cur=$(gsettings get org.gnome.shell enabled-extensions 2>/dev/null || true)
+    # gsettings 返回形如 ['a@b', 'c@d']; 拆成数组
+    while IFS= read -r u; do
+        [ -n "$u" ] && list+=("$u")
+    done < <(printf '%s' "$cur" | tr -d "[]'" | tr ',' '\n' | sed 's/^ *//; s/ *$//' | grep -v '^$' || true)
+    for u in "${list[@]}"; do
+        [ "$u" = "$uuid" ] && return 0   # 已在列表
+    done
+    list+=("$uuid")
+    for u in "${list[@]}"; do
+        [ -n "$joined" ] && joined="$joined, "
+        joined="$joined'$u'"
+    done
+    gsettings set org.gnome.shell enabled-extensions "[$joined]" 2>/dev/null
+}
+
 # 安装 GNOME 扩展（user-themes / dash-to-dock / blur-my-shell）
 # user-themes 是 GNOME 自带的系统扩展(gnome-shell-extensions 包)，无需联网下载；
 # dash-to-dock / blur-my-shell 需联网从 extensions.gnome.org 下载，尽力而为。
 gn_install_extensions() { # version
     local version="$1"
-    local ut_dir ut_uuid="user-themes@gnome-shell-extensions.gnome.org"
+    local ut_dir ut_uuid=""
     echo "  [ext] 安装 GNOME 扩展…"
 
     # --- user-themes: Shell 主题切换的基础（系统包, 不依赖 extensions.gnome.org）---
-    ut_dir=$(ls -d /usr/share/gnome-shell/extensions/user-themes* 2>/dev/null | head -1 || true)
+    # 不同发行版/版本命名不同: 有 user-themes@...gnome.org, 也有
+    # user-theme@...gcampax.github.com (Fedora 45 独立包), 故用 user-them* 匹配单复数
+    ut_dir=$(ls -d /usr/share/gnome-shell/extensions/user-them* 2>/dev/null | head -1 || true)
     if [ -z "$ut_dir" ]; then
         echo "  [ext] 安装 gnome-shell-extensions 包（提供 user-themes，需 sudo）…"
         if command -v dnf >/dev/null 2>&1; then
@@ -199,10 +222,13 @@ gn_install_extensions() { # version
         else
             echo "  [ext] 未识别的包管理器，请手动安装 gnome-shell-extensions" >&2
         fi
-        ut_dir=$(ls -d /usr/share/gnome-shell/extensions/user-themes* 2>/dev/null | head -1 || true)
+        ut_dir=$(ls -d /usr/share/gnome-shell/extensions/user-them* 2>/dev/null | head -1 || true)
     fi
 
     if [ -n "$ut_dir" ]; then
+        # 从 metadata.json 取真实 UUID(不同发行版命名不同, 勿硬编码)
+        ut_uuid=$(sed -n 's/.*"uuid"[[:space:]]*:[[:space:]]*"\([^"]*\)".*/\1/p' "$ut_dir/metadata.json" 2>/dev/null | head -1 || true)
+        [ -z "$ut_uuid" ] && ut_uuid="user-themes@gnome-shell-extensions.gnome.org"
         # user-themes 现在存在(架构可用), 重设 Shell 主题。
         # 此前 gn_apply(第4步)设置时 schema 还不存在会静默失败, 这里补上。
         local gtk_theme
@@ -210,8 +236,10 @@ gn_install_extensions() { # version
         gn_gs org.gnome.shell.extensions.user-theme name "$gtk_theme" || true
         if gnome-extensions enable "$ut_uuid" 2>/dev/null; then
             echo "  [ext] user-themes 已启用 ✅（Shell 主题已设为 $gtk_theme）"
+        elif gn_ext_force_enable "$ut_uuid"; then
+            echo "  [ext] user-themes 已登记为启用（注销重登一次后生效，Shell 主题=$gtk_theme）"
         else
-            echo "  [ext] user-themes 已安装，但需注销重登一次才能生效"
+            echo "  [ext] user-themes 已安装，但需注销重登一次才能启用"
         fi
     else
         echo "  [ext] 未找到 user-themes 扩展（包未装成功），Shell 主题暂无法切换" >&2
