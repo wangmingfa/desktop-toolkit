@@ -41,7 +41,10 @@ read -r GTK_REPO GTK_BRANCH GTK_THEME ICON_REPO ICON_BRANCH ICON_THEME CURSOR_RE
 
 echo "==> [1/5] 安装 GTK 主题 ($GTK_REPO)"
 GTK_DIR=$(gn_clone "$GTK_REPO" "$GTK_BRANCH")
-gn_install_gtk "$GTK_DIR" -l --silent-mode || gn_install_gtk "$GTK_DIR" -l
+# 缺 sassc 时 WhiteSur 会走 prepare_deps 的网络探测(连 iana.org),
+# 本网络下探测失败直接退出；先装好 sassc 可完全跳过探测。
+gn_ensure_deps || true
+gn_install_gtk "$GTK_DIR" -l
 
 echo "==> [2/5] 安装图标主题 ($ICON_REPO)"
 ICON_DIR=$(gn_clone "$ICON_REPO" "$ICON_BRANCH")

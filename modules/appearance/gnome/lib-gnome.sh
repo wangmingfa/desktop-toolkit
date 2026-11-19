@@ -55,6 +55,36 @@ gn_clone() { # repo branch
     echo "$dir"
 }
 
+# 安装 GTK 主题所需的构建依赖(主要是 sassc)。
+# 主题的 install.sh 在缺 sassc 时会走 prepare_deps, 其中用 /dev/tcp 探测
+# iana.org:80 校时; 部分网络下该探测失败直接 exit 1。提前装好 sassc 即可
+# 让 install_theme_deps 直接跳过整段(含探测)。
+gn_ensure_deps() { # 无参数; 返回 0 表示 sassc 可用(或已装好)
+    if command -v sassc >/dev/null 2>&1; then
+        echo "  [deps] sassc 已安装，跳过依赖检查"
+        return 0
+    fi
+    echo "  [deps] 缺少 sassc，用系统包管理器安装（需要 sudo 密码）…"
+    if command -v dnf >/dev/null 2>&1; then
+        sudo dnf install -y sassc
+    elif command -v apt-get >/dev/null 2>&1; then
+        sudo apt-get install -y sassc
+    elif command -v pacman >/dev/null 2>&1; then
+        sudo pacman -S --needed --noconfirm sassc
+    elif command -v zypper >/dev/null 2>&1; then
+        sudo zypper in -y sassc
+    else
+        echo "  [deps] 未识别的包管理器，请手动安装 sassc 后重试" >&2
+        return 1
+    fi
+    if command -v sassc >/dev/null 2>&1; then
+        echo "  [deps] sassc 安装完成"
+    else
+        echo "  [deps] sassc 安装失败" >&2
+        return 1
+    fi
+}
+
 # 运行 GTK 主题安装器（install.sh）
 gn_install_gtk() { # gtk_repo_dir
     local dir="$1"; shift
