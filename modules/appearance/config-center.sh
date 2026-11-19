@@ -52,14 +52,9 @@ if [ "${DT_CONFIG_CLI:-0}" != "1" ] \
     exec python3 "$SCRIPT_DIR/config-center-gtk.py" "$@"
 fi
 
-# ---------- 通用交互控件 (自适应: 宿主机用 kdialog, 容器用 zenity) ----------
-if command -v zenity >/dev/null 2>&1; then
-    GUI=zenity
-elif command -v kdialog >/dev/null 2>&1; then
-    GUI=kdialog
-else
-    GUI=none
-fi
+# ---------- 通用交互控件 (自适应: 宿主机 KDE 用 kdialog, 其余用 zenity) ----------
+source "$SCRIPT_DIR/../../lib/common.sh"
+GUI="$(dt_detect_gui)"
 
 menu() { # title text "key|label|desc" ...
     local title="$1" text="$2"; shift 2
@@ -69,7 +64,7 @@ menu() { # title text "key|label|desc" ...
             IFS='|' read -r key label desc <<< "$row"
             args+=("$key" "$label" "$desc")
         done
-        zenity --list --title="$title" --text="$text" --width=560 --height=560 \
+        zenity --list --title="$title" --text="$text" --width=760 --height=640 \
             --column="键" --column="配置项" --column="当前值 / 说明" \
             --print-column=1 "${args[@]}" 2>/dev/null
     elif [ "$GUI" = kdialog ]; then

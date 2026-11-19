@@ -25,7 +25,7 @@ dt_menu() { # title text "key|label|desc[|gui]" ...
             IFS='|' read -r key label desc _ <<< "$row"
             args+=("$key" "$label" "$desc")
         done
-        zenity --list --title="$title" --text="$text" --width=560 --height=560 \
+        zenity --list --title="$title" --text="$text" --width=760 --height=640 \
             --column="编号" --column="选项" --column="说明" \
             --print-column=1 "${args[@]}" 2>/dev/null
     elif [ "$GUI" = kdialog ]; then

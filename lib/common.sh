@@ -22,9 +22,20 @@ dt_backup() {
     cp -a "$f" "$bak" && dt_log "已备份: $bak"
 }
 
-# 检测 GUI 工具：容器里是 zenity，宿主机 KDE 上是 kdialog
+# 是否运行在 KDE / Plasma 桌面（KDE 上优先用原生 kdialog，而不是 GTK 的 zenity）
+dt_is_kde() {
+    case "${XDG_CURRENT_DESKTOP:-} ${DESKTOP_SESSION:-} ${KDE_FULL_SESSION:-}" in
+        *KDE*|*plasma*|*Plasma*) return 0 ;;
+    esac
+    return 1
+}
+
+# 检测 GUI 工具：KDE 桌面优先用原生 kdialog（菜单/弹窗由 Plasma 主题渲染、随内容
+# 自适应大小）；其余（GNOME / 容器）用 zenity；两者都没有则退化为 TUI。
 dt_detect_gui() {
-    if command -v zenity >/dev/null 2>&1; then
+    if dt_is_kde && command -v kdialog >/dev/null 2>&1; then
+        echo kdialog
+    elif command -v zenity >/dev/null 2>&1; then
         echo zenity
     elif command -v kdialog >/dev/null 2>&1; then
         echo kdialog
