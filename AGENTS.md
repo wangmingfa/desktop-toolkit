@@ -146,6 +146,7 @@ desktop-toolkit/
   - `main.sh` 恢复扫描的 glob **放宽**：`.install-state-macos*` → `.install-state-*`（否则新风格状态文件不被识别），且版本过滤 `case "$ver" in ...|新id)` 加新 id。
   - 光标源可为空：`gn_version_info` 第 7 字段留空，`gn_install_cursors` 已支持跳过（保留当前光标）。
   - **分支名不要想当然**：MacTahoe 用 `main`、WhiteSur/Fluent 用 `master`——先 `git ls-remote --symref <mirror>/<repo>.git HEAD` 确认默认分支，再写进映射。
+- **KDE 侧新增风格**：镜像 `modules/appearance/install-kde-sequoia.sh` 建 `install-kde-<风格>.sh`（克隆用 `dt_clone`、**确认分支**、运行 `install.sh`、提示"系统设置->外观 选择主题"），并在 `kde-scheme.sh` 菜单加 `install<风格>` 项。KDE 主题仓库（`*-kde`）非 root 装到 `~/.local/share/{aurorae,color-schemes,plasma,Kvantum}`，**无需 sudo**。
 
 ---
 

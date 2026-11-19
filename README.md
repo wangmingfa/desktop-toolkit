@@ -44,6 +44,7 @@ desktop-toolkit/
 │   │   ├── adjust-window.sh      # 底层调节工具（圆角/透明度/Dock/Logo/动画…）
 │   │   ├── install-theme.sh      # 安装 macOS 26 Tahoe Liquid KDE 主题
 │   │   ├── install-kde-sequoia.sh # KDE 安装 macOS 15 经典 (WhiteSur-kde)
+│   │   ├── install-kde-fluent.sh  # KDE 安装 Windows 11 (Fluent-kde)
 │   │   ├── toggle-glass.sh       # 性能 / 完整模式切换
 │   │   ├── install-logo.sh       # 安装纯白 CachyOS 顶部栏 Logo
 │   │   └── gnome/                # GNOME 桌面 macOS 美化
@@ -89,27 +90,28 @@ source "$DT_ROOT/lib/ui.sh"
 
 ## 支持的桌面环境与 macOS 版本
 
-| 桌面环境 | macOS 26 (Tahoe 液态玻璃) | macOS 15 (经典 Sequoia) |
-|----------|---------------------------|-------------------------|
-| KDE Plasma | `MacTahoe Liquid KDE`（默认方案） | `WhiteSur-kde` |
-| GNOME      | `MacTahoe-gtk-theme` | `WhiteSur-gtk-theme` |
+| 桌面环境 | macOS 26 (Tahoe 液态玻璃) | macOS 15 (经典 Sequoia) | Windows 11 (Fluent) |
+|----------|---------------------------|-------------------------|---------------------|
+| KDE Plasma | `MacTahoe Liquid KDE`（默认方案） | `WhiteSur-kde` | `Fluent-kde` |
+| GNOME      | `MacTahoe-gtk-theme` | `WhiteSur-gtk-theme` | `Fluent-gtk-theme` |
 
 - **macOS 26（Tahoe）**：最新液态玻璃风格，对应上游仓库 `vinceliuice/MacTahoe-*`。
 - **macOS 15（经典 Sequoia）**：Big Sur / Sequoia 风格，对应 `vinceliuice/WhiteSur-*`。（说明：Apple 版本号由 15 直接跳到 26，**不存在 macOS 16~25**；「经典」指 Sequoia 及之前的连续版本系列。）
+- **Windows 11（Fluent）**：非 macOS 的圆角 / Mica 质感风格，对应 `vinceliuice/Fluent-*`。
 
 GNOME 侧使用：
 ```bash
-./modules/appearance/gnome/install.sh macos26   # 或 macos15
+./modules/appearance/gnome/install.sh macos26   # 或 macos15 / fluent
 ./modules/appearance/gnome/gnome-config-center.sh   # 交互式
 ```
 
-KDE 侧统一入口（安装时选版本，两套二选一）：
+KDE 侧统一入口（安装时选版本，多套二选一）：
 ```bash
 ./modules/appearance/kde-scheme.sh
 # 或从 main.sh：外观美化 -> KDE 外观美化
 ```
 
-> 注意：同一桌面环境里两套主题会互相覆盖，请二选一。
+> 注意：同一桌面环境里多套主题会互相覆盖，请二选一。
 
 ## 国内网络 / 镜像加速
 

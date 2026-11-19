@@ -31,12 +31,13 @@ main() {
             "KDE Plasma 的 macOS 风格方案。安装前先选版本，两套会互相覆盖（二选一）：" \
             "install26|① 安装 macOS 26 (Tahoe 液态玻璃)|MacTahoe Liquid KDE，当前默认方案" \
             "install15|② 安装 macOS 15 (经典 Sequoia)|WhiteSur-kde" \
-            "config|③ 桌面外观配置中心|单窗口界面：圆角/透明度/Dock/Logo/窗口动画" \
-            "mode-perf|④ 切换到性能模式|关闭液态玻璃，软件渲染流畅（VMware 推荐）" \
-            "mode-full|⑤ 切换到完整模式|恢复液态玻璃特效（需硬件加速）" \
-            "window-gui|⑥ 窗口调整滑块|单独打开圆角/透明度滑块界面" \
-            "logo|⑦ 安装白色 CachyOS Logo|macOS 26 Tahoe 的顶栏 Logo" \
-            "list|⑧ 查看当前所有可调项|打印清单" \
+            "installfluent|③ 安装 Windows 11 (Fluent)|Fluent-kde，非 macOS 风格" \
+            "config|④ 桌面外观配置中心|单窗口界面：圆角/透明度/Dock/Logo/窗口动画" \
+            "mode-perf|⑤ 切换到性能模式|关闭液态玻璃，软件渲染流畅（VMware 推荐）" \
+            "mode-full|⑥ 切换到完整模式|恢复液态玻璃特效（需硬件加速）" \
+            "window-gui|⑦ 窗口调整滑块|单独打开圆角/透明度滑块界面" \
+            "logo|⑧ 安装白色 CachyOS Logo|macOS 26 Tahoe 的顶栏 Logo" \
+            "list|⑨ 查看当前所有可调项|打印清单" \
             "back|← 返回|") || return 0
         [ "$c" = back ] && return 0
         case "$c" in
@@ -49,6 +50,11 @@ main() {
                 if dt_confirm "安装 macOS 15 经典 (WhiteSur-kde)？需要网络 + git。"; then
                     bash "$APPEARANCE/install-kde-sequoia.sh"
                     dt_info "WhiteSur 安装流程已结束。去 系统设置->外观 选择 WhiteSur 应用。"
+                fi ;;
+            installfluent)
+                if dt_confirm "安装 Windows 11 (Fluent-kde)？需要网络 + git。"; then
+                    bash "$APPEARANCE/install-kde-fluent.sh"
+                    dt_info "Fluent 安装流程已结束。去 系统设置->外观 选择 Fluent 应用。"
                 fi ;;
             config)
                 [ -x "$APPEARANCE/config-center.sh" ] && "$APPEARANCE/config-center.sh" \
