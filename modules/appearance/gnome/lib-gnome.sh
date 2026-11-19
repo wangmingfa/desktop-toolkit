@@ -48,7 +48,7 @@ gn_clone() { # repo branch
     local dir="$GN_SRC_DIR/$(basename "$repo")"
     mkdir -p "$GN_SRC_DIR"
     if [ -d "$dir/.git" ]; then
-        echo "  [git] $repo 已存在，跳过克隆"
+        echo "  [git] $repo 已存在，跳过克隆" >&2
         echo "$dir"; return 0
     fi
     dt_clone "https://github.com/$repo.git" "$dir" "$branch" || return 1

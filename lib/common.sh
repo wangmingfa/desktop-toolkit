@@ -96,7 +96,7 @@ dt_clone() {
                      -c "http.lowSpeedTime=${DT_GIT_STALL:-20}"
                      -c "http.connectTimeout=${DT_GIT_CONNECT:-10}")
     for m in "${candidates[@]}"; do
-        echo "  [git] 尝试: $m"
+        echo "  [git] 尝试: $m" >&2
         # 强制 HTTP/1.1: 规避部分代理/镜像对 HTTP/2 流的重置
         # GIT_TERMINAL_PROMPT=0: 卡住时别去弹密码/凭据提示, 直接判失败走下一源
         # -k 5: 到点先 TERM, 再等 5s 后 KILL
@@ -112,10 +112,10 @@ dt_clone() {
         [ "$rc" = 0 ] && break
         # 超时被杀的源: git 最后写的是进度行, 打印出来没意义, 直接说明是超时
         if [ "$st" = 124 ] || [ "$st" = 137 ]; then
-            echo "  [git]   (超过 ${DT_GIT_KILL:-60}s 无进展, 已强制中止该源; 可调小 DT_GIT_KILL)"
+            echo "  [git]   (超过 ${DT_GIT_KILL:-60}s 无进展, 已强制中止该源; 可调小 DT_GIT_KILL)" >&2
         elif [ -s "$errf" ]; then
             # 否则打印 git 的真实报错(最后一行)，避免只看到"克隆失败"无从排查
-            sed -n '$p' "$errf" | sed 's/^/  [git]   /'
+            sed -n '$p' "$errf" | sed 's/^/  [git]   /' >&2
         fi
         rm -rf "$dest" 2>/dev/null || true
     done
