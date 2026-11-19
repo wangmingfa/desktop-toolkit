@@ -147,7 +147,7 @@ gn_apply() { # version
     read -r _ _ gtk_theme _ _ icon_theme cursor_theme < <(gn_version_info "$version")
     local cursor_actual="$cursor_theme"
     # 光标实际安装名可能带 -cursors 后缀差异，自动探测
-    local found; found=$(ls -d "$HOME/.local/share/icons/"*[Cc]ursor* 2>/dev/null | head -1)
+    local found; found=$(ls -d "$HOME/.local/share/icons/"*[Cc]ursor* 2>/dev/null | head -1 || true)
     [ -n "$found" ] && cursor_actual="$(basename "$found")"
 
     echo "  [apply] 应用 GTK/图标/光标/Shell 主题…"
@@ -182,7 +182,7 @@ gn_install_extensions() { # version
     echo "  [ext] 安装 GNOME 扩展…"
 
     # --- user-themes: Shell 主题切换的基础（系统包, 不依赖 extensions.gnome.org）---
-    ut_dir=$(ls -d /usr/share/gnome-shell/extensions/user-themes* 2>/dev/null | head -1)
+    ut_dir=$(ls -d /usr/share/gnome-shell/extensions/user-themes* 2>/dev/null | head -1 || true)
     if [ -z "$ut_dir" ]; then
         echo "  [ext] 安装 gnome-shell-extensions 包（提供 user-themes，需 sudo）…"
         if command -v dnf >/dev/null 2>&1; then
@@ -196,7 +196,7 @@ gn_install_extensions() { # version
         else
             echo "  [ext] 未识别的包管理器，请手动安装 gnome-shell-extensions" >&2
         fi
-        ut_dir=$(ls -d /usr/share/gnome-shell/extensions/user-themes* 2>/dev/null | head -1)
+        ut_dir=$(ls -d /usr/share/gnome-shell/extensions/user-themes* 2>/dev/null | head -1 || true)
     fi
 
     if [ -n "$ut_dir" ]; then
