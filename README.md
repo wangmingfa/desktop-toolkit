@@ -117,12 +117,13 @@ KDE 侧统一入口（安装时选版本，两套二选一）：
 
 ### 自动回退（默认）
 
-所有克隆走 `lib/common.sh` 的 `dt_clone`，默认 `DT_MIRROR=auto`：**先直连，失败自动切国内镜像**（`ghproxy` → `gitclone`）。
+所有克隆走 `lib/common.sh` 的 `dt_clone`，默认 `DT_MIRROR=auto`：**先直连，失败自动切国内镜像**（`gh-proxy.com` → `ghfast.top` → `fastgit.org`）。
 
 ```bash
 # 可覆盖镜像与策略（环境变量）
-DT_MIRROR=auto       # auto(默认) | ghproxy | gitclone | off
-GH_PROXY=https://mirror.ghproxy.com   # ghproxy 镜像前缀，失效时更换
+DT_MIRROR=auto       # auto(默认) | ghproxy | ghfast | fastgit | off
+GH_PROXY=https://gh-proxy.com       # 镜像前缀，失效时更换
+DT_GHFAST=https://ghfast.top       # 第二前缀镜像（auto 回退时用）
 ```
 
 例：强制走 ghproxy 镜像安装 GNOME Tahoe：
@@ -142,7 +143,7 @@ DT_MIRROR=ghproxy ./modules/appearance/gnome/install.sh macos26
 
 ### 注意事项
 
-- `ghproxy` 类镜像站地址会变动，失效时换 `GH_PROXY`（如 `https://ghproxy.net`、`https://ghfast.top`）。
+- `ghproxy` 类镜像站地址会变动，失效时换 `GH_PROXY`（如 `https://gh-proxy.com`、`https://ghfast.top`）。
 - `extensions.gnome.org`（GNOME 扩展）**没有稳定国内镜像**，安装扩展时如卡顿，建议开启代理（如 FlClash）。
 - 已开代理且直连顺畅的机器，保持默认 `auto` 即可，直连优先不额外绕路。
 

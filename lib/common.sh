@@ -37,19 +37,30 @@ dt_detect_gui() {
 # 国内网络 / GitHub 镜像加速
 #   涉及 GitHub 的资源（主题/图标/光标仓库）在部分网络下慢或不可达，
 #   可用国内镜像加速。通过环境变量控制，方便复用：
-#     DT_MIRROR=auto|ghproxy|gitclone|off   (默认 auto: 先直连, 失败自动走镜像)
-#     GH_PROXY=<https://xxx>                (ghproxy 镜像前缀, 可换)
-#   注意: ghproxy 类镜像站地址会变动, 失效时改 GH_PROXY 即可。
+#     DT_MIRROR=auto|ghproxy|ghfast|fastgit|off   (默认 auto: 先直连, 失败自动走镜像)
+#     GH_PROXY=<https://xxx>                (ghproxy 类镜像前缀, 可换)
+#   注意: 这类镜像站地址会变动, 失效时改 GH_PROXY 即可。
+# 已验证可用(2026-11): gh-proxy.com / ghfast.top；直连 github.com 在部分网络下超时。
 # =============================================================================
 DT_MIRROR="${DT_MIRROR:-auto}"
-GH_PROXY="${GH_PROXY:-https://mirror.ghproxy.com}"
+# 前缀式镜像: <前缀>/https://github.com/owner/repo.git
+GH_PROXY="${GH_PROXY:-https://gh-proxy.com}"
+DT_GHFAST="${DT_GHFAST:-https://ghfast.top}"
+# 路径式镜像: https://fastgit.org/github.com/owner/repo.git
+DT_FASTGIT="${DT_FASTGIT:-https://fastgit.org/github.com/}"
+
+# 路径式镜像地址: https://fastgit.org/github.com/owner/repo.git
+dt_fastgit_url() { # https://github.com/owner/repo(.git)
+    echo "$DT_FASTGIT${1#https://github.com/}"
+}
 
 # 把 github 完整 URL 按当前镜像改写
 dt_github() { # https://github.com/owner/repo(.git)
     local url="$1"
     case "$DT_MIRROR" in
         ghproxy) echo "$GH_PROXY/$url" ;;
-        gitclone) echo "https://gitclone.com/$url" ;;
+        ghfast)  echo "$DT_GHFAST/$url" ;;
+        fastgit) dt_fastgit_url "$url" ;;
         *) echo "$url" ;;  # auto/off 原样返回(内部由 dt_clone 决定回退)
     esac
 }
@@ -59,22 +70,36 @@ dt_clone() {
     local url="$1" dest="$2" branch="${3:-}"
     local -a candidates=()
     case "$DT_MIRROR" in
-        off)      candidates=("$url") ;;
-        ghproxy)  candidates=("$(dt_github "$url")") ;;
-        gitclone) candidates=("$(dt_github "$url")") ;;
-        auto)     candidates=("$url" "$GH_PROXY/$url" "https://gitclone.com/$url") ;;
+        off)     candidates=("$url") ;;
+        ghproxy) candidates=("$(dt_github "$url")") ;;
+        ghfast)  candidates=("$(dt_github "$url")") ;;
+        fastgit) candidates=("$(dt_github "$url")") ;;
+        auto)    candidates=("$url" "$GH_PROXY/$url" "$DT_GHFAST/$url" "$(dt_fastgit_url "$url")") ;;
     esac
     rm -rf "$dest" 2>/dev/null || true
-    local m
+
+    local errf; errf=$(mktemp)
+    local m rc=1
     for m in "${candidates[@]}"; do
         echo "  [git] 尝试: $m"
         # 强制 HTTP/1.1: 规避部分代理/镜像对 HTTP/2 流的重置
         if [ -n "$branch" ]; then
-            git -c http.version=HTTP/1.1 clone --depth 1 -b "$branch" "$m" "$dest" >/dev/null 2>&1 && return 0
+            git -c http.version=HTTP/1.1 clone --depth 1 -b "$branch" "$m" "$dest" 2>"$errf" && rc=0 || true
         else
-            git -c http.version=HTTP/1.1 clone --depth 1 "$m" "$dest" >/dev/null 2>&1 && return 0
+            git -c http.version=HTTP/1.1 clone --depth 1 "$m" "$dest" 2>"$errf" && rc=0 || true
         fi
+        [ "$rc" = 0 ] && break
+        # 打印 git 的真实报错(最后一行)，否则只能看到"克隆失败"无从排查
+        if [ -s "$errf" ]; then
+            sed -n '$p' "$errf" | sed 's/^/  [git]   /'
+        fi
+        rm -rf "$dest" 2>/dev/null || true
     done
-    echo "  [git] 克隆失败(已尝试 ${#candidates[@]} 个源): $url" >&2
-    return 1
+    rm -f "$errf"
+
+    if [ "$rc" != 0 ]; then
+        echo "  [git] 克隆失败(已尝试 ${#candidates[@]} 个源): $url" >&2
+        echo "  [git] 可调 DT_MIRROR=off|ghproxy|ghfast|fastgit 或 GH_PROXY=<镜像前缀> 后重跑" >&2
+        return 1
+    fi
 }

@@ -8,12 +8,12 @@
 #   on      启用（写入 ~/.gitconfig 的 url.<镜像>/https://github.com/.insteadOf）
 #   off     关闭（移除上述重写）
 #   status  查看当前状态
-# 镜像可通过环境变量覆盖: GH_PROXY=https://mirror.ghproxy.com
+# 镜像可通过环境变量覆盖: GH_PROXY=https://gh-proxy.com
 # 注意: 启用后 git clone https://github.com/xxx 会走镜像；失效时换 GH_PROXY 或 off。
 # =============================================================================
 set -euo pipefail
 
-GH_PROXY="${GH_PROXY:-https://mirror.ghproxy.com}"
+GH_PROXY="${GH_PROXY:-https://gh-proxy.com}"
 BASE="$GH_PROXY/https://github.com/"
 TARGET="https://github.com/"
 
@@ -61,7 +61,8 @@ case "${1:-}" in
   status  查看状态
 
 环境变量:
-  GH_PROXY=https://mirror.ghproxy.com   # 镜像前缀, 失效时更换
+  GH_PROXY=https://gh-proxy.com        # 镜像前缀, 失效时更换
+  DT_GHFAST=https://ghfast.top        # 第二前缀镜像(dt_clone auto 回退用)
 EOF
         exit 1
         ;;

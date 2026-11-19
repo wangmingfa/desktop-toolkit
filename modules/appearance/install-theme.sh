@@ -23,9 +23,9 @@ echo "==> [2/3] 获取主题仓库 (宿主机已开 FlClash TUN，克隆应该�
 if git -C "$REPO_DIR" rev-parse HEAD >/dev/null 2>&1; then
   echo "    仓库已存在且完好，跳过克隆"
 else
-  echo "    清理残留并重新克隆（自动国内镜像回退：直连 -> ghproxy -> gitclone）"
+  echo "    清理残留并重新克隆（自动国内镜像回退：直连 -> gh-proxy.com -> ghfast.top -> fastgit）"
   dt_clone "https://github.com/lestercorderomurillo/macos-tahoe-liquid-kde.git" "$REPO_DIR" || {
-    echo "克隆失败。可设 DT_MIRROR=ghproxy 或换 GH_PROXY 后重跑；已开代理的可检查节点。" >&2
+    echo "克隆失败。可设 DT_MIRROR=ghproxy|ghfast|fastgit 或换 GH_PROXY 后重跑；已开代理的可检查节点。" >&2
     exit 1
   }
 fi
