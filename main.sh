@@ -81,30 +81,35 @@ sub_placeholder() { # title
 # ---------------------------------------------------------------------------
 dt_resume_gnome() {
     local -a pending=()          # 交替存放: version next_step
-    local f ver next
-    for f in "$GN_SRC_DIR"/.install-state-macos*; do
-        [ -f "$f" ] || continue
-        ver=$(sed -n 's/^version=//p' "$f" | head -1)
-        next=$(sed -n 's/^next_step=//p' "$f" | head -1)
-        case "$ver" in macos26|macos15) ;; *) continue ;; esac
-        case "$next" in [2-5]) ;; *) continue ;; esac   # 只列真正未完成的
-        pending+=("$ver" "$next")
-    done
+    local f ver next i idx gui_opt choice
+
+    # 重新扫描(嵌套函数, 便于安装后再次调用)
+    gn_scan_pending() {
+        pending=()
+        for f in "$GN_SRC_DIR"/.install-state-macos*; do
+            [ -f "$f" ] || continue
+            ver=$(sed -n 's/^version=//p' "$f" | head -1)
+            next=$(sed -n 's/^next_step=//p' "$f" | head -1)
+            case "$ver" in macos26|macos15) ;; *) continue ;; esac
+            case "$next" in [2-5]) ;; *) continue ;; esac   # 只列真正未完成的
+            pending+=("$ver" "$next")
+        done
+    }
+    gn_scan_pending
     [ "${#pending[@]}" -eq 0 ] && return 0
 
     echo
     echo "──────────────────────────────────────────────"
     echo "发现未完成的安装进度："
-    local i=1 idx
+    i=1
     for (( idx=0; idx<${#pending[@]}; idx+=2 )); do
         ver="${pending[idx]}"; next="${pending[idx+1]}"
         echo "  [$i] $(gn_version_label "$ver")  —— 第 $next/5 步（$(gn_step_label "$next")）"
         i=$((i+1))
     done
-    local gui_opt=$i
+    gui_opt=$i
     echo "  [$gui_opt] 进入 GUI 菜单"
     echo "──────────────────────────────────────────────"
-    local choice
     read -r -p "选择操作（回车 = $gui_opt 进入 GUI 菜单）: " choice || true
     choice="${choice:-$gui_opt}"
     if [[ "$choice" =~ ^[0-9]+$ ]] && [ "$choice" -ge 1 ] && [ "$choice" -lt "$gui_opt" ]; then
@@ -116,7 +121,12 @@ dt_resume_gnome() {
         # || true: 安装失败也不能让 main.sh(set -e) 直接退出, 回提示让用户再选
         GN_FORCE_RESUME=1 bash "$DT_ROOT/modules/appearance/gnome/install.sh" "$ver" || true
         echo
-        # 安装结束后重新检测(可能还有另一版本未完成, 或已全部完成)
+        # 安装结束后重新检测: 已全部完成则直接结束, 不再弹 GUI 菜单
+        gn_scan_pending
+        if [ "${#pending[@]}" -eq 0 ]; then
+            exit 0
+        fi
+        # 还有另一版本未完成 -> 继续在终端列
         dt_resume_gnome
         return 0
     fi
