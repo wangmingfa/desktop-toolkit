@@ -57,6 +57,60 @@ dnf_install_retry() { # <包名>...
     return 1
 }
 
+# ---------------------------------------------------------------------------
+# 可续传兜底：COPR 的大包(dms-cli ~83MB)存在 AWS S3(copr-pulp-prod.s3.amazonaws.com)。
+# dnf 按"30 秒内少于 1000 B/s"判死且【不能断点续传】，弱网下永远卡在几个百分点。
+# 而 `dnf download` 支持续传——重复调用会在已下部分上继续。故改为：
+#   循环 dnf download(累积) -> rpm2cpio 全量解包校验 -> 用本地 rpm 安装。
+# 进度持久化在 DT_DL_DIR，中断/重跑都能续传。src.rpm 不参与安装，跳过。
+# ---------------------------------------------------------------------------
+dnf_install_resumable() { # <包名>...
+    local -a pkgs=("$@")
+    local dir="${DT_DL_DIR:-/tmp/dt-niridms-rpms}"
+    local dnf_cmd=dnf
+    command -v dnf5 >/dev/null 2>&1 && dnf_cmd=dnf5
+    echo
+    echo "  ⚠ COPR 大包下载失败，改用可续传下载 + 本地安装"
+    echo "    （进度存于 $dir，Ctrl+C 中断后重跑本脚本会继续，不会从头下）"
+    mkdir -p "$dir"
+    local attempt=0 total=0 bad=0 sz prev=-1 stuck=0 f
+    while [ "$attempt" -lt 50 ]; do
+        attempt=$((attempt+1))
+        # 注意: download 不以 root 跑(实测可行, 且避免 root 文件权限)
+        "$dnf_cmd" download --resolve --destdir="$dir" \
+            "${DT_DNF_OPTS[@]}" "${pkgs[@]}" >/dev/null 2>&1 || true
+        total=0; bad=0
+        for f in "$dir"/*.rpm; do
+            [ -f "$f" ] || continue
+            case "$f" in *.src.rpm) continue ;; esac
+            total=$((total+1))
+            # rpm2cpio 会解包整个载荷: 文件截断必失败(比 rpm -qp 可靠)
+            rpm2cpio "$f" >/dev/null 2>&1 || bad=$((bad+1))
+        done
+        sz=$(du -sm "$dir" 2>/dev/null | cut -f1)
+        log "第 ${attempt} 轮：${total} 个 rpm 中 ${bad} 个未完成（已下载 ${sz}MB）"
+        [ "$bad" -eq 0 ] && break
+        [ "$sz" = "$prev" ] && stuck=$((stuck+1)) || stuck=0
+        prev=$sz
+        # 连续两轮零进展 = 网络彻底不通, 别空转
+        [ "$stuck" -ge 2 ] && break
+    done
+    local -a local_rpms=()
+    for f in "$dir"/*.rpm; do
+        [ -f "$f" ] || continue
+        case "$f" in *.src.rpm) continue ;; esac
+        local_rpms+=("$f")
+    done
+    [ "${#local_rpms[@]}" -eq 0 ] && { err "未下载到任何可用 rpm"; return 1; }
+    if [ "$bad" -ne 0 ]; then
+        err "仍有 ${bad} 个 rpm 未完成下载。请重跑本脚本续传（进度已保留），"
+        err "或给机器挂代理后重跑: HTTPS_PROXY=http://127.0.0.1:7890 bash $0"
+        return 1
+    fi
+    echo "==> 从本地 rpm 安装（${#local_rpms[@]} 个；缺的基础包 dnf 会从正常源补）…"
+    sudo dnf install -y "${local_rpms[@]}"
+}
+
 install_pkgs() {
     if command -v dnf >/dev/null 2>&1; then
         echo "==> 检测到 Fedora/dnf"
@@ -64,8 +118,12 @@ install_pkgs() {
         # 幂等：已启用时 enable 是 no-op
         sudo dnf copr enable -y duxlabs/dms 2>/dev/null \
             || log "COPR duxlabs/dms 启用未确认(可手动: sudo dnf copr enable duxlabs/dms)，继续"
-        echo "  安装 niri + dms + 配套(需 sudo 密码；dms-cli 约 83MB，网络慢时请耐心等待)…"
+        echo "  安装 niri + dms + 配套(需 sudo 密码；COPR 的 dms-cli 约 83MB)…"
+        # 常规安装 -> 失败(通常是 COPR 大包下载被判超时)则走可续传的兜底路径
         dnf_install_retry niri dms quickshell xwayland-satellite \
+            xdg-desktop-portal-gnome xdg-desktop-portal-gtk \
+            "$TERMINAL" fuzzel mako waybar playerctl \
+        || dnf_install_resumable niri dms quickshell xwayland-satellite \
             xdg-desktop-portal-gnome xdg-desktop-portal-gtk \
             "$TERMINAL" fuzzel mako waybar playerctl
     elif command -v pacman >/dev/null 2>&1; then

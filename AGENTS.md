@@ -82,6 +82,20 @@ desktop-toolkit/
 ### 3.3 非关键下载"尽力而为"
 - 返回值约定：成功 `0`，失败 `1`；但调用方对**可选件**（光标、联网扩展）用 `|| echo "提示"` 容错。
 
+### 3.4 COPR / S3 大包下载超时的兜底（实测，必知）
+- **COPR 的包体存在 AWS S3（`copr-pulp-prod.s3.amazonaws.com`），弱网下极慢且会断流。**
+  dnf 按 **low-speed 判定**（30 秒内少于 1000 B/s）掐断连接，**且 `dnf install` 不能断点续传**，
+  于是大包（如 DMS 的 `dms-cli` ~83MB）**永远卡在 3%**。
+- 关键差异：**`dnf download` 支持续传**（重跑会在已下部分上继续）。
+  所以兜底路径 = 循环 `dnf download --resolve --destdir=$DIR <包名>` 累积下载，再用**本地 rpm 安装**。
+  `niri-dms.sh` 的 `dnf_install_resumable` 即此实现；`$DIR` 持久化，中断后重跑继续。
+- **完整性判据用 `rpm2cpio`**（全量解包，截断必失败）。**不要用 `rpm -qp`**（截断文件仍带完整
+  rpm 头，会误判为完整）；COPR 包未签名，`rpm -K` 也无输出，不可用。
+- dnf5 **只认** `--setopt=timeout=` 与 `--setopt=retries=`；**不认** dnf4 的
+  `transfer_timeout` / `retrycount` / `retry`（会报 `Option "..." not found`）。
+- 低带宽阈值 dnf 不暴露、改不了，所以只能靠"续传 + 重试"兜底；`dnf download` **不要加 sudo**
+  （实测非 root 可行，且避免 root 属主）。
+
 ---
 
 ## 4. stdout / stderr 约定（最容易踩、最难查）
