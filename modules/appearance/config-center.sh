@@ -1,8 +1,8 @@
 #!/usr/bin/env bash
 # =============================================================================
 # 桌面外观配置中心 —— 统一交互式入口
-# 运行后全部用菜单/滑块操作，不需要记住任何命令。
-# 底层复用同目录的 adjust-window.sh 与 toggle-glass.sh
+# 默认打开 GTK 单窗口版（切换分类不关窗，Dock 只有一个图标）；
+# GTK4 不可用时退回 zenity/kdialog 菜单版。底层复用 adjust-window.sh。
 # =============================================================================
 set -euo pipefail
 
@@ -13,6 +13,40 @@ KWINRC="$HOME/.config/kwinrc"
 DBUS_ENV="DBUS_SESSION_BUS_ADDRESS=unix:path=/run/user/1000/bus XDG_RUNTIME_DIR=/run/user/1000"
 
 [ -x "$ADJUST" ] || { echo "缺少 $ADJUST" >&2; exit 1; }
+
+# ---------------------------------------------------------------------------
+# 优先使用 GTK 单窗口版：切换分类只换页面，不会关窗/开新窗，
+# Dock / 任务栏上始终只有一个图标。GTK4 不可用时自动退回下面的
+# zenity / kdialog 菜单版（想强制用旧版：DT_CONFIG_CLI=1）。
+# ---------------------------------------------------------------------------
+install_desktop_entry() {
+    local dir="$HOME/.local/share/applications"
+    local f="$dir/io.github.desktoptoolkit.ConfigCenter.desktop"
+    [ -f "$f" ] && return 0
+    mkdir -p "$dir" 2>/dev/null || return 0
+    cat > "$f" <<EOF
+[Desktop Entry]
+Type=Application
+Name=桌面外观配置中心
+Comment=macOS 风格桌面设置（圆角 / 透明度 / Dock / 窗口动画）
+Exec="$SCRIPT_DIR/config-center.sh"
+Icon=preferences-desktop-theme
+Terminal=false
+Categories=Settings;DesktopSettings;
+StartupWMClass=io.github.desktoptoolkit.ConfigCenter
+EOF
+    command -v update-desktop-database >/dev/null 2>&1 && update-desktop-database "$dir" >/dev/null 2>&1 || true
+}
+
+if [ "${DT_CONFIG_CLI:-0}" != "1" ] \
+    && [ -f "$SCRIPT_DIR/config-center-gtk.py" ] \
+    && command -v python3 >/dev/null 2>&1 \
+    && python3 -c 'import gi; gi.require_version("Gtk", "4.0")' >/dev/null 2>&1; then
+    install_desktop_entry
+    # 旧版 zenity 菜单的窗口规则（新窗口不再需要，但保留可消除其它弹窗的 Dock 图标）
+    [ -x "$SCRIPT_DIR/kwin-rule.sh" ] && "$SCRIPT_DIR/kwin-rule.sh" install >/dev/null 2>&1 || true
+    exec python3 "$SCRIPT_DIR/config-center-gtk.py" "$@"
+fi
 
 # ---------- 通用交互控件 (自适应: 宿主机用 kdialog, 容器用 zenity) ----------
 if command -v zenity >/dev/null 2>&1; then

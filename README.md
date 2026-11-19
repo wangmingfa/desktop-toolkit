@@ -17,6 +17,10 @@ cd ~/code/desktop-toolkit
 
 脚本会自动识别 GUI 工具：**容器里用 zenity，宿主机 KDE 上用 kdialog**。菜单里选中「外观美化 → 桌面外观配置中心」就能交互式调整全部配置，不需要记命令。
 
+> 配置中心现在默认打开**单窗口版（GTK4）**：左侧分类、右侧内容，切换分类只换页面，
+> 窗口不会关闭重开，Dock 上始终只有一个图标。GTK4 不可用时自动退回 zenity/kdialog 菜单版
+> （想强制用旧版：`DT_CONFIG_CLI=1 ./main.sh`）。
+
 > 首次部署建议顺序：
 > 1. `主菜单 → 外观美化 → 安装 macOS Tahoe 主题`
 > 2. `主菜单 → 外观美化 → 桌面外观配置中心`（调圆角/透明度/Dock/Logo/窗口动画）
@@ -32,8 +36,10 @@ desktop-toolkit/
 │   └── ui.sh                # 通用菜单/滑块/确认框（zenity/kdialog 自适应）
 ├── modules/
 │   ├── appearance/          # 外观美化
-│   │   ├── kde-scheme.sh         # KDE 统一入口：macOS 26 / 16 安装切换 + 微调
-│   │   ├── config-center.sh      # 桌面外观配置中心（macOS 26 微调）
+│   │   ├── kde-scheme.sh         # KDE 统一入口：macOS 26 / 15 安装切换 + 微调
+│   │   ├── config-center.sh      # 桌面外观配置中心入口（优先 GTK 单窗口版）
+│   │   ├── config-center-gtk.py  # 单窗口版配置中心（GTK4，切换分类不开新窗）
+│   │   ├── kwin-rule.sh          # 让弹窗不进任务栏/Dock（KWin 规则）
 │   │   ├── adjust-window.sh      # 底层调节工具（圆角/透明度/Dock/Logo/动画…）
 │   │   ├── install-theme.sh      # 安装 macOS 26 Tahoe Liquid KDE 主题
 │   │   ├── install-kde-sequoia.sh # KDE 安装 macOS 15 经典 (WhiteSur-kde)
