@@ -95,11 +95,14 @@ gn_install_gtk() { # gtk_repo_dir
     fi
 }
 
-# 安装图标主题（icon repo 的 install.sh，-t blue 默认）
+# 安装图标主题（icon repo 的 install.sh，默认蓝色 macOS 风格）
 gn_install_icons() { # icon_repo_dir
     local dir="$1"
     if [ -x "$dir/install.sh" ]; then
-        ( cd "$dir" && ./install.sh -t blue ) || { echo "图标主题安装失败" >&2; return 1; }
+        # WhiteSur 的 -t 不认 blue(合法值 default|purple|...), 但默认即 blue;
+        # MacTahoe 的 -t 认 blue。故先试 -t blue, 失败回退为默认(同样蓝色)。
+        ( cd "$dir" && ./install.sh -t blue ) || ( cd "$dir" && ./install.sh ) \
+            || { echo "图标主题安装失败" >&2; return 1; }
     else
         echo "未找到 $dir/install.sh" >&2; return 1
     fi
