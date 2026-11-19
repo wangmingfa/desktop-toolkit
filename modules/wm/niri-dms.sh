@@ -111,6 +111,39 @@ dnf_install_resumable() { # <包名>...
     sudo dnf install -y "${local_rpms[@]}"
 }
 
+# 已有本地 rpm 时直接装(跳过网络)。用于：
+#   1) 之前 dnf_install_resumable 已把 rpm 下齐(如 /tmp/dmsdl 累积完成)
+#   2) 在别处下载好 rpm 拷进本机
+# 只装 DT_DL_DIR 里【完整】的非 src 包；返回 0 表示已用本地路径装完。
+dnf_install_from_local() { # <包名>...
+    local -a want=("$@")
+    local dir="${DT_DL_DIR:-/tmp/dt-niridms-rpms}"
+    [ -d "$dir" ] || return 1
+    local -a local_rpms=() f missing=()
+    for f in "$dir"/*.rpm; do
+        [ -f "$f" ] || continue
+        case "$f" in *.src.rpm) continue ;; esac
+        local_rpms+=("$f")
+    done
+    [ "${#local_rpms[@]}" -eq 0 ] && return 1
+    # 确认用户要装的包都在本地(按包名前缀匹配 NEVRA)
+    for w in "${want[@]}"; do
+        local found=0
+        for f in "${local_rpms[@]}"; do
+            if rpm -qp --qf '%{NAME}\n' "$f" 2>/dev/null | grep -qx "$w"; then
+                found=1; break
+            fi
+        done
+        [ "$found" -eq 1 ] || missing+=("$w")
+    done
+    if [ "${#missing[@]}" -gt 0 ]; then
+        log "本地缺少: ${missing[*]}，需要联网下载"
+        return 1
+    fi
+    echo "==> 用本地 rpm 安装（${#local_rpms[@]} 个，无需再从 S3 下载）…"
+    sudo dnf install -y "${local_rpms[@]}"
+}
+
 install_pkgs() {
     if command -v dnf >/dev/null 2>&1; then
         echo "==> 检测到 Fedora/dnf"
@@ -118,6 +151,12 @@ install_pkgs() {
         # 幂等：已启用时 enable 是 no-op
         sudo dnf copr enable -y duxlabs/dms 2>/dev/null \
             || log "COPR duxlabs/dms 启用未确认(可手动: sudo dnf copr enable duxlabs/dms)，继续"
+        # 优先用已有的本地 rpm(续传产物/外部导入), 跳过慢的 S3 下载
+        if dnf_install_from_local niri dms quickshell xwayland-satellite \
+            xdg-desktop-portal-gnome xdg-desktop-portal-gtk \
+            "$TERMINAL" fuzzel mako waybar playerctl; then
+            return 0
+        fi
         echo "  安装 niri + dms + 配套(需 sudo 密码；COPR 的 dms-cli 约 83MB)…"
         # 常规安装 -> 失败(通常是 COPR 大包下载被判超时)则走可续传的兜底路径
         dnf_install_retry niri dms quickshell xwayland-satellite \
