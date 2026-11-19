@@ -17,13 +17,14 @@ source "$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)/lib-gnome.sh"
 VERSION="${1:-}"
 
 case "$VERSION" in
-    macos26|macos15) ;;
+    macos26|macos15|fluent) ;;
     *)
         cat <<'EOF'
-用法: ./install.sh <macos26|macos15>
+用法: ./install.sh <macos26|macos15|fluent>
 
   macos26  安装 macOS 26 (Tahoe 液态玻璃)  -> MacTahoe-gtk-theme
   macos15  安装 macOS 15 (经典 Sequoia 风格) -> WhiteSur-gtk-theme
+  fluent   安装 Windows 11 (Fluent 风格)   -> Fluent-gtk-theme
 
 示例:
   ./install.sh macos26
@@ -89,27 +90,27 @@ gn_resume_confirm() { # saved_next -> 0 继续, 1 重头
 # 各步骤(函数内各自打印 [n/5] 头部)
 # ---------------------------------------------------------------------------
 step_gtk() {
-    echo "==> [1/5] 安装 GTK 主题 ($GTK_REPO)"
+    echo "==> [1/6] 安装 GTK 主题 ($GTK_REPO)"
     GTK_DIR=$(gn_clone "$GTK_REPO" "$GTK_BRANCH")
     # 缺 sassc 时 WhiteSur 会走 prepare_deps 的网络探测(连 iana.org),
     # 本网络下探测失败直接退出；先装好 sassc 可完全跳过探测。
     gn_ensure_deps || true
-    gn_install_gtk "$GTK_DIR" -l
+    gn_install_gtk "$GTK_DIR" "$VERSION"
 }
 
 step_icons() {
-    echo "==> [2/5] 安装图标主题 ($ICON_REPO)"
+    echo "==> [2/6] 安装图标主题 ($ICON_REPO)"
     ICON_DIR=$(gn_clone "$ICON_REPO" "$ICON_BRANCH")
     gn_install_icons "$ICON_DIR"
 }
 
 step_cursors() {
-    echo "==> [3/5] 安装光标主题"
+    echo "==> [3/6] 安装光标主题"
     gn_install_cursors "$ICON_DIR" "$CURSOR_REPO" || echo "  (光标主题可选，可稍后手动安装)"
 }
 
 step_apply() {
-    echo "==> [4/5] 应用主题设置 (gsettings)"
+    echo "==> [4/6] 应用主题设置 (gsettings)"
     gn_apply "$VERSION"
 }
 

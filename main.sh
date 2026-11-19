@@ -86,11 +86,11 @@ dt_resume_gnome() {
     # 重新扫描(嵌套函数, 便于安装后再次调用)
     gn_scan_pending() {
         pending=()
-        for f in "$GN_SRC_DIR"/.install-state-macos*; do
+        for f in "$GN_SRC_DIR"/.install-state-*; do
             [ -f "$f" ] || continue
             ver=$(sed -n 's/^version=//p' "$f" | head -1)
             next=$(sed -n 's/^next_step=//p' "$f" | head -1)
-            case "$ver" in macos26|macos15) ;; *) continue ;; esac
+            case "$ver" in macos26|macos15|fluent) ;; *) continue ;; esac
             case "$next" in [2-6]) ;; *) continue ;; esac   # 只列真正未完成的
             pending+=("$ver" "$next")
         done

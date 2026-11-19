@@ -15,21 +15,25 @@ fi
 GN_SRC_DIR="${GN_SRC_DIR:-$HOME/.local/src/desktop-toolkit-gnome}"
 
 # 版本 -> 仓库 / 主题名 映射
-gn_version_info() { # macos26|macos15  -> 输出 "gtk_repo gtk_branch gtk_theme icon_repo icon_branch icon_theme cursor_theme"
+gn_version_info() { # macos26|macos15|fluent  -> 输出 "gtk_repo gtk_branch gtk_theme icon_repo icon_branch icon_theme cursor_theme"
     case "$1" in
         macos26)
             echo "vinceliuice/MacTahoe-gtk-theme main  MacTahoe  vinceliuice/MacTahoe-icon-theme main MacTahoe vinceliuice/MacTahoe-icon-theme" ;;
         macos15)
             echo "vinceliuice/WhiteSur-gtk-theme master WhiteSur  vinceliuice/WhiteSur-icon-theme master WhiteSur vinceliuice/WhiteSur-cursors" ;;
+        fluent)
+            # Windows 11 Fluent 风格; 光标源暂缺(验证未达), 留空则由 gn_install_cursors 跳过
+            echo "vinceliuice/Fluent-gtk-theme master Fluent  vinceliuice/Fluent-icon-theme master Fluent  " ;;
         *) return 1 ;;
     esac
 }
 
-gn_version_label() { # macos26|macos15 -> 中文标签
+gn_version_label() { # macos26|macos15|fluent -> 中文标签
     case "$1" in
         macos26) echo "macOS 26 (Tahoe 液态玻璃)" ;;
         macos15) echo "macOS 15 (经典 Sequoia 风格)" ;;
-        *)      echo "未知版本" ;;
+        fluent)  echo "Windows 11 (Fluent 风格)" ;;
+        *)       echo "未知版本" ;;
     esac
 }
 
@@ -98,11 +102,19 @@ gn_ensure_deps() { # 无参数; 返回 0 表示 sassc 可用(或已装好)
     fi
 }
 
-# 运行 GTK 主题安装器（install.sh）
-gn_install_gtk() { # gtk_repo_dir
-    local dir="$1"; shift
+# 运行 GTK 主题安装器（install.sh）。参数按版本区分：
+#  - WhiteSur/MacTahoe: -l = 本地安装(→~/.themes)
+#  - Fluent: -l 语义是 --libadwaita(不同!), 且非 root 默认装 $XDG_DATA_HOME/themes(若已设),
+#    故显式 -d ~/.themes 强制与其它主题一致, 否则 gn_resolve_theme_name 会找不到主题目录。
+gn_install_gtk() { # gtk_repo_dir version
+    local dir="$1" version="$2"
+    local -a args=()
+    case "$version" in
+        fluent) args=(-d "$HOME/.themes") ;;
+        *)      args=(-l) ;;
+    esac
     if [ -x "$dir/install.sh" ]; then
-        ( cd "$dir" && ./install.sh "$@" ) || { echo "GTK 主题安装失败" >&2; return 1; }
+        ( cd "$dir" && ./install.sh "${args[@]}" ) || { echo "GTK 主题安装失败" >&2; return 1; }
     else
         echo "未找到 $dir/install.sh" >&2; return 1
     fi
@@ -124,8 +136,13 @@ gn_install_icons() { # icon_repo_dir
 # 安装光标主题：优先 icon repo 内的 cursors 目录；否则用独立 cursors 仓库
 gn_install_cursors() { # icon_repo_dir cursor_repo
     local icon_dir="$1" cursor_repo="$2"
+    # 优先用 icon 仓库自带的 cursors 子目录(如 Fluent-icon-theme/cursors)
     if [ -d "$icon_dir/cursors" ] && [ -x "$icon_dir/cursors/install.sh" ]; then
         ( cd "$icon_dir/cursors" && ./install.sh ) && return 0
+    fi
+    if [ -z "$cursor_repo" ]; then
+        echo "  [cursor] 无光标源（该风格未提供），保留当前光标主题" >&2
+        return 0
     fi
     local branch=master
     case "$cursor_repo" in *MacTahoe*) branch=main ;; esac
@@ -155,16 +172,19 @@ gn_theme_base() { # theme_name
 # 主题安装器生成的是带变体后缀的目录（WhiteSur-Dark / WhiteSur-Light），
 # 基础名（WhiteSur）通常不存在；若把 gsettings 设成不存在的名字，
 # user-theme 扩展会回退到默认 Adwaita -> 顶栏/窗口不变。故需解析真实目录。
+# 注意: 有的主题(Fluent)会同时生成"基础目录"(Fluent)且它对应默认=浅色,
+# 故**目标色变体优先于基础名**, 避免深色偏好被误设成浅色基础版。
 # 用法: gn_resolve_theme_name <base> [dark|light]  -> 输出真实主题名
 gn_resolve_theme_name() { # base [dark|light]
     local base="$1" pref="${2:-dark}" d
-    [ -d "$HOME/.themes/$base/gnome-shell" ] && { echo "$base"; return 0; }
     # 目标色普通变体（优先）
     local -a suf
     if [ "$pref" = light ]; then suf=("$HOME/.themes/$base-Light" "$HOME/.themes/$base-light"); else suf=("$HOME/.themes/$base-Dark" "$HOME/.themes/$base-dark"); fi
     for d in "${suf[@]}"; do
         [ -d "$d/gnome-shell" ] && { echo "$(basename "$d")"; return 0; }
     done
+    # 基础名精确存在（仅当目标色变体缺失时用，如 Fluent 的基础目录是浅色）
+    [ -d "$HOME/.themes/$base/gnome-shell" ] && { echo "$base"; return 0; }
     # 任意目标色变体，排除 solid/hdpi/xhdpi
     local pglob; pglob="$HOME/.themes/$base-Dark* $HOME/.themes/$base-dark*"; [ "$pref" = light ] && pglob="$HOME/.themes/$base-Light* $HOME/.themes/$base-light*"
     for d in $pglob; do

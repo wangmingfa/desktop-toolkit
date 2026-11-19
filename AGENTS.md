@@ -107,6 +107,7 @@ desktop-toolkit/
 > 若把 gsettings 设成基础名，user-theme 扩展会回退默认 Adwaita → **顶栏/窗口不变**（本次真实事故）。
 
 - **必须解析真实存在的目录名**：用 `gn_resolve_theme_name <base> [dark|light]`（默认深色，排除 solid/hdpi/xhdpi）。
+- **目标色变体优先于基础名**：有的主题（Fluent）会同时生成"基础目录"（`Fluent`）且它对应**默认=浅色**；若把基础名放最优先，深色偏好会被误设成浅色基础版。`gn_resolve_theme_name` 已按"目标色变体 → 基础名 → 任意变体"顺序解析。
 - 深浅色切换用 `gn_switch_color_scheme dark|light`（**同时**切 `color-scheme` 和主题变体，别只切一个）。
 - 窗口按钮位置用 `gn_set_button_layout left|right` / `gn_button_layout`（macOS 红黄绿在左 / GNOME 在右）。
 - 统一用 `gn_gs` 封装 `gsettings set`（失败走 stderr），别裸调 `gsettings set`。
@@ -135,11 +136,16 @@ desktop-toolkit/
 
 ---
 
-## 9. 版本 / 仓库映射（新增 macOS 版本）
+## 9. 版本 / 仓库映射（新增风格/版本）
 
 - 版本 → 仓库/主题/图标/光标映射集中在 `gn_version_info`；中文标签在 `gn_version_label`。**新增版本只改这两处 + 配置中心菜单项**。
 - 同一桌面环境两套主题**互相覆盖**，菜单里明确"二选一"。
 - 配置中心新增安装项：菜单加 `installXX|…`，case 里调 `install.sh <version>`。
+- **新增非 macOS 风格**（如 Windows/Fluent）还需：
+  - `install.sh` 的用法 `case "$VERSION"` 加新 id，并在 usage 文本加一行。
+  - `main.sh` 恢复扫描的 glob **放宽**：`.install-state-macos*` → `.install-state-*`（否则新风格状态文件不被识别），且版本过滤 `case "$ver" in ...|新id)` 加新 id。
+  - 光标源可为空：`gn_version_info` 第 7 字段留空，`gn_install_cursors` 已支持跳过（保留当前光标）。
+  - **分支名不要想当然**：MacTahoe 用 `main`、WhiteSur/Fluent 用 `master`——先 `git ls-remote --symref <mirror>/<repo>.git HEAD` 确认默认分支，再写进映射。
 
 ---
 
