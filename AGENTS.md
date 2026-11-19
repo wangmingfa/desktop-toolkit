@@ -21,6 +21,8 @@ desktop-toolkit/
     │   └── lib-gnome.sh         # GNOME 公共库（步骤函数、gsettings、扩展、启动器）
     ├── appearance/…         # KDE 侧同类模块
     ├── network/github-mirror.sh  # 全局 git 镜像
+    ├── wm/                  # 窗口管理器 / 桌面方案
+    │   └── niri-dms.sh          # 一键安装 Niri + DMS (Dux Modular Shell)
     └── <分类>/…             # 其他待扩展分类
 ```
 

@@ -67,6 +67,26 @@ sub_network() {
 }
 
 # ---------------------------------------------------------------------------
+# 子菜单：窗口管理器 / 桌面方案
+# ---------------------------------------------------------------------------
+sub_wm() {
+    while true; do
+        local c
+        c=$(dt_menu "窗口管理器 / 桌面方案" "平铺 Wayland 合成器与桌面外壳方案：" \
+            "niri-dms|① 一键安装 Niri + DMS|滚动平铺 Niri + Dux Modular Shell(DMS) 桌面外壳" \
+            "back|← 返回主菜单|") || return 0
+        [ "$c" = back ] && return 0
+        case "$c" in
+            niri-dms)
+                if dt_confirm "一键安装 Niri + DMS（Dux Modular Shell）？\n需要网络 + sudo 密码，安装几分钟。"; then
+                    bash "$DT_ROOT/modules/wm/niri-dms.sh"
+                    dt_info "Niri + DMS 安装流程结束。注销后登录界面选 Niri 会话。"
+                fi ;;
+        esac
+    done
+}
+
+# ---------------------------------------------------------------------------
 # 子菜单：系统配置 / 开发 / 备份（预留分类，后续往对应目录加脚本即可）
 # ---------------------------------------------------------------------------
 sub_placeholder() { # title
@@ -147,15 +167,17 @@ main() {
         local c
         c=$(dt_menu "desktop-toolkit" "选择要执行的分类（脚本集中管理，拉下来即可用）：" \
             "appearance|① 外观美化|macOS 美化 / 主题 / 配置中心 / 性能模式" \
-            "system|② 系统配置|系统优化与服务配置（待扩展）" \
-            "network|③ 网络工具|代理 / 网络相关脚本（待扩展）" \
-            "dev|④ 开发环境|开发工具与环境配置（待扩展）" \
-            "backup|⑤ 备份与恢复|配置备份/还原（待扩展）" \
-            "about|⑥ 关于 / 使用说明|查看仓库结构与用法" \
-            "exit|⑦ 退出|") || exit 0
+            "wm|② 窗口管理器 / 桌面方案|Niri + DMS 等平铺 Wayland 方案" \
+            "system|③ 系统配置|系统优化与服务配置（待扩展）" \
+            "network|④ 网络工具|代理 / 网络相关脚本（待扩展）" \
+            "dev|⑤ 开发环境|开发工具与环境配置（待扩展）" \
+            "backup|⑥ 备份与恢复|配置备份/还原（待扩展）" \
+            "about|⑦ 关于 / 使用说明|查看仓库结构与用法" \
+            "exit|⑧ 退出|") || exit 0
         case "$c" in
             exit) exit 0 ;;
             appearance) sub_appearance ;;
+            wm) sub_wm ;;
             network) sub_network ;;
             system|dev|backup) sub_placeholder "$c" "$c" ;;
             about)

@@ -2,7 +2,7 @@
 
 统一管理电脑相关脚本的工具箱。目标：**拉下仓库 → 运行一个总入口 → 菜单选择 → 开始执行**。
 
-目前包含 macOS Tahoe Liquid KDE 桌面美化的全套脚本，后续可继续按分类往里加系统/网络/开发/备份脚本。
+目前包含 macOS Tahoe Liquid KDE 桌面美化的全套脚本，以及 Niri + DMS 平铺桌面一键安装；后续可继续按分类往里加系统/网络/开发/备份脚本。
 
 ## 快速开始
 
@@ -54,6 +54,8 @@ desktop-toolkit/
 │   ├── system/              # 系统配置（待扩展）
 │   ├── network/
 │   │   └── github-mirror.sh      # GitHub 国内镜像一键配置（全局 git）
+│   ├── wm/                   # 窗口管理器 / 桌面方案
+│   │   └── niri-dms.sh           # 一键安装 Niri + DMS (Dux Modular Shell)
 │   ├── dev/                 # 开发环境（待扩展）
 │   └── backup/              # 备份与恢复（待扩展）
 └── assets/                  # 图标、SVG 等资源
