@@ -171,7 +171,31 @@ desktop-toolkit/
 
 ---
 
-## 10. 提交规范
+## 10. GDM / Wayland 会话文件（"登录界面没有会话切换项"= 这几个坑）
+
+> 场景：装完 niri 等 Wayland 合成器，登录界面**连左下角的齿轮都没有**。
+
+- **会话文件必须放系统级目录**。GDM greeter 以 root/gdm 运行，只扫
+  `/usr/share/wayland-sessions`、`/usr/share/xsessions`、`/usr/share/gdm/greeter/wayland-sessions`
+  （`strings /usr/sbin/gdm | grep -E 'sessions'` 可确认）。
+  **用户级 `~/.local/share/wayland-sessions/` 对 greeter 无效**，别拿它当兜底
+  （`niri-dms.sh` 早期版本就踩过，现已改为写系统级）。
+- **`Exec` / `TryExec` 用绝对路径**：`Exec=/usr/bin/niri-session` + `TryExec=/usr/bin/niri-session`。
+  niri 官方 rpm 自带的是裸命令名（`Exec=niri-session`）且**没有 `TryExec`**；GDM 解析不到命令就跳过
+  该会话（二进制里有 `GdmSession: Command not found: %s`）。跳过后若登录界面只剩一个会话，
+  **齿轮按钮直接不显示**——这是"看不到任何切换项"的典型链路。
+- **不要照抄 GNOME 的 `X-GDM-SessionRegisters=true`**：它表示"会话程序自己向 DisplayManager 注册"。
+  判定方法 `strings /usr/bin/<合成器> | grep -c DisplayManager`——niri 结果为 0（它从不注册），
+  照抄反而让 GDM 等一个永远不来的注册。
+- **改完必须 `sudo systemctl restart gdm`**：GDM 只在**启动时**扫一次会话文件，单纯"注销"无效。
+- 排查顺序：`rpm -q niri` → `command -v niri-session` → `cat /usr/share/wayland-sessions/niri.desktop`
+  → `systemctl show gdm -p ActiveEnterTimestamp`（会话文件时间必须早于 GDM 启动时间）
+  → 开调试确认：`/etc/gdm/custom.conf` 的 `[debug]` 下把 `#Enable=true` 取消注释后 restart gdm，
+  再看 `journalctl -u gdm | grep -iE 'session|Command not found'`。
+
+---
+
+## 11. 提交规范
 
 - 一个 commit 一件事，信息中文说明，前缀 `fix(scope):` / `feat(scope):`（scope 如 `gnome`、`network`）。
 - 提交前：`bash -n` 全部改动文件；关键路径实测；`git add -A && git commit && git push origin main`。

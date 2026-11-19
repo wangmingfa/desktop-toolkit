@@ -227,21 +227,55 @@ strip_waybar() {
 }
 
 # ---------------------------------------------------------------------------
-# 5) 确保登录界面有 Niri 会话项（系统包未提供时建用户级）
+# 5) 确保登录界面有 Niri 会话项
+#
+#    两个硬约束(实测踩坑)：
+#    a) 必须写在【系统级】目录。GDM greeter 以 root/gdm 运行，只扫
+#         /usr/share/wayland-sessions、/usr/share/xsessions、
+#         /usr/share/gdm/greeter/wayland-sessions
+#       用户级 ~/.local/share/wayland-sessions 对 greeter 无效(只影响已登录会话)。
+#    b) Exec / TryExec 必须是【绝对路径】。niri 包自带的文件写的是裸命令名
+#       (Exec=niri-session) 且没有 TryExec；GDM 解析不到命令就跳过该会话
+#       (日志: "GdmSession: Command not found")。跳过后若登录界面只剩一个会话，
+#       连左下角的会话切换齿轮都不显示。
 # ---------------------------------------------------------------------------
 ensure_session_file() {
-    [ -f /usr/share/wayland-sessions/niri.desktop ] && return 0
-    [ -f "$HOME/.local/share/wayland-sessions/niri.desktop" ] && return 0
-    mkdir -p "$HOME/.local/share/wayland-sessions"
-    cat > "$HOME/.local/share/wayland-sessions/niri.desktop" <<'EOF'
+    local sys_dir=/usr/share/wayland-sessions
+    local sys_file="$sys_dir/niri.desktop"
+    local user_file="$HOME/.local/share/wayland-sessions/niri.desktop"
+
+    # 清掉历史上误建的用户级文件：对 greeter 无效，还会让旧逻辑误判"已处理"
+    rm -f "$user_file"
+
+    # 幂等：已存在且写法正确则不动
+    if [ -f "$sys_file" ] \
+        && grep -q '^Exec=/usr/bin/niri-session' "$sys_file" 2>/dev/null \
+        && grep -q '^TryExec=/usr/bin/niri-session' "$sys_file" 2>/dev/null; then
+        return 0
+    fi
+    if [ ! -d "$sys_dir" ]; then
+        log "无 $sys_dir(非 GDM 显示管理器)，跳过会话项修正"
+        return 0
+    fi
+
+    # 注意不要照抄 GNOME 的 X-GDM-SessionRegisters=true：那是"会话程序自己向
+    # DisplayManager 注册"的声明，niri 二进制里 0 处引用 DisplayManager，
+    # 设了反而会让 GDM 等一个永远不会来的注册。
+    if ! sudo tee "$sys_file" >/dev/null <<'EOF'
 [Desktop Entry]
 Name=Niri
-Comment=Scrollable tiling Wayland compositor
-Exec=niri-session
+Comment=A scrollable-tiling Wayland compositor
+Exec=/usr/bin/niri-session
+TryExec=/usr/bin/niri-session
 Type=Application
-DesktopName=niri
+DesktopNames=niri
 EOF
-    log "已创建用户级 Niri 登录项：~/.local/share/wayland-sessions/niri.desktop"
+    then
+        err "写 $sys_file 失败(需要 sudo 密码)。请手动执行上面同样内容的写入，"
+        err "或重跑本脚本。之后必须 sudo systemctl restart gdm 才生效。"
+        return 0
+    fi
+    log "已修正系统级会话项 $sys_file(绝对路径 Exec + TryExec)"
 }
 
 # 安装是前置条件：失败则不生成配置，明确提示续装，避免看似"完成"实则装了一半
@@ -264,9 +298,13 @@ ensure_session_file
 echo
 echo "============================================================"
 echo "✅ 完成！Niri + DMS 已安装。"
-echo "  1) 注销，登录界面选 Niri 会话；或用 TTY 运行: niri-session"
+echo "  1) 必须【重启 GDM】才生效(单纯注销无效，GDM 只在启动时扫会话文件):"
+echo "       sudo systemctl restart gdm"
+echo "     重启后登录界面左下角的【齿轮】里选 Niri。或在 TTY 直接: niri-session"
 echo "  2) 快捷键: Super+T 开终端($TERMINAL) · Super+D 应用启动器 · Super+Shift+E 退出"
 echo "  3) DMS 顶栏/设置: 按 Super 打开面板进一步微调"
-echo "  4) 若 Niri 登录项未出现: 检查 /usr/share/wayland-sessions/niri.desktop"
+echo "  4) 若齿轮里仍无 Niri: 检查 /usr/share/wayland-sessions/niri.desktop 是否"
+echo "     含 Exec=/usr/bin/niri-session 与 TryExec=(裸命令名会被 GDM 跳过),"
+echo "     并看 journalctl -u gdm 里有无 'Command not found'"
 echo "  5) 双栏(waybar+DMS)残留: 重跑本脚本会自动清理，或删 config.kdl 里 spawn-at-startup \"waybar\""
 echo "============================================================"
