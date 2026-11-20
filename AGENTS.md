@@ -180,6 +180,7 @@ desktop-toolkit/
   - **分支名不要想当然**：MacTahoe 用 `main`、WhiteSur/Fluent 用 `master`——先 `git ls-remote --symref <mirror>/<repo>.git HEAD` 确认默认分支，再写进映射。
 - **KDE 侧新增风格**：镜像 `modules/appearance/install-kde-sequoia.sh` 建 `install-kde-<风格>.sh`（克隆用 `dt_clone`、**确认分支**、运行 `install.sh`、提示"系统设置->外观 选择主题"），并在 `kde-scheme.sh` 菜单加 `install<风格>` 项。KDE 主题仓库（`*-kde`）非 root 装到 `~/.local/share/{aurorae,color-schemes,plasma,Kvantum}`，**无需 sudo**。
 - **KDE 配置中心（`config-center.sh`）对 KWin/Plasma 是通用微调**，不依赖主题；但要感知风格：`kde_active_style()` 按 `~/.local/share/plasma/desktoptheme/` 前缀判断（`MacTahoeLiquidKde*`→macos26，`Fluent*`→fluent，`WhiteSur*`→macos15）并在主菜单标题显示。**窗口动画预设**要按风格提供（如 `winanim preset windows` = 无神灯+滑入，非 macOS 风格用；macOS 用神灯 genie）。
+
 - **给同一合成器加"第二种外壳"方案**（如 Niri + Noctalia，`modules/wm/niri-noctalia.sh`）时的约定：
   - **配置走"模块文件 + `include`"，不直接改主配置**：生成 `~/.config/niri/noctalia.kdl`，主配置只加
     `include "noctalia.kdl"`。**放在 `include` 列表末尾**才能让本模块的 `binds` 覆盖合成器内置绑定
@@ -203,6 +204,29 @@ desktop-toolkit/
     分两种文案（"已安装并配置" vs "已配置"）。
   - **包安装失败必须在写配置之前中止**：实测发现 sudo 要密码导致安装失败时，脚本仍继续生成配置，
     会留下"看似配置好实则跑不起来"的半装状态，`install_pkgs` 失败后直接 `exit 1`。
+
+
+### 9.1 WM 方案（`modules/wm/`）的发行版支持矩阵
+
+> **新增 WM 方案前先查这张表**，别以为包名在各发行版一致——外壳类包名几乎每个发行版都不同。
+
+| 发行版 | Niri + DMS | Niri + Noctalia |
+|---|---|---|
+| Fedora 45 | ✅ 官方 COPR `duxlabs/dms`（主力目标） | ✅ 官方源 `noctalia` |
+| Fedora ≤44 | ✅ | ❌ 包只给 45 做，`preflight` 主动拦下 |
+| Arch | ✅ 官方 extra 源 | ✅ 官方源 |
+| Debian / Ubuntu | ✅ 走官方 PPA `ppa:duxlabs/*` | ❌ 源里没有 noctalia，需源码编译 |
+| openSUSE | ⚠️ 分支写了但没实测过 | ❌ |
+| NixOS | ❌ | Noctalia 官方有专门 NixOS 页，脚本未做 |
+
+- **包名在各发行版不一致，且会改名**：DMS 2.0 起在 Arch 上叫 **`dux-shell`**（旧名 `dms-shell`），
+  在 Fedora/Debian/openSUSE/Void 上仍叫 `dms`。`niri-dms.sh` 的 pacman 分支必须写 `dux-shell`。
+  Noctalia 则统一叫 `noctalia`。
+- **`xwayland-satellite` 不必显式安装**：Dux 官方文档说明它是 niri 的依赖会**自动带上**，
+  `niri-dms.sh` 清单里留着只是无害冗余（已装即 no-op）。
+- **Noctalia 有 niri 版本门槛**：模糊规则（`background-effect` / `blur`）要求 niri ≥ 26.04，
+  老版本写进去直接报配置错误。所以脚本按 `niri --version` 探测，低于门槛跳过该段。
+  本机 Fedora 45 的 niri 是 `26.04-2.fc45`，刚好够。
 
 ---
 
