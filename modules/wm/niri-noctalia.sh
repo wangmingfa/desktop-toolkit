@@ -108,7 +108,7 @@ install_pkgs() {
         # niri 是刚装的: 登录界面还没有 Niri 会话项, 必须补上
         # (系统级目录 + X-GDM-CanRunHeadless=true, 细节见 lib/niri.sh)
         if [ "$NEED_NIRI" = 1 ]; then
-            niri_ensure_gdm_session
+            niri_ensure_dm_session
         fi
     else
         log "Noctalia 已安装，跳过"
@@ -390,7 +390,7 @@ reload_now
 # 收尾横幅 + 交互代跑"重启 GDM"见 lib/niri.sh 的 niri_finish_banner
 if [ "$NEED_NIRI" = 1 ]; then
     niri_finish_banner "Niri + Noctalia 已安装并配置。" \
-        "1) 本次连 niri 一起新装了: 登录界面选 Niri 会话才会启动(齿轮 ⚙️ 里找)" \
+        "1) 本次连 niri 一起新装了: 登录界面选 Niri 会话才会启动(会话切换处选)" \
         "2) 外壳自启: spawn-at-startup \"noctalia\" + systemd 用户服务" \
         "3) 快捷键: Super+Space 启动器 · Super+S 控制中心 · Super+Shift+Comma 设置" \
         "4) 音量/亮度 OSD 走 Noctalia; Alt+Tab 用 Noctalia 窗口切换器" \

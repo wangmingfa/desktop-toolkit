@@ -168,7 +168,7 @@ dnf_install_from_local() { # <包名>...
 # DisplayManager，niri 结果为 0（从不注册），照抄会让 GDM 空等；实际登录时
 # GDM 走的是 gdm-wayland-session --handle-registration 代为注册。
 # ---------------------------------------------------------------------------
-niri_ensure_gdm_session() {
+niri_ensure_dm_session() {
     local sys_dir=/usr/share/wayland-sessions
     local sys_file="$sys_dir/niri.desktop"
     local user_file="$HOME/.local/share/wayland-sessions/niri.desktop"
@@ -199,30 +199,76 @@ DesktopNames=niri
 X-GDM-CanRunHeadless=true
 EOF
     then
+        local dm
+        dm=$(niri_dm_unit 2>/dev/null || true)
         err "写 $sys_file 失败(需要 sudo 密码)。请手动写入同样内容后重跑，"
-        err "之后必须 sudo systemctl restart gdm 才生效。"
+        err "之后必须 sudo systemctl restart ${dm:-<显示管理器>} 才生效。"
         return 0
     fi
     log "已修正系统级会话项 $sys_file(绝对路径 + X-GDM-CanRunHeadless=true)"
 }
+# 旧名别名: 此前叫 niri_ensure_gdm_session, 会话文件对 SDDM 同样生效故改名,
+# 保留别名避免外部脚本/历史调用断掉。
+niri_ensure_gdm_session() { niri_ensure_dm_session "$@"; }
 
 # ---------------------------------------------------------------------------
-# 收尾横幅: 绿色完成横幅 + 黄色加粗的"重启 GDM"提示 + 交互代跑
-#   niri_finish <完成标题> [额外提示行...]
-# GDM 只在【启动时】扫一次会话文件，单纯"注销"不会重新扫描，必须 restart。
+# 显示管理器自适应: 不同发行版用不同的 DM, 单元名也不一样
+#   Fedora         → gdm.service
+#   Arch/CachyOS   → sddm.service (CachyOS 默认); 2026-01 版起 Plasma 用户
+#                    可迁到 plasma-login-manager(plasmalogin.service)
+#   Debian/Ubuntu  → gdm3.service / lightdm.service
+# 所以不能硬编码 restart gdm —— 否则 CachyOS 上直接报
+#   "Failed to restart gdm.service: Unit gdm.service not found"。
+# 探测顺序: 常见单元逐个 is-enabled(不依赖"当前活跃", 因为脚本可能跑在 TTY 里)
+#          → 回退到 display-manager.service 别名(多数 DM 都有)。
+# ---------------------------------------------------------------------------
+niri_dm_unit() { # stdout 只输出单元名(被 $() 捕获), 诊断走 stderr
+    local u
+    for u in gdm.service gdm3.service sddm.service lightdm.service plasmalogin.service; do
+        if systemctl is-enabled "$u" >/dev/null 2>&1; then
+            echo "$u"
+            return 0
+        fi
+    done
+    # 都没命中: 试 display-manager.service 别名(通常指向实际 DM)
+    if systemctl cat display-manager.service >/dev/null 2>&1; then
+        echo "display-manager.service"
+        return 0
+    fi
+    err "未探测到显示管理器(gdm/sddm/lightdm/plasmalogin)。请手动重启你的 DM，"
+    err "例如: sudo systemctl restart sddm"
+    return 1
+}
+
+# 用探测到的 DM 单元重启。stdout 无输出, 便于在 $() 或 if 里使用。
+niri_restart_dm() {
+    local unit
+    unit=$(niri_dm_unit) || return 1
+    sudo systemctl restart "$unit"
+}
+
+# ---------------------------------------------------------------------------
+# 收尾横幅: 绿色完成横幅 + 黄色加粗的"重启显示管理器"提示 + 交互代跑
+#   niri_finish_banner <完成标题> [额外提示行...]
+# DM 只在【启动时】扫一次会话文件，单纯"注销"不会重新扫描，必须 restart。
 # ---------------------------------------------------------------------------
 niri_finish_banner() { # 完成标题 [额外提示行...]
     local title="$1"; shift || true
+    local dm_unit dm_name
+    dm_unit=$(niri_dm_unit 2>/dev/null || true)
+    # 短名用于提示文案(去掉 .service 后缀), 探测不到时退化为"显示管理器"
+    dm_name=${dm_unit%.service}
+    [ -n "$dm_name" ] || dm_name="显示管理器"
     echo
     echo -e "${DT_GREEN}${DT_BOLD}════════════════════════════════════════════════════════════════${DT_NC}"
     echo -e "${DT_GREEN}${DT_BOLD}✅ 完成！${title}${DT_NC}"
     echo -e "${DT_GREEN}${DT_BOLD}════════════════════════════════════════════════════════════════${DT_NC}"
     echo
-    echo -e "${DT_YELLOW}${DT_BOLD}★ 下一步（必做）：重启 GDM，登录界面才会出现 Niri${DT_NC}"
-    echo -e "${DT_YELLOW}  GDM 只在【启动时】扫一次会话文件，单纯“注销”不会重新扫描，所以必须重启它。${DT_NC}"
+    echo -e "${DT_YELLOW}${DT_BOLD}★ 下一步（必做）：重启 ${dm_name}，登录界面才会出现 Niri${DT_NC}"
+    echo -e "${DT_YELLOW}  ${dm_name} 只在【启动时】扫一次会话文件，单纯“注销”不会重新扫描，所以必须重启它。${DT_NC}"
     echo -e "${DT_YELLOW}  手动执行:${DT_NC}"
-    echo -e "      ${DT_CYAN}${DT_BOLD}sudo systemctl restart gdm${DT_NC}"
-    echo -e "  重启后在登录界面【左下角的齿轮 ⚙️】里选 Niri。"
+    echo -e "      ${DT_CYAN}${DT_BOLD}sudo systemctl restart ${dm_unit:-<你的显示管理器>}${DT_NC}"
+    echo -e "  重启后在登录界面【会话切换处】里选 Niri(GDM 在左下角齿轮 ⚙️，SDDM 在右下角)。"
     echo -e "  也可以不进登录界面，在 TTY 直接跑: ${DT_CYAN}${DT_BOLD}niri-session${DT_NC}"
     if [ "$#" -gt 0 ]; then
         echo
@@ -235,13 +281,13 @@ niri_finish_banner() { # 完成标题 [额外提示行...]
     # 只在 stdin 是终端时问，避免非交互环境(管道/CI)卡在 read。
     if [ -t 0 ]; then
         case "${XDG_SESSION_TYPE:-}" in
-            wayland|x11) echo -e "  ${DT_YELLOW}提示: 你当前在桌面会话里，重启 GDM 会立即注销本桌面(这是预期行为)。${DT_NC}" ;;
+            wayland|x11) echo -e "  ${DT_YELLOW}提示: 你当前在桌面会话里，重启 ${dm_name} 会立即注销本桌面(这是预期行为)。${DT_NC}" ;;
         esac
         echo
-        if dt_confirm "要现在重启 GDM 吗？（会立即注销当前桌面，之后在登录界面选 Niri）"; then
-            echo -e "  ${DT_CYAN}==> 重启 GDM…（本终端会被关闭）${DT_NC}"
-            sudo systemctl restart gdm \
-                || echo -e "  ${DT_YELLOW}重启失败，请手动执行: sudo systemctl restart gdm${DT_NC}"
+        if dt_confirm "要现在重启 ${dm_name} 吗？（会立即注销当前桌面，之后在登录界面选 Niri）"; then
+            echo -e "  ${DT_CYAN}==> 重启 ${dm_name}…（本终端会被关闭）${DT_NC}"
+            niri_restart_dm \
+                || echo -e "  ${DT_YELLOW}重启失败，请手动执行: sudo systemctl restart ${dm_unit}${DT_NC}"
         else
             echo -e "  ${DT_CYAN}已跳过，稍后自己执行上面的命令即可。${DT_NC}"
         fi

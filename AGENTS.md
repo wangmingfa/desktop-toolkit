@@ -198,7 +198,7 @@ desktop-toolkit/
     再 `systemctl --user daemon-reload` + `enable`。`WantedBy` 那几行是注释态，必须 `sed` 处理。
   - **合成器缺失要连带装上，别指望用户先跑别的脚本**：外壳方案（`niri-noctalia.sh`）的宿主是 niri，
     新机器上跑时不该要求"先去跑 niri-dms.sh"。做法是 `preflight` 检测到缺 niri 就置位 `NEED_NIRI=1`，
-    由 `install_pkgs` 把 `niri` 与 `noctalia` 一起 `dnf install`，装完补 `niri_ensure_gdm_session`
+    由 `install_pkgs` 把 `niri` 与 `noctalia` 一起 `dnf install`，装完补 `niri_ensure_dm_session`
     （新装的 niri 还没有系统级会话文件，登录界面出不来）。**但只装合成器本体**，不要擅自连带 DMS 那套
     （COPR + 83MB 的 dms-cli）——那是另一个方案的意图，留给 `niri-dms.sh`。收尾横幅按 `NEED_NIRI`
     分两种文案（"已安装并配置" vs "已配置"）。
@@ -227,6 +227,13 @@ desktop-toolkit/
 - **Noctalia 有 niri 版本门槛**：模糊规则（`background-effect` / `blur`）要求 niri ≥ 26.04，
   老版本写进去直接报配置错误。所以脚本按 `niri --version` 探测，低于门槛跳过该段。
   本机 Fedora 45 的 niri 是 `26.04-2.fc45`，刚好够。
+- **显示管理器不能硬编码 `gdm`**：收尾必须提示"重启显示管理器"并支持代跑，但单元名各发行版不同——
+  Fedora `gdm.service`、Arch/**CachyOS** `sddm.service`、Debian `gdm3.service`/`lightdm.service`、
+  CachyOS 2026-01 版起 Plasma 用户可迁到 `plasmalogin.service`。
+  统一走 `lib/niri.sh` 的 `niri_dm_unit()`（逐个 `systemctl is-enabled` 探测，回退
+  `display-manager.service` 别名）+ `niri_restart_dm()`。**踩过的真实报错**：
+  在 CachyOS 上硬编码 `sudo systemctl restart gdm` →
+  `Failed to restart gdm.service: Unit gdm.service not found`。
 
 ---
 

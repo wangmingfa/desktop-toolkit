@@ -128,7 +128,7 @@ strip_waybar() {
 # ---------------------------------------------------------------------------
 # 5) 确保登录界面有 Niri 会话项
 #    会话文件的三个硬约束(系统级目录 / X-GDM-CanRunHeadless=true / Exec 绝对路径)
-#    已抽到 lib/niri.sh 的 niri_ensure_gdm_session，此处不再重复。
+#    已抽到 lib/niri.sh 的 niri_ensure_dm_session，此处不再重复。
 
 # 安装是前置条件：失败则不生成配置，明确提示续装，避免看似"完成"实则装了一半
 if ! install_pkgs; then
@@ -145,11 +145,11 @@ fi
 setup_dms
 bind_systemd
 strip_waybar
-niri_ensure_gdm_session
+niri_ensure_dm_session
 
 # 收尾横幅 + 交互代跑"重启 GDM"见 lib/niri.sh 的 niri_finish_banner
 niri_finish_banner "Niri + DMS 已安装。" \
     "1) 快捷键: Super+T 开终端($TERMINAL) · Super+D 应用启动器 · Super+Shift+E 退出" \
     "2) DMS 顶栏/设置: 按 Super 打开面板进一步微调" \
-    "3) 若齿轮里仍无 Niri: 检查 /usr/share/wayland-sessions/niri.desktop 是否含 X-GDM-CanRunHeadless=true" \
+    "3) 若登录界面仍无 Niri: 检查 /usr/share/wayland-sessions/niri.desktop 是否含 X-GDM-CanRunHeadless=true" \
     "4) 双栏(waybar+DMS)残留: 重跑本脚本会自动清理，或删 config.kdl 里 spawn-at-startup \"waybar\""
