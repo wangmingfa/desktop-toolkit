@@ -185,7 +185,11 @@ desktop-toolkit/
     `include "noctalia.kdl"`。**放在 `include` 列表末尾**才能让本模块的 `binds` 覆盖合成器内置绑定
     （如 `Alt+Tab`）；回退只需删掉那行 include + 删模块文件。
   - **桌面外壳类包先在发行版默认源找**：Noctalia 在 Fedora 45 默认源（5.5.0-3.fc45），无需 COPR/PPA；
-    只有默认源没有时才走 COPR（那才需要 `lib/niri.sh` 的续传兜底）。
+    只有默认源没有时才走 COPR（那才需要 `lib/niri.sh` 的续传兜底）。**注意包往往只给最新发行版做**：
+    Noctalia 的 RPM Fusion 页面标注 `Version: Fedora 45`，44 及更早的官方源里查不到这个包。
+    所以 `preflight` 里要**读 `/etc/fedora-release` 把大版本号解析出来**，低于门槛直接 `exit 1` 并说明
+    "官方包只给 Fedora 45"——否则会让 `dnf_install_retry` 空转三次重试才失败，用户只看到"安装失败"，
+    看不出真正原因是发行版太旧。
   - **版本门槛要探测再写**：Noctalia 的模糊规则（`background-effect` / `blur`）要求 niri ≥ 26.04，
     老版本写进去会**直接报配置错误**。所以按 `niri --version` 探测，低于门槛就跳过该段并 `log` 说明。
   - **systemd 用户服务按发行版文档装**：Noctalia 包内 `assets/noctalia.service` 要拷到

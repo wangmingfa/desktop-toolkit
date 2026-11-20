@@ -63,6 +63,20 @@ preflight() {
         exit 1
     fi
     mkdir -p "$HOME/.config/niri"
+
+    # Noctalia 官方 RPM Fusion 只给 Fedora 45 做了包（rpmfusion.net 页面标注
+    # "Version: Fedora 45"）。老版本直接查不到包, 与其重试三次再失败, 不如提前说明。
+    if [ -r /etc/fedora-release ] || [ -r /etc/redhat-release ]; then
+        local major
+        major=$(grep -oE 'Fedora (Linux )?[0-9]+' /etc/fedora-release /etc/redhat-release 2>/dev/null \
+            | grep -oE '[0-9]+' | sort -n | tail -1)
+        if [ -n "$major" ] && [ "$major" -lt 45 ]; then
+            err "检测到 Fedora ${major}。Noctalia 的发行版包目前只做给 Fedora 45，"
+            err "这个版本的官方源里没有 noctalia 包，dnf 会查不到而失败。"
+            err "可选: 升级到 Fedora 45+ / 用 noctalia 的 AUR(nix/darwin) 包 / 从源码编译。"
+            exit 1
+        fi
+    fi
 }
 
 # ---------------------------------------------------------------------------
