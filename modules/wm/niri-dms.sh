@@ -11,6 +11,8 @@
 set -euo pipefail
 
 source "$(cd "$(dirname "${BASH_SOURCE[0]}")/../.." && pwd)/lib/common.sh"
+# ui.sh 提供 dt_confirm 等交互控件(含 TUI 兜底)，收尾时用来问"是否现在重启 GDM"
+source "$(cd "$(dirname "${BASH_SOURCE[0]}")/../.." && pwd)/lib/ui.sh"
 
 TERMINAL="alacritty"
 FORCE=0
@@ -26,6 +28,18 @@ done
 
 log() { echo "  [niri-dms] $*"; }
 err() { echo "  [niri-dms] 错误: $*" >&2; }
+
+# 收尾横幅用的颜色。沿用 install.sh 的写法；stdout 不是 tty(输出被重定向/管道)时
+# 退化为无色，避免 ANSI 转义混进日志。
+if [ -t 1 ]; then
+    DT_BOLD=$'\033[1m'
+    DT_GREEN=$'\033[0;32m'
+    DT_YELLOW=$'\033[0;33m'
+    DT_CYAN=$'\033[0;36m'
+    DT_NC=$'\033[0m'
+else
+    DT_BOLD=""; DT_GREEN=""; DT_YELLOW=""; DT_CYAN=""; DT_NC=""
+fi
 
 # dnf 下载参数：COPR 的大包(dms-cli ~83MB)在网络慢时极易失败——dnf 内部按
 # "30 秒内少于 1000 B/s" 判死(low-speed)，这个阈值 dnf 不暴露、改不了。
@@ -306,14 +320,35 @@ strip_waybar
 ensure_session_file
 
 echo
-echo "============================================================"
-echo "✅ 完成！Niri + DMS 已安装。"
-echo "  1) 必须【重启 GDM】才生效(单纯注销无效，GDM 只在启动时扫会话文件):"
-echo "       sudo systemctl restart gdm"
-echo "     重启后登录界面左下角的【齿轮】里选 Niri。或在 TTY 直接: niri-session"
-echo "  2) 快捷键: Super+T 开终端($TERMINAL) · Super+D 应用启动器 · Super+Shift+E 退出"
-echo "  3) DMS 顶栏/设置: 按 Super 打开面板进一步微调"
-echo "  4) 若齿轮里仍无 Niri: 检查 /usr/share/wayland-sessions/niri.desktop 是否含"
+echo -e "${DT_GREEN}${DT_BOLD}════════════════════════════════════════════════════════════════${DT_NC}"
+echo -e "${DT_GREEN}${DT_BOLD}✅ 完成！Niri + DMS 已安装。${DT_NC}"
+echo -e "${DT_GREEN}${DT_BOLD}════════════════════════════════════════════════════════════════${DT_NC}"
+echo
+echo -e "${DT_YELLOW}${DT_BOLD}★ 下一步（必做）：重启 GDM，登录界面才会出现 Niri${DT_NC}"
+echo -e "${DT_YELLOW}  GDM 只在【启动时】扫一次会话文件，单纯“注销”不会重新扫描，所以必须重启它。${DT_NC}"
+echo -e "${DT_YELLOW}  手动执行:${DT_NC}"
+echo -e "      ${DT_CYAN}${DT_BOLD}sudo systemctl restart gdm${DT_NC}"
+echo -e "  重启后在登录界面【左下角的齿轮 ⚙️】里选 Niri。"
+echo -e "  也可以不进登录界面，在 TTY 直接跑: ${DT_CYAN}${DT_BOLD}niri-session${DT_NC}"
+echo
+echo "  1) 快捷键: Super+T 开终端($TERMINAL) · Super+D 应用启动器 · Super+Shift+E 退出"
+echo "  2) DMS 顶栏/设置: 按 Super 打开面板进一步微调"
+echo "  3) 若齿轮里仍无 Niri: 检查 /usr/share/wayland-sessions/niri.desktop 是否含"
 echo "     X-GDM-CanRunHeadless=true (缺了会被 GDM 静默过滤), 再看 Exec 是否绝对路径"
-echo "  5) 双栏(waybar+DMS)残留: 重跑本脚本会自动清理，或删 config.kdl 里 spawn-at-startup \"waybar\""
-echo "============================================================"
+echo "  4) 双栏(waybar+DMS)残留: 重跑本脚本会自动清理，或删 config.kdl 里 spawn-at-startup \"waybar\""
+echo
+# 交互确认后代跑重启：用户回答"是"就直接重启 GDM，省得自己再敲一遍。
+# 只在 stdin 是终端时问，避免非交互环境(管道/CI)卡在 read。
+if [ -t 0 ]; then
+    case "${XDG_SESSION_TYPE:-}" in
+        wayland|x11) echo -e "  ${DT_YELLOW}提示: 你当前在桌面会话里，重启 GDM 会立即注销本桌面(这是预期行为)。${DT_NC}" ;;
+    esac
+    echo
+    if dt_confirm "要现在重启 GDM 吗？（会立即注销当前桌面，之后在登录界面选 Niri）"; then
+        echo -e "  ${DT_CYAN}==> 重启 GDM…（本终端会被关闭）${DT_NC}"
+        sudo systemctl restart gdm \
+            || echo -e "  ${DT_YELLOW}重启失败，请手动执行: sudo systemctl restart gdm${DT_NC}"
+    else
+        echo -e "  ${DT_CYAN}已跳过，稍后自己执行上面的命令即可。${DT_NC}"
+    fi
+fi

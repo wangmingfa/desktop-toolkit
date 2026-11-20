@@ -153,6 +153,14 @@ desktop-toolkit/
 2. **绿色完成横幅**：`$GREEN` 高亮"✅ 完成！已应用 …"，并提示注销重登注意事项。
 3. **清状态文件**：`gn_state_clear`（否则 `main.sh` 启动仍会列出已完成进度）。
 4. **恢复后不弹 GUI**：`main.sh` 恢复完成且状态清空 → `exit 0`，不再弹配置中心。
+5. **"生效前提"要显式提示 + 代跑**：若装完必须重启服务/重登才生效（典型：装完 Wayland 合成器必须
+   `sudo systemctl restart gdm`——GDM 只在启动时扫会话文件，单纯"注销"无效），收尾横幅里用**黄色加粗**
+   把那条命令单独提出来，再用 `dt_confirm` 问"要现在重启吗"，答"是"就直接代跑。
+   - 颜色变量（`DT_GREEN/DT_YELLOW/DT_CYAN/DT_BOLD/DT_NC`）**在非 tty 下退化为空串**，否则 ANSI 转义混进日志。
+   - `dt_confirm` 需要 `source lib/ui.sh`；交互分支要受 `[ -t 0 ]` 保护，非交互环境（管道/CI）别卡在 `read`。
+   - ⚠ **单测陷阱**：`dt_confirm` 在 `GUI=zenity` 时会**真的在桌面弹对话框**。测试时强制 `GUI=none`
+     走 TUI 分支，否则会弹出若干窗口（本次踩过，弹了 7 个，事后用 `pkill -x zenity` 清）。
+     另外**别用 `pkill -f` 带会出现在自己命令行里的 pattern**，会把自己的 shell 杀了。
 
 ---
 
