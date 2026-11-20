@@ -77,6 +77,7 @@ sub_wm() {
         c=$(dt_menu "窗口管理器 / 桌面方案" "平铺 Wayland 合成器与桌面外壳方案：" \
             "niri-dms|① 一键安装 Niri + DMS|滚动平铺 Niri + Dux Modular Shell(DMS) 桌面外壳" \
             "niri-noctalia|② 一键配置 Niri + Noctalia|Noctalia 桌面外壳(需已装 niri；Fedora 45+ 默认源)" \
+            "niri-shell-switch|③ 切换桌面外壳(DMS ↔ Noctalia)|两个外壳同时开会抢顶栏, 这里关掉一个开另一个" \
             "back|← 返回主菜单|") || return 0
         [ "$c" = back ] && return 0
         case "$c" in
@@ -90,7 +91,39 @@ sub_wm() {
                     bash "$DT_ROOT/modules/wm/niri-noctalia.sh"
                     dt_info "Niri + Noctalia 配置完成。注销后登录界面选 Niri 会话。"
                 fi ;;
+            niri-shell-switch)
+                bash "$DT_ROOT/modules/wm/niri-shell-switch.sh"
+                ;;
         esac
+    done
+}
+
+# ---------------------------------------------------------------------------
+# 子菜单：系统诊断（自动扫描 modules/system/ 下的脚本）
+#   新增诊断工具只需往该目录丢一个 .sh，这里会自动出现（不需要改 main.sh）。
+# ---------------------------------------------------------------------------
+sub_system() {
+    local dir="$DT_ROOT/modules/system"
+    # 目录不存在时 find 返回非零，pipefail 下必须容错，否则 set -e 直接退出
+    local -a files=() f
+    for f in "$dir"/*.sh; do
+        [ -f "$f" ] || continue
+        files+=("$f")
+    done
+    [ "${#files[@]}" -eq 0 ] && { sub_placeholder system system; return 0; }
+
+    while true; do
+        local -a rows=()
+        for f in "${files[@]}"; do
+            rows+=("$(basename "$f" .sh)|$(basename "$f")")
+        done
+        local c
+        c=$(dt_menu "系统诊断" "诊断环境并按需一键修复：" \
+            "${rows[@]}" "back|← 返回主菜单|") || return 0
+        [ "$c" = back ] && return 0
+        for f in "${files[@]}"; do
+            [ "$(basename "$f" .sh)" = "$c" ] && bash "$f"
+        done
     done
 }
 
@@ -180,7 +213,7 @@ main() {
         c=$(dt_menu "desktop-toolkit" "选择要执行的分类（脚本集中管理，拉下来即可用）：" \
             "appearance|① 外观美化|macOS 美化 / 主题 / 配置中心 / 性能模式|gui" \
             "wm|② 窗口管理器 / 桌面方案|Niri + DMS 等平铺 Wayland 方案" \
-            "system|③ 系统配置|系统优化与服务配置（待扩展）" \
+            "system|③ 系统诊断|会话/显示管理器/依赖体检（自动扫描 modules/system/）" \
             "network|④ 网络工具|代理 / 网络相关脚本（待扩展）" \
             "dev|⑤ 开发环境|开发工具与环境配置（待扩展）" \
             "backup|⑥ 备份与恢复|配置备份/还原（待扩展）" \
@@ -191,7 +224,8 @@ main() {
             appearance) sub_appearance ;;
             wm) sub_wm ;;
             network) sub_network ;;
-            system|dev|backup) sub_placeholder "$c" "$c" ;;
+            system) sub_system ;;
+            dev|backup) sub_placeholder "$c" "$c" ;;
             about)
                 dt_info "desktop-toolkit\n\n仓库目录：$DT_ROOT\n\n用法：\n1) git clone 本仓库\n2) cd desktop-toolkit && ./main.sh\n3) 菜单选择对应分类，选中即开始\n\n脚本按分类放在 modules/ 下，公共库在 lib/，资源在 assets/。" ;;
         esac

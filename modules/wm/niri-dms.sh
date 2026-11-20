@@ -21,17 +21,58 @@ export DT_DL_DIR="${DT_DL_DIR:-/tmp/dt-niridms-rpms}"
 TERMINAL="alacritty"
 FORCE=0
 NO_SYSTEMD=0
+UNINSTALL=0
 while [ $# -gt 0 ]; do
     case "$1" in
         --terminal) TERMINAL="${2:-alacritty}"; shift 2 ;;
         --force)    FORCE=1; shift ;;
         --skip-systemd) NO_SYSTEMD=1; shift ;;
-        *) echo "用法: niri-dms.sh [--terminal alacritty|kitty|ghostty] [--force] [--skip-systemd]" >&2; exit 1 ;;
+        --uninstall) UNINSTALL=1; shift ;;
+        *) echo "用法: niri-dms.sh [--terminal alacritty|kitty|ghostty] [--force] [--skip-systemd] [--uninstall]" >&2; exit 1 ;;
     esac
 done
 
 log() { echo "  [niri-dms] $*"; }
 err() { echo "  [niri-dms] 错误: $*" >&2; }
+
+# ---------------------------------------------------------------------------
+# 卸载: 移除 DMS 配置与服务, 保留 niri 本体与用户数据
+#   在主流程 install_pkgs 之前调用并 exit, 避免卸载时又去装包。
+# ---------------------------------------------------------------------------
+uninstall_dms() {
+    local cfg="$HOME/.config/niri/config.kdl"
+    echo "==> 卸载 Niri + DMS 配置…"
+
+    # 1) 停用 systemd 用户服务(niri-dms.sh 的 bind_systemd 用 add-wants 绑定)
+    systemctl --user disable dms 2>/dev/null && log "已停用 dms 用户服务" || true
+    systemctl --user daemon-reload 2>/dev/null || true
+
+    # 2) 移除 config.kdl 里的 dms include 行(备份后清理)
+    if [ -f "$cfg" ]; then
+        cp -a "$cfg" "$cfg.bak-uninstall-$(date +%Y%m%d-%H%M%S)" 2>/dev/null || true
+        sed -i -E '/^[[:space:]]*include[[:space:]]+optional=true[[:space:]]+"dms\//d' "$cfg"
+        log "已从 $cfg 移除 dms include 行（备份为 $cfg.bak-uninstall-*）"
+    fi
+
+    # 3) 删除 DMS 生成的配置目录
+    if [ -d "$HOME/.config/niri/dms" ]; then
+        log "已删除 $HOME/.config/niri/dms"
+        rm -rf "$HOME/.config/niri/dms"
+    fi
+
+    # 4) 卸载包(保留 niri 本体: 它可继续给 Noctalia 等方案当宿主)
+    if command -v dnf >/dev/null 2>&1; then
+        sudo dnf remove -y dms quickshell 2>/dev/null \
+            && log "已卸载 dms/quickshell 包" \
+            || err "卸载 dms 包失败, 可手动: sudo dnf remove dms"
+    else
+        log "未检测到 dnf, 跳过 dms 包卸载"
+    fi
+
+    echo
+    echo "  DMS 配置已移除。niri 本体保留(登录界面仍可选 Niri 会话)。"
+    echo "  想连 niri 一起移除: sudo dnf remove niri"
+}
 
 niri_color_init
 
@@ -129,6 +170,12 @@ strip_waybar() {
 # 5) 确保登录界面有 Niri 会话项
 #    会话文件的三个硬约束(系统级目录 / X-GDM-CanRunHeadless=true / Exec 绝对路径)
 #    已抽到 lib/niri.sh 的 niri_ensure_dm_session，此处不再重复。
+
+# --uninstall 在任何安装动作之前处理并退出, 避免"卸载时又去装包"
+if [ "$UNINSTALL" = 1 ]; then
+    uninstall_dms
+    exit 0
+fi
 
 # 安装是前置条件：失败则不生成配置，明确提示续装，避免看似"完成"实则装了一半
 if ! install_pkgs; then

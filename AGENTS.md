@@ -24,7 +24,10 @@ desktop-toolkit/
     ├── network/github-mirror.sh  # 全局 git 镜像
     ├── wm/                  # 窗口管理器 / 桌面方案
     │   ├── niri-dms.sh          # 一键安装 Niri + DMS (Dux Modular Shell)
-    │   └── niri-noctalia.sh     # 一键配置 Niri + Noctalia 桌面外壳
+    │   ├── niri-noctalia.sh     # 一键配置 Niri + Noctalia 桌面外壳
+    │   └── niri-shell-switch.sh # DMS ↔ Noctalia 外壳切换(避免双壳抢顶栏)
+    ├── system/              # 系统诊断(由 main.sh 的 sub_system 自动扫描)
+    │   └── niri-doctor.sh       # Niri 环境体检 + 一键修复
     └── <分类>/…             # 其他待扩展分类
 ```
 
@@ -234,6 +237,24 @@ desktop-toolkit/
   `display-manager.service` 别名）+ `niri_restart_dm()`。**踩过的真实报错**：
   在 CachyOS 上硬编码 `sudo systemctl restart gdm` →
   `Failed to restart gdm.service: Unit gdm.service not found`。
+
+### 9.2 配置切换/卸载类脚本的三条铁律（`niri-shell-switch.sh` / `--uninstall` 踩过）
+
+1. **别用"增量注释 + 多次开关"做状态切换**。实测踩坑：`disable` 用 while-read 重写文件、
+   `enable` 再还原，两次切换落在**不同秒**时备份路径带时间戳会各存一份，第二份存的是
+   "已被切换过的"配置，重建基准被污染 → 切回原态少行。
+   **正确做法：首次改动时存一份原始配置到【固定路径】（如 `config.kdl.orig-shellswitch`），
+   之后每次切换都从原始配置按目标状态整体重建**（`build_shell_cfg keep_dms keep_noctalia`）。
+   天然幂等，且中间态不可能丢失。
+2. **别用 sed 做含空格/括号的替换**。`sed 's|...|...'"$MARK"'|'` 这类嵌套引号极易写错成
+   "未闭合引号"而直接语法报错（实测踩过，且错误信息指向无关行号难定位）。
+   **需要按行改写就用 awk**，正则与数据分离，无引号地狱。
+3. **卸载必须放在安装动作之前处理**。脚本主流程是 `install_pkgs → 生成配置`，
+   `--uninstall` 若放在末尾会"卸载时又去装包"。要在 install 之前 `if [ "$UNINSTALL" = 1 ]; then ...; exit 0; fi`。
+   卸载保留合成器本体（niri 可继续给别的方案当宿主），只清本方案的配置/服务/包。
+
+- **`modules/system/` 由 `sub_system()` 自动扫描**：新增诊断工具只需往该目录丢一个 `.sh`，
+  主菜单会自动出现，**不需要改 `main.sh`**。目录为空时回退 `sub_placeholder` 提示。
 
 ---
 

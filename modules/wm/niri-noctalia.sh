@@ -31,6 +31,7 @@ WALLPAPER="flat"       # backdrop=毛玻璃总览壁纸 / wallpaper=常驻壁纸
 NO_SYSTEMD=0
 FORCE=0
 NO_RELOAD=0
+UNINSTALL=0
 NEED_NIRI=0      # preflight 置位: niri 本体缺失, install_pkgs 连带安装
 while [ $# -gt 0 ]; do
     case "$1" in
@@ -39,12 +40,53 @@ while [ $# -gt 0 ]; do
         --no-systemd)  NO_SYSTEMD=1; shift ;;
         --no-reload)   NO_RELOAD=1; shift ;;
         --force)       FORCE=1; shift ;;
-        *) echo "用法: niri-noctalia.sh [--terminal alacritty|kitty|ghostty] [--wallpaper backdrop|wallpaper|flat] [--no-systemd] [--no-reload] [--force]" >&2; exit 1 ;;
+        --uninstall)   UNINSTALL=1; shift ;;
+        *) echo "用法: niri-noctalia.sh [--terminal alacritty|kitty|ghostty] [--wallpaper backdrop|wallpaper|flat] [--no-systemd] [--no-reload] [--force] [--uninstall]" >&2; exit 1 ;;
     esac
 done
 
 log() { echo "  [niri-noctalia] $*"; }
 err() { echo "  [niri-noctalia] 错误: $*" >&2; }
+
+# ---------------------------------------------------------------------------
+# 卸载: 移除本脚本生成的配置与服务, 保留 niri 本体与用户数据
+#   在主流程 install_pkgs 之前调用并 exit, 避免卸载时又去装包。
+# ---------------------------------------------------------------------------
+uninstall_noctalia() {
+    echo "==> 卸载 Niri + Noctalia 配置…"
+    # 1) 停用 systemd 用户服务
+    if systemctl --user is-enabled noctalia.service >/dev/null 2>&1; then
+        systemctl --user disable noctalia.service 2>/dev/null && log "已停用 noctalia.service" || true
+    fi
+    rm -f "$SVCDIR/noctalia.service"
+    systemctl --user daemon-reload 2>/dev/null || true
+
+    # 2) 移除配置模块与主配置里的接入行(备份后清理)
+    if [ -f "$NMOD" ]; then
+        cp -a "$NMOD" "$NMOD.bak-uninstall-$(date +%Y%m%d-%H%M%S)" 2>/dev/null || true
+        rm -f "$NMOD"
+        log "已删除 $NMOD（备份为 $NMOD.bak-uninstall-*）"
+    fi
+    if [ -f "$NCFG" ]; then
+        cp -a "$NCFG" "$NCFG.bak-uninstall-$(date +%Y%m%d-%H%M%S)" 2>/dev/null || true
+        sed -i -e '/^spawn-at-startup "noctalia"$/d' \
+               -e '/^include "noctalia.kdl"$/d' "$NCFG"
+        log "已从 $NCFG 移除 noctalia 接入行（备份为 $NCFG.bak-uninstall-*）"
+    fi
+
+    # 3) 卸载 noctalia 包(终端不动: 用户可能还在用)
+    if command -v dnf >/dev/null 2>&1; then
+        sudo dnf remove -y noctalia \
+            && log "已卸载 noctalia 包" \
+            || err "卸载 noctalia 包失败, 可手动: sudo dnf remove noctalia"
+    else
+        log "未检测到 dnf, 跳过 noctalia 包卸载"
+    fi
+
+    echo
+    echo "  Noctalia 配置已移除。niri 本体保留(仍在登录界面可用)。"
+    echo "  想连 niri 一起移除: sudo dnf remove niri"
+}
 
 niri_color_init
 
@@ -368,6 +410,13 @@ reload_now() {
 # ---------------------------------------------------------------------------
 # 主流程
 # ---------------------------------------------------------------------------
+
+# --uninstall 在任何安装动作之前处理并退出, 避免"卸载时又去装包"
+if [ "$UNINSTALL" = 1 ]; then
+    uninstall_noctalia
+    exit 0
+fi
+
 preflight
 
 # 安装是前置条件：Noctalia 没装上就不该写配置，否则用户看到"完成"实则跑不起来
