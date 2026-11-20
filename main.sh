@@ -76,6 +76,7 @@ sub_wm() {
         local c
         c=$(dt_menu "窗口管理器 / 桌面方案" "平铺 Wayland 合成器与桌面外壳方案：" \
             "niri-dms|① 一键安装 Niri + DMS|滚动平铺 Niri + Dux Modular Shell(DMS) 桌面外壳" \
+            "niri-noctalia|② 一键配置 Niri + Noctalia|Noctalia 桌面外壳(需已装 niri；Fedora 45+ 默认源)" \
             "back|← 返回主菜单|") || return 0
         [ "$c" = back ] && return 0
         case "$c" in
@@ -83,6 +84,11 @@ sub_wm() {
                 if dt_confirm "一键安装 Niri + DMS（Dux Modular Shell）？\n需要网络 + sudo 密码，安装几分钟。"; then
                     bash "$DT_ROOT/modules/wm/niri-dms.sh"
                     dt_info "Niri + DMS 安装流程结束。注销后登录界面选 Niri 会话。"
+                fi ;;
+            niri-noctalia)
+                if dt_confirm "为当前 niri 配置 Noctalia 桌面外壳？\n需要 sudo 密码安装 noctalia（Fedora 45+ 默认源）。"; then
+                    bash "$DT_ROOT/modules/wm/niri-noctalia.sh"
+                    dt_info "Niri + Noctalia 配置完成。注销后登录界面选 Niri 会话。"
                 fi ;;
         esac
     done

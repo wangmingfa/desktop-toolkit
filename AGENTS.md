@@ -13,7 +13,8 @@ desktop-toolkit/
 ├── main.sh                  # 唯一总入口：启动恢复检测 + 图形主菜单
 ├── lib/
 │   ├── common.sh            # DT_ROOT、DBUS 环境、备份、GUI 检测、dt_clone 镜像克隆
-│   └── ui.sh                # dt_menu / dt_confirm / dt_info / dt_ask_*（zenity/kdialog 自适应）
+│   ├── ui.sh                # dt_menu / dt_confirm / dt_info / dt_ask_*（zenity/kdialog 自适应）
+│   └── niri.sh              # Niri 系方案共享库：dnf 弱网兜底 / GDM 会话文件修正 / 彩色收尾横幅
 └── modules/
     ├── appearance/gnome/    # GNOME 桌面 macOS 美化
     │   ├── install.sh           # 安装器 + 断点续装状态机（macos26 / macos15）
@@ -22,12 +23,15 @@ desktop-toolkit/
     ├── appearance/…         # KDE 侧同类模块
     ├── network/github-mirror.sh  # 全局 git 镜像
     ├── wm/                  # 窗口管理器 / 桌面方案
-    │   └── niri-dms.sh          # 一键安装 Niri + DMS (Dux Modular Shell)
+    │   ├── niri-dms.sh          # 一键安装 Niri + DMS (Dux Modular Shell)
+    │   └── niri-noctalia.sh     # 一键配置 Niri + Noctalia 桌面外壳
     └── <分类>/…             # 其他待扩展分类
 ```
 
 - 入口只认 `main.sh`；模块通过 `source lib/common.sh` / `source lib/ui.sh` 取公共能力。
 - 模块路径：`DT_ROOT="$(cd "$(dirname "${BASH_SOURCE[0]}")/../.." && pwd)"`（lib 里已定 `DT_ROOT`）。
+- **同一合成器/平台的多个方案**要把公共部分抽成 `lib/<平台>.sh`（例：`lib/niri.sh` 被
+  `niri-dms.sh` 与 `niri-noctalia.sh` 共用），别在每个方案里各复制一份 dnf 兜底/会话文件/横幅。
 
 ---
 
@@ -176,6 +180,19 @@ desktop-toolkit/
   - **分支名不要想当然**：MacTahoe 用 `main`、WhiteSur/Fluent 用 `master`——先 `git ls-remote --symref <mirror>/<repo>.git HEAD` 确认默认分支，再写进映射。
 - **KDE 侧新增风格**：镜像 `modules/appearance/install-kde-sequoia.sh` 建 `install-kde-<风格>.sh`（克隆用 `dt_clone`、**确认分支**、运行 `install.sh`、提示"系统设置->外观 选择主题"），并在 `kde-scheme.sh` 菜单加 `install<风格>` 项。KDE 主题仓库（`*-kde`）非 root 装到 `~/.local/share/{aurorae,color-schemes,plasma,Kvantum}`，**无需 sudo**。
 - **KDE 配置中心（`config-center.sh`）对 KWin/Plasma 是通用微调**，不依赖主题；但要感知风格：`kde_active_style()` 按 `~/.local/share/plasma/desktoptheme/` 前缀判断（`MacTahoeLiquidKde*`→macos26，`Fluent*`→fluent，`WhiteSur*`→macos15）并在主菜单标题显示。**窗口动画预设**要按风格提供（如 `winanim preset windows` = 无神灯+滑入，非 macOS 风格用；macOS 用神灯 genie）。
+- **给同一合成器加"第二种外壳"方案**（如 Niri + Noctalia，`modules/wm/niri-noctalia.sh`）时的约定：
+  - **配置走"模块文件 + `include`"，不直接改主配置**：生成 `~/.config/niri/noctalia.kdl`，主配置只加
+    `include "noctalia.kdl"`。**放在 `include` 列表末尾**才能让本模块的 `binds` 覆盖合成器内置绑定
+    （如 `Alt+Tab`）；回退只需删掉那行 include + 删模块文件。
+  - **桌面外壳类包先在发行版默认源找**：Noctalia 在 Fedora 45 默认源（5.5.0-3.fc45），无需 COPR/PPA；
+    只有默认源没有时才走 COPR（那才需要 `lib/niri.sh` 的续传兜底）。
+  - **版本门槛要探测再写**：Noctalia 的模糊规则（`background-effect` / `blur`）要求 niri ≥ 26.04，
+    老版本写进去会**直接报配置错误**。所以按 `niri --version` 探测，低于门槛就跳过该段并 `log` 说明。
+  - **systemd 用户服务按发行版文档装**：Noctalia 包内 `assets/noctalia.service` 要拷到
+    `~/.config/systemd/user/` 并**取消注释对应合成器的 `WantedBy=`**（Niri 用 `WantedBy=niri.service`），
+    再 `systemctl --user daemon-reload` + `enable`。`WantedBy` 那几行是注释态，必须 `sed` 处理。
+  - **合成器未装好要提前拦下**：外壳类方案依赖合成器，`preflight` 里检测不到就直接 `exit 1` 并指路先跑基础方案；
+    包安装失败也必须在写配置**之前**中止，否则会留下"看似配置好实则跑不起来"的半装状态。
 
 ---
 
