@@ -52,6 +52,7 @@ sub_network() {
         local c
         c=$(dt_menu "网络工具" "网络相关脚本：" \
             "mirror|① GitHub 国内镜像一键配置|对大陆网络下 github 慢/不通的场景" \
+            "proxy|② 代理一键配置|git/dnf/pip/npm/cargo 代理 + no_proxy（受限网络）" \
             "back|← 返回主菜单|") || return 0
         [ "$c" = back ] && return 0
         case "$c" in
@@ -63,6 +64,18 @@ sub_network() {
                     "status|③ 查看状态|") || return 0
                 bash "$DT_ROOT/modules/network/github-mirror.sh" "$action"
                 dt_info "完成。查看/修改: 换 GH_PROXY 前缀后重跑 on。"
+                ;;
+            proxy)
+                local action url
+                action=$(dt_menu "代理配置" "为各工具配置/移除代理(URL 默认 http://127.0.0.1:7890)：" \
+                    "on|① 配置代理|写入 git/dnf/pip/npm/cargo + 环境变量" \
+                    "off|② 移除代理|清除上述全部代理" \
+                    "status|③ 查看状态|") || return 0
+                if [ "$action" = on ]; then
+                    url=$(dt_ask_text "代理地址" "代理 URL（含协议）" "http://127.0.0.1:7890") || url="http://127.0.0.1:7890"
+                    [ -n "$url" ] || url="http://127.0.0.1:7890"
+                fi
+                bash "$DT_ROOT/modules/network/proxy-setup.sh" "$action" "${url:-}"
                 ;;
         esac
     done
@@ -214,7 +227,7 @@ main() {
             "appearance|① 外观美化|macOS 美化 / 主题 / 配置中心 / 性能模式|gui" \
             "wm|② 窗口管理器 / 桌面方案|Niri + DMS 等平铺 Wayland 方案" \
             "system|③ 系统诊断|会话/显示管理器/依赖体检（自动扫描 modules/system/）" \
-            "network|④ 网络工具|代理 / 网络相关脚本（待扩展）" \
+            "network|④ 网络工具|GitHub 镜像 / 代理配置 / 网络相关脚本" \
             "dev|⑤ 开发环境|开发工具与环境配置（待扩展）" \
             "backup|⑥ 备份与恢复|配置备份/还原（待扩展）" \
             "about|⑦ 关于 / 使用说明|查看仓库结构与用法" \

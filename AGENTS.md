@@ -11,6 +11,8 @@
 ```
 desktop-toolkit/
 ├── main.sh                  # 唯一总入口：启动恢复检测 + 图形主菜单
+├── scripts/
+│   └── self-check.sh        # 仓库自检：静态拦住反复踩过的 bug 模式(提交前/CI 用)
 ├── lib/
 │   ├── common.sh            # DT_ROOT、DBUS 环境、备份、GUI 检测、dt_clone 镜像克隆
 │   ├── ui.sh                # dt_menu / dt_confirm / dt_info / dt_ask_*（zenity/kdialog 自适应）
@@ -21,7 +23,9 @@ desktop-toolkit/
     │   ├── gnome-config-center.sh  # GNOME 配置中心（GUI 菜单）
     │   └── lib-gnome.sh         # GNOME 公共库（步骤函数、gsettings、扩展、启动器）
     ├── appearance/…         # KDE 侧同类模块
-    ├── network/github-mirror.sh  # 全局 git 镜像
+    ├── network/             # 网络相关
+    │   ├── github-mirror.sh     # 全局 git 镜像
+    │   └── proxy-setup.sh       # git/dnf/pip/npm/cargo 代理 + no_proxy 一键配置
     ├── wm/                  # 窗口管理器 / 桌面方案
     │   ├── niri-dms.sh          # 一键安装 Niri + DMS (Dux Modular Shell)
     │   ├── niri-noctalia.sh     # 一键配置 Niri + Noctalia 桌面外壳
@@ -75,6 +79,12 @@ desktop-toolkit/
 ---
 
 ## 3. 网络 / 下载（受限网络必备）
+
+### 3.0 代理统一配置
+- `modules/network/proxy-setup.sh on|off|status [URL]` 一次性配好 git/dnf/pip/npm/cargo 的代理 + no_proxy；未装工具自动跳过，dnf 走 sudo 写 `/etc/dnf/dnf.conf`。
+- 默认 URL `http://127.0.0.1:7890`（与 lib/niri.sh 的弱网提示一致）；每项幂等（on 覆盖 / off 全清）。
+- 配置文件按行改写一律用 awk（dnf.conf 的 `[main]`、cargo 的 `[http]`），不拼 sed 引号。
+- 环境变量写入 `~/.config/environment.d/dt-proxy.conf`，下次登录对所有用户会话生效。
 
 ### 3.1 克隆一律走 `dt_clone`（不要裸 `git clone`）
 - `dt_clone <github_url> <dest> [branch]` 已实现：**直连 → gh-proxy.com → ghfast.top → fastgit.org** 自动回退。
@@ -299,5 +309,5 @@ desktop-toolkit/
 ## 11. 提交规范
 
 - 一个 commit 一件事，信息中文说明，前缀 `fix(scope):` / `feat(scope):`（scope 如 `gnome`、`network`）。
-- 提交前：`bash -n` 全部改动文件；关键路径实测；`git add -A && git commit && git push origin main`。
+- 提交前：`bash -n` 全部改动文件 + `bash scripts/self-check.sh`（静态拦住反复踩过的 bug 模式）；关键路径实测；`git add -A && git commit && git push origin main`。
 - 改动涉及镜像/主题名/步骤数等**跨文件**约定时，同步更新本 AGENTS.md。

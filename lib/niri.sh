@@ -101,7 +101,7 @@ dnf_install_resumable() { # <包名>...
     [ "${#local_rpms[@]}" -eq 0 ] && { err "未下载到任何可用 rpm"; return 1; }
     if [ "$bad" -ne 0 ]; then
         err "仍有 ${bad} 个 rpm 未完成下载。请重跑本脚本续传（进度已保留），"
-        err "或给机器挂代理后重跑: HTTPS_PROXY=http://127.0.0.1:7890 bash $0"
+        err "或先配好代理再重跑: bash ${DT_ROOT:-.}/modules/network/proxy-setup.sh on"
         return 1
     fi
     echo "==> 从本地 rpm 安装（${#local_rpms[@]} 个；缺的基础包 dnf 会从正常源补）…"
