@@ -195,8 +195,14 @@ desktop-toolkit/
   - **systemd 用户服务按发行版文档装**：Noctalia 包内 `assets/noctalia.service` 要拷到
     `~/.config/systemd/user/` 并**取消注释对应合成器的 `WantedBy=`**（Niri 用 `WantedBy=niri.service`），
     再 `systemctl --user daemon-reload` + `enable`。`WantedBy` 那几行是注释态，必须 `sed` 处理。
-  - **合成器未装好要提前拦下**：外壳类方案依赖合成器，`preflight` 里检测不到就直接 `exit 1` 并指路先跑基础方案；
-    包安装失败也必须在写配置**之前**中止，否则会留下"看似配置好实则跑不起来"的半装状态。
+  - **合成器缺失要连带装上，别指望用户先跑别的脚本**：外壳方案（`niri-noctalia.sh`）的宿主是 niri，
+    新机器上跑时不该要求"先去跑 niri-dms.sh"。做法是 `preflight` 检测到缺 niri 就置位 `NEED_NIRI=1`，
+    由 `install_pkgs` 把 `niri` 与 `noctalia` 一起 `dnf install`，装完补 `niri_ensure_gdm_session`
+    （新装的 niri 还没有系统级会话文件，登录界面出不来）。**但只装合成器本体**，不要擅自连带 DMS 那套
+    （COPR + 83MB 的 dms-cli）——那是另一个方案的意图，留给 `niri-dms.sh`。收尾横幅按 `NEED_NIRI`
+    分两种文案（"已安装并配置" vs "已配置"）。
+  - **包安装失败必须在写配置之前中止**：实测发现 sudo 要密码导致安装失败时，脚本仍继续生成配置，
+    会留下"看似配置好实则跑不起来"的半装状态，`install_pkgs` 失败后直接 `exit 1`。
 
 ---
 

@@ -6,7 +6,10 @@
 #
 # 用法: bash niri-noctalia.sh [--terminal alacritty|kitty|ghostty]
 #                               [--wallpaper backdrop|wallpaper|flat]
-#                               [--no-systemd] [--force]
+#                               [--no-systemd] [--no-reload] [--force]
+#
+# 行为: niri 缺失时会自动连 niri 一起装(只装合成器本体, 不装 DMS 那套);
+#       niri 已装则只叠 Noctalia。想要 DMS 桌面外壳用 niri-dms.sh。
 #
 # 官方依据(2026-11 核过 docs.noctalia.dev 与 noctalia 5.5.0 rpm 内容):
 #   * 包只装 /usr/bin/noctalia + 资源 + /usr/share/noctalia/assets/noctalia.service
@@ -28,6 +31,7 @@ WALLPAPER="flat"       # backdrop=毛玻璃总览壁纸 / wallpaper=常驻壁纸
 NO_SYSTEMD=0
 FORCE=0
 NO_RELOAD=0
+NEED_NIRI=0      # preflight 置位: niri 本体缺失, install_pkgs 连带安装
 while [ $# -gt 0 ]; do
     case "$1" in
         --terminal)    TERMINAL="${2:-alacritty}"; shift 2 ;;
@@ -56,11 +60,12 @@ echo "════════════════════════�
 # 0) 前置检查：niri 必须是合成的宿主，否则 Noctalia 无处启动
 # ---------------------------------------------------------------------------
 preflight() {
+    # niri 缺失不退出: install_pkgs 会连带装上(niri 是本方案的地基, 没它 Noctalia 无处启动)。
+    # 只装 niri 本体 + 会话文件, 不擅自装 DMS 那套(COPR + 83MB dms-cli),
+    # 想要 DMS 用 modules/wm/niri-dms.sh。
     if ! command -v niri >/dev/null 2>&1; then
-        err "未检测到 niri。Noctalia 是桌面外壳，必须先有合成器。"
-        err "请先跑: bash modules/wm/niri-dms.sh"
-        err "装完 niri 后重跑本脚本即可（本脚本会自动补上外壳部分）。"
-        exit 1
+        echo "==> 未检测到 niri，将连同 Noctalia 一起安装"
+        NEED_NIRI=1
     fi
     mkdir -p "$HOME/.config/niri"
 
@@ -85,17 +90,25 @@ preflight() {
 #    dnf 弱网兜底(重试/可续传下载/本地 rpm 复用)见 lib/niri.sh
 # ---------------------------------------------------------------------------
 install_pkgs() {
-    if ! command -v noctalia >/dev/null 2>&1; then
-        echo "==> 安装 Noctalia + 终端($TERMINAL)…"
+    # NEED_NIRI 由 preflight 置位: niri 本体也缺, 与 noctalia 一起装
+    # Noctalia 在 Fedora 45 默认源(5.5.0-3.fc45)，无需 COPR/PPA，下载量小
+    if ! command -v noctalia >/dev/null 2>&1 || [ "$NEED_NIRI" = 1 ]; then
+        echo "==> 安装 niri + Noctalia + 终端($TERMINAL)…"
+        local -a pkgs=(niri noctalia "$TERMINAL")
         if command -v dnf >/dev/null 2>&1; then
-            dnf_install_retry noctalia "$TERMINAL" \
-                || dnf_install_resumable noctalia "$TERMINAL"
+            dnf_install_retry "${pkgs[@]}" \
+                || dnf_install_resumable "${pkgs[@]}"
         elif command -v pacman >/dev/null 2>&1; then
-            sudo pacman -S --needed --noconfirm noctalia "$TERMINAL"
+            sudo pacman -S --needed --noconfirm "${pkgs[@]}"
         else
             err "未识别的包管理器。请手动安装 noctalia，例如:"
-            err "  sudo dnf install noctalia"
+            err "  sudo dnf install niri noctalia $TERMINAL"
             return 1
+        fi
+        # niri 是刚装的: 登录界面还没有 Niri 会话项, 必须补上
+        # (系统级目录 + X-GDM-CanRunHeadless=true, 细节见 lib/niri.sh)
+        if [ "$NEED_NIRI" = 1 ]; then
+            niri_ensure_gdm_session
         fi
     else
         log "Noctalia 已安装，跳过"
@@ -364,7 +377,7 @@ if ! install_pkgs; then
     echo "❌ Noctalia 未安装成功，已中止（未生成/未改动配置）。"
     echo "  常见原因: sudo 要密码 / 网络不通 / 版本低于 Fedora 45 无此包。"
     echo "  请手动执行后重跑本脚本:"
-    echo "    sudo dnf install noctalia $TERMINAL"
+    echo "    sudo dnf install niri noctalia $TERMINAL"
     echo "============================================================"
     exit 1
 fi
@@ -372,13 +385,21 @@ fi
 setup_module
 wire_config
 setup_service
-niri_ensure_gdm_session
 reload_now
 
 # 收尾横幅 + 交互代跑"重启 GDM"见 lib/niri.sh 的 niri_finish_banner
-niri_finish_banner "Niri + Noctalia 已配置。" \
-    "1) 外壳自启: 已在 $NCFG 加 spawn-at-startup \"noctalia\"（systemd 服务也已启用）" \
-    "2) 快捷键: Super+Space 启动器 · Super+S 控制中心 · Super+Shift+Comma 设置" \
-    "3) 音量/亮度 OSD 走 Noctalia; Alt+Tab 用 Noctalia 窗口切换器(想换回原生见 noctalia.kdl 注释)" \
-    "4) 壁纸/模糊想调整: 编辑 $NMOD 后跑 niri msg action config-reload" \
-    "5) 日志: ~/.cache/noctalia/noctalia.log；排查层规则: niri msg layers"
+if [ "$NEED_NIRI" = 1 ]; then
+    niri_finish_banner "Niri + Noctalia 已安装并配置。" \
+        "1) 本次连 niri 一起新装了: 登录界面选 Niri 会话才会启动(齿轮 ⚙️ 里找)" \
+        "2) 外壳自启: spawn-at-startup \"noctalia\" + systemd 用户服务" \
+        "3) 快捷键: Super+Space 启动器 · Super+S 控制中心 · Super+Shift+Comma 设置" \
+        "4) 音量/亮度 OSD 走 Noctalia; Alt+Tab 用 Noctalia 窗口切换器" \
+        "5) 壁纸/模糊想调整: 编辑 $NMOD 后跑 niri msg action config-reload"
+else
+    niri_finish_banner "Niri + Noctalia 已配置。" \
+        "1) 外壳自启: 已在 $NCFG 加 spawn-at-startup \"noctalia\"（systemd 服务也已启用）" \
+        "2) 快捷键: Super+Space 启动器 · Super+S 控制中心 · Super+Shift+Comma 设置" \
+        "3) 音量/亮度 OSD 走 Noctalia; Alt+Tab 用 Noctalia 窗口切换器(想换回原生见 noctalia.kdl 注释)" \
+        "4) 壁纸/模糊想调整: 编辑 $NMOD 后跑 niri msg action config-reload" \
+        "5) 日志: ~/.cache/noctalia/noctalia.log；排查层规则: niri msg layers"
+fi
