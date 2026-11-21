@@ -22,7 +22,8 @@ sub_appearance() {
         c=$(dt_menu "外观美化" "桌面环境与 macOS 版本方案（KDE / GNOME 均支持 macOS 26 与 15）：" \
             "kde|① KDE 外观美化|macOS 26 Tahoe / 15 经典 安装切换 + 微调工具|gui" \
             "gnome|② GNOME 外观美化|macOS 26 / 15 方案（适用于 GNOME 系统）|gui" \
-            "list|③ 查看当前所有配置|打印可调项清单" \
+            "wbtn|③ 窗口按钮布局|GTK/Electron 关闭按钮位置（macOS 左 / Windows 右）" \
+            "list|④ 查看当前所有配置|打印可调项清单" \
             "back|← 返回主菜单|") || return 0
         [ "$c" = back ] && return 0
         case "$c" in
@@ -30,6 +31,8 @@ sub_appearance() {
                 bash "$APPEARANCE/kde-scheme.sh" ;;
             gnome)
                 bash "$APPEARANCE/gnome/gnome-config-center.sh" ;;
+            wbtn)
+                bash "$APPEARANCE/window-buttons.sh" ;;
             list)
                 "$APPEARANCE/adjust-window.sh" list > /tmp/dt-config-list.txt 2>&1 || true
                 if [ "$GUI" = zenity ]; then
