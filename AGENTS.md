@@ -237,6 +237,12 @@ desktop-toolkit/
   Noctalia 则统一叫 `noctalia`。
 - **`xwayland-satellite` 不必显式安装**：Dux 官方文档说明它是 niri 的依赖会**自动带上**，
   `niri-dms.sh` 清单里留着只是无害冗余（已装即 no-op）。
+- **`mako` 会抢走 DMS 的通知总线名，导致顶栏起不来（实测）**：`dms.service` 与 `mako.service`
+  的 `[Service]` 都声明 `BusName=org.freedesktop.Notifications`（DMS 自带通知中心）。mako 常被
+  D-Bus 按需激活先占了这个名字，systemd 便拒绝加载 `dms.service`（日志
+  `Two services allocated for the same bus name`），DMS 顶栏在重启后消失。`niri-dms.sh` 的
+  `neutralize_mako` 在绑定后 `systemctl --user mask mako.service`（幂等，卸载时对称解除）；
+  这与 waybar 的处理一致——DMS 方案里通知/顶栏都由 DMS 负责，mako/waybar 只装不用、避免冲突。
 - **Noctalia 有 niri 版本门槛**：模糊规则（`background-effect` / `blur`）要求 niri ≥ 26.04，
   老版本写进去直接报配置错误。所以脚本按 `niri --version` 探测，低于门槛跳过该段。
   本机 Fedora 45 的 niri 是 `26.04-2.fc45`，刚好够。

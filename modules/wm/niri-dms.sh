@@ -45,6 +45,15 @@ uninstall_dms() {
 
     # 1) 停用 systemd 用户服务(niri-dms.sh 的 bind_systemd 用 add-wants 绑定)
     systemctl --user disable dms 2>/dev/null && log "已停用 dms 用户服务" || true
+
+    # 1.5) 恢复被本脚本屏蔽的 mako(通知守护进程交还给 mako; 只解除本脚本的 mask)
+    local mst
+    mst=$(systemctl --user is-enabled mako.service 2>/dev/null || true)
+    if [ "$mst" = "masked" ]; then
+        systemctl --user unmask mako.service 2>/dev/null \
+            && log "已恢复 mako(解除 mask，通知守护进程交还给 mako)" \
+            || err "恢复 mako 失败，可手动: systemctl --user unmask mako.service"
+    fi
     systemctl --user daemon-reload 2>/dev/null || true
 
     # 2) 移除 config.kdl 里的 dms include 行(备份后清理)
@@ -154,6 +163,35 @@ bind_systemd() {
 }
 
 # ---------------------------------------------------------------------------
+# 3.5) 中和 mako 通知守护进程（与 dms.service 的总线名冲突，必踩）
+#   dms.service 与 mako.service 的 [Service] 都声明 BusName=org.freedesktop.Notifications
+#   （DMS 自带通知中心）。若 mako 先被 D-Bus 按需激活占了这个名字，systemd 会
+#   拒绝加载 dms.service（"Two services allocated for the same bus name"），导致
+#   DMS 顶栏在重启后消失（本机实测）。mako 在此场景多余且冲突，故直接 mask 掉
+#   它的用户服务：既不能开机自启，也不能被 D-Bus 按需激活；通知统一走 DMS。
+#   幂等：已 mask 则跳过；卸载(uninstall_dms)时对称解除。
+# ---------------------------------------------------------------------------
+neutralize_mako() {
+    [ "$NO_SYSTEMD" = 1 ] && return 0
+    if ! systemctl --user cat mako.service >/dev/null 2>&1; then
+        log "未安装 mako 用户服务，跳过通知冲突处理"
+        return 0
+    fi
+    local mst
+    mst=$(systemctl --user is-enabled mako.service 2>/dev/null || true)
+    if [ "$mst" = "masked" ]; then
+        log "mako 已屏蔽(mask)，无需处理"
+        return 0
+    fi
+    systemctl --user stop mako.service 2>/dev/null || true
+    if systemctl --user mask mako.service >/dev/null 2>&1; then
+        log "已屏蔽 mako 通知守护进程（DMS 自带通知中心，避免抢 org.freedesktop.Notifications 总线名）"
+    else
+        err "屏蔽 mako 失败，可手动: systemctl --user mask mako.service"
+    fi
+}
+
+# ---------------------------------------------------------------------------
 # 4) 去掉默认 waybar 自启（DMS 自带顶栏，避免出现两条栏）
 # ---------------------------------------------------------------------------
 strip_waybar() {
@@ -191,6 +229,7 @@ if ! install_pkgs; then
 fi
 setup_dms
 bind_systemd
+neutralize_mako
 strip_waybar
 niri_ensure_dm_session
 
