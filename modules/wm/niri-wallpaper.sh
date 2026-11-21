@@ -1,0 +1,183 @@
+#!/usr/bin/env bash
+# =============================================================================
+# niri 壁纸 + 锁屏(swaylock) 美化
+# -----------------------------------------------------------------------------
+# 壁纸: 用 niri 原生 `output { background-image }`(无名字=所有输出, 实测 26.04
+#       合法, 无需 swaybg 额外进程)。写入独立 ~/.config/niri/wallpaper.kdl,
+#       主配置末尾 include(幂等, 与 tools.kdl/dt-settings.kdl 互不干扰)。
+# 锁屏: swaylock 样式预设写 ~/.config/swaylock/config。
+# 受限网络不下载壁纸: 请自行放图片到 ~/Pictures/Wallpapers/ 或用本工具输入路径。
+#
+# 用法: niri-wallpaper.sh [set|lock|clear|status|uninstall|menu]
+# =============================================================================
+set -euo pipefail
+
+DT_ROOT="$(cd "$(dirname "${BASH_SOURCE[0]}")/../.." && pwd)"
+source "$DT_ROOT/lib/common.sh"
+source "$DT_ROOT/lib/ui.sh"
+
+log() { dt_log "$*"; }
+err() { dt_err "$*"; }
+
+NIRI_DIR="$HOME/.config/niri"
+MAIN="$NIRI_DIR/config.kdl"
+WALL="$NIRI_DIR/wallpaper.kdl"
+WP_DIR="$HOME/Pictures/Wallpapers"
+LOCK_CFG="$HOME/.config/swaylock/config"
+LOCK_BAK="$HOME/.config/swaylock/config.dt-bak"
+TOOLS_INCLUDE='include optional=true "wallpaper.kdl"'
+
+# ---------------------------------------------------------------------------
+# 壁纸
+# ---------------------------------------------------------------------------
+pick_wallpaper() {
+    # 优先从 ~/Pictures/Wallpapers 选择, 否则输入路径
+    if [ -d "$WP_DIR" ] && ls "$WP_DIR"/*.{png,jpg,jpeg,webp} >/dev/null 2>&1; then
+        local -a rows=() f i=0
+        for f in "$WP_DIR"/*.{png,jpg,jpeg,webp}; do [ -f "$f" ] && { rows+=("$f|$(basename "$f")|"); i=$((i+1)); }; done
+        rows+=("custom|输入自定义路径|")
+        rows+=("back|← 取消|")
+        local sel
+        sel=$(dt_menu "选择壁纸" "从 ~/Pictures/Wallpapers 选择：" "${rows[@]}") || return 2
+        [ -z "$sel" ] && return 2
+        [ "$sel" = back ] && return 2
+        if [ "$sel" = custom ]; then
+            sel=$(dt_ask_text "壁纸路径" "输入图片绝对路径(png/jpg/webp)" "") || return 2
+            [ -n "$sel" ] || return 2
+        fi
+        [ -f "$sel" ] && echo "$sel" && return 0
+        err "文件不存在: $sel"
+        return 2
+    fi
+    local p
+    p=$(dt_ask_text "壁纸路径" "输入图片绝对路径(或放入 $WP_DIR)" "") || return 2
+    [ -n "$p" ] && [ -f "$p" ] && echo "$p" && return 0
+    [ -n "$p" ] && err "文件不存在: $p"
+    return 2
+}
+
+gen_wallpaper_kdl() { # <path>
+    cat > "$WALL" <<KDL
+// dt-wallpaper: niri 壁纸(由 niri-wallpaper.sh 管理); 无名字 output=应用到所有输出
+output {
+    background-image "$1"
+}
+KDL
+}
+
+ensure_include() {
+    grep -q 'wallpaper\.kdl' "$MAIN" 2>/dev/null && return 0
+    awk '{ print } END { print ""; print "// dt-wallpaper include (niri-wallpaper.sh 管理)"; print "'"$TOOLS_INCLUDE"'" }' "$MAIN" > "$MAIN.tmp" \
+        && mv "$MAIN.tmp" "$MAIN"
+    log "已在主配置末尾加入 include wallpaper.kdl"
+}
+
+remove_include() {
+    [ -f "$MAIN" ] || return 0
+    awk -v inc="$TOOLS_INCLUDE" '
+        /dt-wallpaper include/ { skip=1; next }
+        skip && /^include optional=true "wallpaper.kdl"/ { skip=0; next }
+        { print }
+    ' "$MAIN" > "$MAIN.tmp" && mv "$MAIN.tmp" "$MAIN"
+    log "已从主配置移除 include wallpaper.kdl"
+}
+
+set_wallpaper() {
+    local p
+    p=$(pick_wallpaper) || return 0
+    mkdir -p "$NIRI_DIR"
+    gen_wallpaper_kdl "$p"
+    ensure_include
+    log "壁纸已设置: $p（需 niri msg reload-config 生效）"
+}
+
+clear_wallpaper() {
+    remove_include
+    rm -f "$WALL"
+    log "已清除壁纸（主配置 background-color 等保留）"
+}
+
+# ---------------------------------------------------------------------------
+# 锁屏 (swaylock)
+# ---------------------------------------------------------------------------
+lock_preset() { # style
+    local style="$1"
+    mkdir -p "$(dirname "$LOCK_CFG")"
+    [ -f "$LOCK_CFG" ] && [ ! -f "$LOCK_BAK" ] && cp "$LOCK_CFG" "$LOCK_BAK"
+    case "$style" in
+        simple)
+            cat > "$LOCK_CFG" <<'CFG'
+color=000000cc
+font-size=24
+ring-color=7c9bff
+key-hl-color=7c9bff
+separator-color=7c9bff
+CFG
+            ;;
+        frost)
+            cat > "$LOCK_CFG" <<'CFG'
+blur=10
+screenshot
+color=00000099
+font-size=28
+inside-color=00000000
+ring-color=88aaff
+key-hl-color=88aaff
+bs-hl-color=ff8899
+separator-color=88aaff
+CFG
+            ;;
+        *)
+            # 恢复默认(移除本工具写的, 回退备份或删)
+            [ -f "$LOCK_BAK" ] && mv "$LOCK_BAK" "$LOCK_CFG" || rm -f "$LOCK_CFG"
+            return 0
+            ;;
+    esac
+    log "锁屏样式已设为: $style (swaylock 读取 ~/.config/swaylock/config)"
+}
+
+# ---------------------------------------------------------------------------
+# 菜单/状态
+# ---------------------------------------------------------------------------
+status() {
+    echo "=== 壁纸 ==="
+    if [ -f "$WALL" ]; then grep -oE 'background-image "[^"]+"' "$WALL" | sed 's/^/  /' || echo "  (未设置)"; else echo "  (未设置)"; fi
+    grep -q 'wallpaper\.kdl' "$MAIN" 2>/dev/null && echo "  ✅ 已 include" || echo "  ❌ 未 include"
+    echo "=== 锁屏(swaylock) ==="
+    [ -f "$LOCK_CFG" ] && echo "  样式: $(grep -oE '^(blur|color)=' "$LOCK_CFG" | head -2 | tr '\n' ' ')" || echo "  (默认)"
+    echo "=== 工具 ==="
+    command -v swaylock >/dev/null 2>&1 && echo "  ✅ swaylock $(swaylock --version 2>/dev/null | head -1 | awk '{print $2}')" || echo "  ❌ swaylock 未装"
+}
+
+menu() {
+    while true; do
+        local c
+        c=$(dt_menu "niri 壁纸 / 锁屏" "壁纸用 niri 原生 background-image; 锁屏 swaylock 样式" \
+            "set|① 设置壁纸|从 ~/Pictures/Wallpapers 选或输入路径" \
+            "lock|② 锁屏样式|swaylock 预设(极简/磨砂玻璃/默认)" \
+            "status|③ 查看状态|壁纸 + 锁屏配置" \
+            "clear|④ 清除壁纸|移除 wallpaper.kdl 与 include" \
+            "uninstall|⑤ 卸载|清壁纸 + 锁屏样式恢复默认" \
+            "back|← 返回|") || return 0
+        case "$c" in
+            set) set_wallpaper ;;
+            lock)
+                local s
+                s=$(dt_menu "锁屏样式" "swaylock 预设:" "simple|极简|纯色+圆角时钟" "frost|磨砂玻璃|模糊截图+透明" "default|恢复默认|移除本工具配置") || continue
+                lock_preset "$s" ;;
+            status) status ;;
+            clear) clear_wallpaper ;;
+            uninstall) clear_wallpaper; lock_preset default ;;
+            back) return 0 ;;
+        esac
+    done
+}
+
+case "${1:-menu}" in
+    set) set_wallpaper ;;
+    clear) clear_wallpaper ;;
+    status) status ;;
+    uninstall) clear_wallpaper; lock_preset default ;;
+    menu) menu ;;
+    *) echo "用法: niri-wallpaper.sh [set|clear|status|uninstall|menu]" >&2; exit 1 ;;
+esac

@@ -96,6 +96,7 @@ sub_wm() {
             "niri-shell-switch|③ 切换桌面外壳(DMS ↔ Noctalia)|两个外壳同时开会抢顶栏, 这里关掉一个开另一个" \
             "niri-config|④ Niri 可视化配置|常用配置菜单化: 布局/边框/阴影/输入/光标/显示器输出" \
             "niri-tools|⑤ niri 日常工具|截图/录屏/剪贴板历史 + 快捷键(Print/Super+P/Super+V)" \
+            "niri-wallpaper|⑥ niri 壁纸/锁屏|原生 background-image 壁纸 + swaylock 锁屏样式" \
             "back|← 返回主菜单|") || return 0
         [ "$c" = back ] && return 0
         case "$c" in
@@ -117,6 +118,9 @@ sub_wm() {
                 ;;
             niri-tools)
                 bash "$DT_ROOT/modules/wm/niri-tools.sh"
+                ;;
+            niri-wallpaper)
+                bash "$DT_ROOT/modules/wm/niri-wallpaper.sh"
                 ;;
         esac
     done
