@@ -155,11 +155,14 @@ sub_apps() {
         local c
         c=$(dt_menu "应用安装" "应用级一键安装（镜像下载，适配受限网络）：" \
             "uu-remote|① UU 远程 Linux 被控端|社区开源实现，官方客户端远程控制本机" \
+            "wowtype|② WowType 输入法|fcitx5 插件，镜像下载 + fcitx5 一键配置" \
             "back|← 返回主菜单|") || return 0
         [ "$c" = back ] && return 0
         case "$c" in
             uu-remote)
                 bash "$DT_ROOT/modules/apps/uu-remote.sh" ;;
+            wowtype)
+                bash "$DT_ROOT/modules/apps/wowtype.sh" ;;
         esac
     done
 }

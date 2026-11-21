@@ -33,7 +33,8 @@ desktop-toolkit/
     ├── system/              # 系统诊断(由 main.sh 的 sub_system 自动扫描)
     │   └── niri-doctor.sh       # Niri 环境体检 + 一键修复
     ├── apps/                # 应用安装(由 main.sh 的 sub_apps 列出)
-    │   └── uu-remote.sh         # UU 远程 Linux 被控端 安装/登录/体检/卸载
+    │   ├── uu-remote.sh         # UU 远程 Linux 被控端 安装/登录/体检/卸载
+    │   └── wowtype.sh           # WowType 输入法(fcitx5 插件) 安装/体检/卸载
     └── <分类>/…             # 其他待扩展分类
 ```
 

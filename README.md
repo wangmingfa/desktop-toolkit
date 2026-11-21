@@ -63,7 +63,8 @@ desktop-toolkit/
 │   ├── wm/                   # 窗口管理器 / 桌面方案
 │   │   └── niri-dms.sh           # 一键安装 Niri + DMS (Dux Modular Shell)
 │   ├── apps/                # 应用安装
-│   │   └── uu-remote.sh         # UU 远程 Linux 被控端（社区实现）安装/登录/体检
+│   │   ├── uu-remote.sh         # UU 远程 Linux 被控端（社区实现）安装/登录/体检
+│   │   └── wowtype.sh           # WowType 输入法（fcitx5 插件）安装/体检
 │   ├── dev/                 # 开发环境（待扩展）
 │   └── backup/              # 备份与恢复（待扩展）
 └── assets/                  # 图标、SVG 等资源
