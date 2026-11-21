@@ -177,10 +177,21 @@ gen_mouse() {
     printf '    }\n'
 }
 
+gen_focus_follows() {
+    # focus-follows-mouse 是 input{} 里的通用合并段(非整块替换)。
+    # niri 没有显式 off 语法(实测 26.04 报非法)，所以 off=不生成该行；
+    # 若主配置 config.kdl 里已写 focus-follows-mouse，需手动注释那行才真正关闭。
+    case "$(state_get ffm_mode off)" in
+        always) printf '    focus-follows-mouse\n' ;;
+        0)      printf '    focus-follows-mouse max-scroll-amount="0%%"\n' ;;
+        10)     printf '    focus-follows-mouse max-scroll-amount="10%%"\n' ;;
+    esac
+}
+
 gen_input() {
     local body; body=$(mktemp)
     # gen_keyboard/gen_touchpad 直接写 stdout, 先收集到 body
-    { gen_keyboard; gen_touchpad; gen_mouse; } > "$body"
+    { gen_keyboard; gen_touchpad; gen_mouse; gen_focus_follows; } > "$body"
     if [ -s "$body" ]; then printf 'input {\n'; cat "$body"; printf '}\n\n'; fi
     rm -f "$body"
 }
@@ -437,6 +448,23 @@ seed_mouse() {
     state_set mouse_seeded 1
 }
 
+seed_focus_follows() {
+    state_has ffm_mode && return 0
+    # 仅用于菜单"当前"显示: 从主配置 input{} 尽力解析当前有效值
+    local b; b=$(extract_block "$MAIN" input)
+    local m=off
+    if [ -n "$b" ]; then
+        if echo "$b" | grep -qE '^[[:space:]]*focus-follows-mouse[[:space:]]+max-scroll-amount="0%"'; then
+            m=0
+        elif echo "$b" | grep -qE '^[[:space:]]*focus-follows-mouse[[:space:]]+max-scroll-amount="10%"'; then
+            m=10
+        elif echo "$b" | grep -qE '^[[:space:]]*focus-follows-mouse([[:space:]]|$)'; then
+            m=always
+        fi
+    fi
+    state_set ffm_mode "$m"
+}
+
 # ---------------------------------------------------------------------------
 # 子菜单: 布局
 # ---------------------------------------------------------------------------
@@ -594,18 +622,43 @@ menu_mouse() {
         esac
     done
 }
+menu_focus_follows() {
+    seed_focus_follows
+    while true; do
+        local c cur; cur=$(state_get ffm_mode off)
+        local lbl; case "$cur" in
+            always) lbl="始终跟随(移到窗口即聚焦)" ;;
+            0) lbl="仅完全可见时(滚动≤0%)" ;;
+            10) lbl="滚动≤10%屏幕宽" ;;
+            *) lbl="关闭" ;;
+        esac
+        c=$(dt_menu "焦点跟随鼠标 focus-follows-mouse" \
+            "鼠标移到窗口上自动聚焦。当前: $lbl（关闭=不生成该行; 若主配置已写需手动注释）" \
+            "off|① 关闭|不启用" \
+            "always|② 始终跟随|移到任何窗口立即聚焦" \
+            "0|③ 仅完全可见时|窗口已完整显示、不滚动视图才聚焦(最稳)" \
+            "10|④ 允许少量滚动|滚动量≤10%屏幕宽才聚焦" \
+            "back|← 返回|") || return 0
+        case "$c" in
+            off|always|0|10) state_set ffm_mode "$c"; save ;;
+            back) return 0 ;;
+        esac
+    done
+}
 menu_input() {
     while true; do
         local c
-        c=$(dt_menu "输入设备" "键盘 / 触摸板 / 鼠标：" \
+        c=$(dt_menu "输入与焦点" "键盘 / 触摸板 / 鼠标 / 焦点跟随：" \
             "kb|① 键盘|布局/变体/选项/重复/数字锁" \
             "tp|② 触摸板|点按/自然滚动/打字禁用/加速/滚动方式" \
             "mouse|③ 鼠标|自然滚动/加速/左手" \
+            "ffm|④ 焦点跟随鼠标|鼠标移到窗口自动聚焦" \
             "back|← 返回|") || return 0
         case "$c" in
             kb) menu_keyboard ;;
             tp) menu_touchpad ;;
             mouse) menu_mouse ;;
+            ffm) menu_focus_follows ;;
             back) return 0 ;;
         esac
     done
@@ -764,7 +817,7 @@ main_menu() {
         local c
         c=$(dt_menu "Niri 可视化配置" "改完自动生成 KDL + 校验 + 热重载；只影响你显式设置过的项：" \
             "layout|① 布局与外观|间距/居中/边框/焦点环/阴影/背景" \
-            "input|② 输入设备|键盘/触摸板/鼠标" \
+            "input|② 输入与焦点|键盘/触摸板/鼠标/焦点跟随" \
             "misc|③ 光标与杂项|光标/截图/装饰/概览/模糊" \
             "output|④ 显示器输出|缩放/旋转/开关（每台显示器）" \
             "view|⑤ 查看当前配置|已设置项 + 校验结果" \
