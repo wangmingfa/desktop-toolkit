@@ -1,7 +1,7 @@
 #!/usr/bin/env bash
 # 切换 macOS Tahoe 主题的"液态玻璃特效"开关
-#   bash ~/toggle-macos-glass.sh perf   -> 性能模式：关闭高开销特效（解决软件渲染卡顿）
-#   bash ~/toggle-macos-glass.sh full   -> 完整模式：恢复液态玻璃特效（需要 GPU 硬件加速才流畅）
+#   bash modules/appearance/toggle-glass.sh perf   -> 性能模式：关闭高开销特效（解决软件渲染卡顿）
+#   bash modules/appearance/toggle-glass.sh full   -> 完整模式：恢复液态玻璃特效（需要 GPU 硬件加速才流畅）
 # 修改后需要注销并重新登录才生效。
 set -euo pipefail
 
@@ -33,7 +33,7 @@ case "$MODE" in
     echo "请注销并重新登录（或重启）后生效。"
     ;;
   *)
-    echo "用法: bash ~/toggle-macos-glass.sh perf|full" >&2
+    echo "用法: bash modules/appearance/toggle-glass.sh perf|full" >&2
     exit 1
     ;;
 esac

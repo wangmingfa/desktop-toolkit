@@ -6,7 +6,7 @@
 # 透明度:   主题 SVG 资源重生成 (零运行时开销, 不影响流畅度)
 # 玻璃参数: liquidglass 特效参数 (仅在 full 模式开启时可见)
 #
-# 直接用 ./adjust-macos-window.sh gui 打开滑块界面最省事。
+# 直接用 bash modules/appearance/adjust-window.sh gui 打开滑块界面最省事。
 # =============================================================================
 set -euo pipefail
 
@@ -617,11 +617,11 @@ macOS Tahoe 窗口外观调整工具
           HighlightWidth HighlightStrength Saturation Brightness Contrast NoiseStrength
 
 示例:
-  ./adjust-macos-window.sh gui
-  ./adjust-macos-window.sh corner 18
-  ./adjust-macos-window.sh transparency 60
-  ./adjust-macos-window.sh transparency dock 85
-  ./adjust-macos-window.sh glass BlurStrength 3
+  bash modules/appearance/adjust-window.sh gui
+  bash modules/appearance/adjust-window.sh corner 18
+  bash modules/appearance/adjust-window.sh transparency 60
+  bash modules/appearance/adjust-window.sh transparency dock 85
+  bash modules/appearance/adjust-window.sh glass BlurStrength 3
 EOF
 }
 

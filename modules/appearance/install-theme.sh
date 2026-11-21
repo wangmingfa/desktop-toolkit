@@ -1,6 +1,6 @@
 #!/usr/bin/env bash
 # ============================================================
-# 在宿主机 CachyOS 的终端中运行：  bash ~/setup-macos-tahoe-host.sh
+# 在宿主机 CachyOS 的终端中运行：  bash modules/appearance/install-theme.sh
 #
 # 效果：把 KDE Plasma 6 打造成 macOS Tahoe（液态玻璃）风格
 #   - 全套组件：顶部菜单栏 + 底部 Dock + 控制中心 + 红绿灯窗口按钮
