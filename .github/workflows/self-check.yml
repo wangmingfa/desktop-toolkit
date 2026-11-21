@@ -1,0 +1,26 @@
+name: self-check
+
+# 仓库自检：把 AGENTS.md 第 11 节的提交前检查（bash -n + scripts/self-check.sh
+# 里固化的踩坑模式）搬进 CI，不再依赖"提交的人记得跑"。
+on:
+  push:
+    branches: [main]
+  pull_request:
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: self-check-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  self-check:
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    steps:
+      - uses: actions/checkout@v7
+
+      - name: 仓库自检（bash -n + 踩坑模式）
+        run: bash scripts/self-check.sh

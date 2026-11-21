@@ -1,5 +1,7 @@
 # desktop-toolkit
 
+[![self-check](https://github.com/wangmingfa/desktop-toolkit/actions/workflows/self-check.yml/badge.svg?branch=main)](https://github.com/wangmingfa/desktop-toolkit/actions/workflows/self-check.yml)
+
 统一管理电脑相关脚本的工具箱。目标：**拉下仓库 → 运行一个总入口 → 菜单选择 → 开始执行**；
 同时每个功能都能**单独一条命令直接跑**（`bash modules/<分类>/<脚本>.sh`），不必进菜单。
 
@@ -578,6 +580,9 @@ source "$DT_ROOT/lib/ui.sh"
 ```bash
 bash scripts/self-check.sh
 ```
+
+同一个脚本也挂在 CI 上（`.github/workflows/self-check.yml`）：push 到 `main` 和 PR 都会跑，
+跑不过就是红叉。本地先过一次能省一个来回。
 
 详细约定（断点续装步骤同步、stdout/stderr 规范、镜像下载、GDM 会话文件等）见 `AGENTS.md`。
 
