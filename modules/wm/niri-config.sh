@@ -529,7 +529,7 @@ menu_shadow() {
 menu_layout() {
     while true; do
         local c
-        c=$(dt_menu "布局与外观" "间距 / 居中 / 边框 / 焦点环 / 阴影 / 背景：" \
+        c=$(dt_menu "布局与外观" "间距 / 居中 / 边框 / 焦点环 / 阴影 / 背景 / 窗口装饰：" \
             "gaps|① 窗口间距|当前: $(state_get gaps 16) px" \
             "center|② 焦点列居中|当前: $(state_get center_focused never)" \
             "disp|③ 新列显示模式|当前: $(state_get default_column_display normal)" \
@@ -537,6 +537,7 @@ menu_layout() {
             "focus|⑤ 焦点环 focus-ring|宽 $(state_get focus_ring_width 4)px $(onoff "$(state_get focus_ring_on 1)")" \
             "border|⑥ 窗口边框 border|宽 $(state_get border_width 4)px $(onoff "$(state_get border_on 0)")" \
             "shadow|⑦ 窗口阴影 shadow|$(onoff "$(state_get shadow_on 0)")" \
+            "csd|⑧ 窗口按钮/装饰 prefer-no-csd|当前: $( [ "$(state_get prefer_no_csd 0)" = 1 ] && echo '隐藏(无边框)' || echo '显示(应用自绘)' )" \
             "back|← 返回|") || return 0
         case "$c" in
             gaps) num_int_set gaps "窗口间距(px)" 16 0 64 && save ;;
@@ -546,6 +547,7 @@ menu_layout() {
             focus) menu_focus_ring ;;
             border) menu_border ;;
             shadow) menu_shadow ;;
+            csd) toggle_set prefer_no_csd "隐藏窗口按钮和标题栏？(开启后应用自绘的 关闭/最大化/最小化 按钮会消失，窗口变无边框)" 0 && save ;;
             back) return 0 ;;
         esac
     done
@@ -694,22 +696,20 @@ menu_misc() {
             "cs|② 光标大小|当前: $(state_get cursor_size 继承)"
             "hit|③ 打字时隐藏光标|当前: $(onoff "$(state_get cursor_hide_typing 0)")"
             "sp|④ 截图保存路径|当前: $(state_get screenshot_path 未设置)"
-            "csd|⑤ 优先无客户端装饰 prefer-no-csd|当前: $(onoff "$(state_get prefer_no_csd 0)")"
-            "oz|⑥ 概览缩放 zoom|当前: $(state_get overview_zoom 未设置)"
-            "ob|⑦ 概览背景色|当前: $(state_get overview_backdrop 未设置)"
-            "hs|⑧ 跳过启动快捷键提示|当前: $(onoff "$(state_get hotkey_skip 0)")"
-            "cl|⑨ 禁用中键主选区|当前: $(onoff "$(state_get clipboard_disable_primary 0)")"
+            "oz|⑤ 概览缩放 zoom|当前: $(state_get overview_zoom 未设置)"
+            "ob|⑥ 概览背景色|当前: $(state_get overview_backdrop 未设置)"
+            "hs|⑦ 跳过启动快捷键提示|当前: $(onoff "$(state_get hotkey_skip 0)")"
+            "cl|⑧ 禁用中键主选区|当前: $(onoff "$(state_get clipboard_disable_primary 0)")"
         )
-        niri_ge_2604 && rows+=("blur|⑩ 背景模糊 blur|参数调整")
+        niri_ge_2604 && rows+=("blur|⑨ 背景模糊 blur|参数调整")
         rows+=("back|← 返回|")
         local c
-        c=$(dt_menu "光标与杂项" "光标 / 截图 / 窗口装饰 / 概览 / 模糊：" "${rows[@]}") || return 0
+        c=$(dt_menu "光标与杂项" "光标 / 截图 / 概览 / 模糊：" "${rows[@]}") || return 0
         case "$c" in
             ct) text_set cursor_theme "光标主题名(如 Adwaita / breeze_cursors)" "" && save ;;
             cs) num_int_set cursor_size "光标大小(px)" 24 8 128 && save ;;
             hit) toggle_set cursor_hide_typing "打字时隐藏光标？" 0 && save ;;
             sp) text_set screenshot_path "截图路径(支持 ~ 和 %Y 等)" "~/Pictures/Screenshots/Screenshot from %Y-%m-%d %H-%M-%S.png" && save ;;
-            csd) toggle_set prefer_no_csd "优先无客户端装饰？" 0 && save ;;
             oz) float_set overview_zoom "概览缩放(0-0.75)" 0.5 0.0 0.75 && save ;;
             ob) text_set overview_backdrop "概览背景色" "#262626" && save ;;
             hs) toggle_set hotkey_skip "启动时跳过快捷键提示？" 0 && save ;;
@@ -816,7 +816,7 @@ main_menu() {
     while true; do
         local c
         c=$(dt_menu "Niri 可视化配置" "改完自动生成 KDL + 校验 + 热重载；只影响你显式设置过的项：" \
-            "layout|① 布局与外观|间距/居中/边框/焦点环/阴影/背景" \
+            "layout|① 布局与外观|间距/居中/边框/焦点环/阴影/背景/窗口装饰" \
             "input|② 输入与焦点|键盘/触摸板/鼠标/焦点跟随" \
             "misc|③ 光标与杂项|光标/截图/装饰/概览/模糊" \
             "output|④ 显示器输出|缩放/旋转/开关（每台显示器）" \
