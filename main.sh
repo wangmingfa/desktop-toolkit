@@ -97,6 +97,7 @@ sub_wm() {
             "niri-config|④ Niri 可视化配置|常用配置菜单化: 布局/边框/阴影/输入/光标/显示器输出" \
             "niri-tools|⑤ niri 日常工具|截图/录屏/剪贴板历史 + 快捷键(Print/Super+P/Super+V)" \
             "niri-wallpaper|⑥ niri 壁纸/锁屏|原生 background-image 壁纸 + swaylock 锁屏样式" \
+            "dms-theme|⑦ DMS 顶栏主题|dms matugen 生成 Material 主题(顶栏+niri+gtk+终端)" \
             "back|← 返回主菜单|") || return 0
         [ "$c" = back ] && return 0
         case "$c" in
@@ -121,6 +122,9 @@ sub_wm() {
                 ;;
             niri-wallpaper)
                 bash "$DT_ROOT/modules/wm/niri-wallpaper.sh"
+                ;;
+            dms-theme)
+                bash "$DT_ROOT/modules/wm/niri-dms-theme.sh"
                 ;;
         esac
     done
