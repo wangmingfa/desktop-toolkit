@@ -138,3 +138,52 @@ dt_clone() {
         return 1
     fi
 }
+
+# =============================================================================
+# 下载 GitHub release 资产（tar.gz / deb / rpm / .sha256 等），带镜像回退。
+#   与 dt_clone 同一套镜像候选：直连 → gh-proxy.com → ghfast.top（auto 模式）。
+#   用于"下载发行包"场景，与"git clone 仓库"的 dt_clone 互补。
+#   用法： dt_download <github_asset_url> <dest>
+#   成功 0，失败 1；进度/错误全部走 stderr（stdout 不输出，避免被 $( ) 捕获污染）。
+#   可调环境变量：DT_DL_KILL=<单源硬上限秒，默认 300>（大包慢网放宽）；
+#                 其余复用 dt_clone 的 DT_MIRROR/GH_PROXY/DT_GHFAST/DT_GIT_CONNECT。
+# 已验证可用(2026-11): gh-proxy.com / ghfast.top。
+# =============================================================================
+DT_DL_KILL="${DT_DL_KILL:-300}"
+dt_download() {
+    local url="$1" dest="$2"
+    local -a candidates=()
+    case "$DT_MIRROR" in
+        off)     candidates=("$url") ;;
+        ghproxy) candidates=("$GH_PROXY/$url") ;;
+        ghfast)  candidates=("$DT_GHFAST/$url") ;;
+        fastgit) candidates=("$(dt_fastgit_url "$url")") ;;
+        auto)    candidates=("$url" "$GH_PROXY/$url" "$DT_GHFAST/$url") ;;
+    esac
+
+    local m rc=1 st=0
+    for m in "${candidates[@]}"; do
+        echo "  [download] 尝试: $m" >&2
+        st=0
+        # -f: HTTP>=400 即失败; --retry 2 对瞬断重试; --http1.1 规避部分镜像对 HTTP/2 流重置
+        # 单源硬上限用外部 timeout(与 dt_clone 同理由: curl 内部超时不可靠)
+        timeout -k 5 "$DT_DL_KILL" curl -fL --http1.1 --retry 2 \
+            --connect-timeout "${DT_GIT_CONNECT:-10}" \
+            --max-time "$DT_DL_KILL" \
+            -o "$dest" "$m" 2>"$dest.err" || st=$?
+        if [ "$st" = 0 ] && [ -s "$dest" ]; then
+            rc=0; break
+        fi
+        # 打印 curl 真实报错最后一行(若有)，便于定位是超时还是 404
+        if [ -s "$dest.err" ]; then
+            sed -n '$p' "$dest.err" | sed 's/^/  [download]   /' >&2
+        fi
+        rm -f "$dest" "$dest.err" 2>/dev/null || true
+    done
+    rm -f "$dest.err" 2>/dev/null || true
+    if [ "$rc" != 0 ]; then
+        echo "  [download] 下载失败(已尝试 ${#candidates[@]} 个源): $url" >&2
+        echo "  [download] 可调 DT_MIRROR=off|ghproxy|ghfast 或 GH_PROXY=<镜像前缀> 后重跑" >&2
+        return 1
+    fi
+}

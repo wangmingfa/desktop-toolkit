@@ -14,7 +14,7 @@ desktop-toolkit/
 ├── scripts/
 │   └── self-check.sh        # 仓库自检：静态拦住反复踩过的 bug 模式(提交前/CI 用)
 ├── lib/
-│   ├── common.sh            # DT_ROOT、DBUS 环境、备份、GUI 检测、dt_clone 镜像克隆
+│   ├── common.sh            # DT_ROOT、DBUS 环境、备份、GUI 检测、dt_clone 镜像克隆、dt_download 镜像下载
 │   ├── ui.sh                # dt_menu / dt_confirm / dt_info / dt_ask_*（zenity/kdialog 自适应）
 │   └── niri.sh              # Niri 系方案共享库：dnf 弱网兜底 / GDM 会话文件修正 / 彩色收尾横幅
 └── modules/
@@ -32,6 +32,8 @@ desktop-toolkit/
     │   └── niri-shell-switch.sh # DMS ↔ Noctalia 外壳切换(避免双壳抢顶栏)
     ├── system/              # 系统诊断(由 main.sh 的 sub_system 自动扫描)
     │   └── niri-doctor.sh       # Niri 环境体检 + 一键修复
+    ├── apps/                # 应用安装(由 main.sh 的 sub_apps 列出)
+    │   └── uu-remote.sh         # UU 远程 Linux 被控端 安装/登录/体检/卸载
     └── <分类>/…             # 其他待扩展分类
 ```
 
@@ -85,6 +87,11 @@ desktop-toolkit/
 - 默认 URL `http://127.0.0.1:7890`（与 lib/niri.sh 的弱网提示一致）；每项幂等（on 覆盖 / off 全清）。
 - 配置文件按行改写一律用 awk（dnf.conf 的 `[main]`、cargo 的 `[http]`），不拼 sed 引号。
 - 环境变量写入 `~/.config/environment.d/dt-proxy.conf`，下次登录对所有用户会话生效。
+
+### 3.0b 下载 release 资产一律走 `dt_download`（不要裸 `curl -o`）
+- `dt_download <github_asset_url> <dest>` 已实现：与 `dt_clone` 同一套镜像回退（直连 → gh-proxy.com → ghfast.top），单源硬上限用外部 `timeout`（`DT_DL_KILL`，默认 300s，大包慢网可放宽）。
+- 成功 `0` / 失败 `1`；**stdout 不输出**（进度/错误全走 stderr），避免被 `$( )` 捕获污染。
+- 适用：GitHub Release 的 `tar.gz` / `deb` / `rpm` / `.sha256` 等**文件**下载（与克隆仓库的 `dt_clone` 互补）。
 
 ### 3.1 克隆一律走 `dt_clone`（不要裸 `git clone`）
 - `dt_clone <github_url> <dest> [branch]` 已实现：**直连 → gh-proxy.com → ghfast.top → fastgit.org** 自动回退。
@@ -151,6 +158,17 @@ desktop-toolkit/
 - 光标实际安装名可能带 `-cursors` 后缀差异：**自动探测**（`ls -d ~/.local/share/icons/*[Cc]ursor* | head -1`），别硬编码。
 - 图标变体：`-t blue` 先试、失败回退不带 `-t`（MacTahoe 认 blue，WhiteSur 不认）。
 - 光标仓库要带 **owner 前缀**（`vinceliuice/WhiteSur-cursors`），否则克隆路径错误。
+
+### 6.1 窗口按钮布局（GTK 客户端装饰全局）—— 踩坑
+
+> **`org.gnome.desktop.wm.preferences button-layout` 是全局设置，作用于所有带客户端装饰(CSD)的 GTK/Electron 应用**（Capy / 浏览器 / 设置等），不只是 GNOME 主题。
+
+- **macOS 左边风格（`close,minimize,maximize:`，冒号在末）会把关闭键顶到左上角**；像 Capy 这类应用在侧栏折叠后其"展开按钮"也出现在左上角，**两个按钮正好重叠**（本次真实事故，Capy v0.9.2）。
+- **彻底解决只能把按钮移到右边**：`gsettings set org.gnome.desktop.wm.preferences button-layout ':minimize,maximize,close'`（关闭最右，Windows 风格）。**没有"既左又避开"的第三种布局**——只要关闭键在左上角，就必然压住左上角的展开控件。
+- 改后 **GTK/Electron 应用必须重启才生效**（客户端装饰只在窗口创建时读布局）。
+- 独立工具：`modules/appearance/window-buttons.sh`（GUI/TUI 自适应，macOS 左 / Windows 右 / GNOME 默认 / 自定义 + 校验），已注册 `main.sh` 外观子菜单第 ③ 项。
+- `gsettings get/set` 的 **schema 和 key 必须拆成两个参数**（`gsettings get "$SCHEMA" "$GKEY"`），**别拼成一个带空格的字符串**（会当单参数永远失败）。
+- 自定义 `button-layout` 校验：**恰好一个冒号**，两侧 token ∈ `close,minimize,maximize,appmenu`，**无重复**；非法值拒绝且不改动现状。
 
 ---
 

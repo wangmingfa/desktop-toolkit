@@ -148,6 +148,23 @@ sub_system() {
 }
 
 # ---------------------------------------------------------------------------
+# 子菜单：应用安装
+# ---------------------------------------------------------------------------
+sub_apps() {
+    while true; do
+        local c
+        c=$(dt_menu "应用安装" "应用级一键安装（镜像下载，适配受限网络）：" \
+            "uu-remote|① UU 远程 Linux 被控端|社区开源实现，官方客户端远程控制本机" \
+            "back|← 返回主菜单|") || return 0
+        [ "$c" = back ] && return 0
+        case "$c" in
+            uu-remote)
+                bash "$DT_ROOT/modules/apps/uu-remote.sh" ;;
+        esac
+    done
+}
+
+# ---------------------------------------------------------------------------
 # 子菜单：系统配置 / 开发 / 备份（预留分类，后续往对应目录加脚本即可）
 # ---------------------------------------------------------------------------
 sub_placeholder() { # title
@@ -235,16 +252,18 @@ main() {
             "wm|② 窗口管理器 / 桌面方案|Niri + DMS 等平铺 Wayland 方案" \
             "system|③ 系统诊断|会话/显示管理器/依赖体检（自动扫描 modules/system/）" \
             "network|④ 网络工具|GitHub 镜像 / 代理配置 / 网络相关脚本" \
-            "dev|⑤ 开发环境|开发工具与环境配置（待扩展）" \
-            "backup|⑥ 备份与恢复|配置备份/还原（待扩展）" \
-            "about|⑦ 关于 / 使用说明|查看仓库结构与用法" \
-            "exit|⑧ 退出|") || exit 0
+            "apps|⑤ 应用安装|UU 远程 等应用一键安装（受限网络镜像）" \
+            "dev|⑥ 开发环境|开发工具与环境配置（待扩展）" \
+            "backup|⑦ 备份与恢复|配置备份/还原（待扩展）" \
+            "about|⑧ 关于 / 使用说明|查看仓库结构与用法" \
+            "exit|⑨ 退出|") || exit 0
         case "$c" in
             exit) exit 0 ;;
             appearance) sub_appearance ;;
             wm) sub_wm ;;
             network) sub_network ;;
             system) sub_system ;;
+            apps) sub_apps ;;
             dev|backup) sub_placeholder "$c" "$c" ;;
             about)
                 dt_info "desktop-toolkit\n\n仓库目录：$DT_ROOT\n\n用法：\n1) git clone 本仓库\n2) cd desktop-toolkit && ./main.sh\n3) 菜单选择对应分类，选中即开始\n\n脚本按分类放在 modules/ 下，公共库在 lib/，资源在 assets/。" ;;

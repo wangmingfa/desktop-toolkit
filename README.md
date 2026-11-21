@@ -38,7 +38,7 @@ cd ~/code/desktop-toolkit
 desktop-toolkit/
 ├── main.sh                  # ← 唯一总入口（菜单选择）
 ├── lib/
-│   ├── common.sh            # 仓库路径、DBUS 环境、备份、GUI 检测
+│   ├── common.sh            # 仓库路径、DBUS 环境、备份、GUI 检测、dt_clone/dt_download（镜像回退）
 │   └── ui.sh                # 通用菜单/滑块/确认框（zenity/kdialog 自适应）
 ├── modules/
 │   ├── appearance/          # 外观美化
@@ -62,6 +62,8 @@ desktop-toolkit/
 │   │   └── github-mirror.sh      # GitHub 国内镜像一键配置（全局 git）
 │   ├── wm/                   # 窗口管理器 / 桌面方案
 │   │   └── niri-dms.sh           # 一键安装 Niri + DMS (Dux Modular Shell)
+│   ├── apps/                # 应用安装
+│   │   └── uu-remote.sh         # UU 远程 Linux 被控端（社区实现）安装/登录/体检
 │   ├── dev/                 # 开发环境（待扩展）
 │   └── backup/              # 备份与恢复（待扩展）
 └── assets/                  # 图标、SVG 等资源
