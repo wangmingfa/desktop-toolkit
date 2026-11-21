@@ -188,6 +188,28 @@ gen_focus_follows() {
     esac
 }
 
+gen_anim() {
+    # 动画是顶层 animation{} 块; 预设覆盖窗口移动/开关/工作区切换的 spring。
+    # default=不生成(沿用主配置/默认); off=高刚度近似"无动画"。
+    local style dr st
+    style=$(state_get anim default)
+    [ "$style" = default ] && return 0
+    case "$style" in
+        fluid)  dr=0.85; st=400 ;;
+        snappy) dr=0.70; st=800 ;;
+        off)    dr=1.00; st=10000 ;;
+        *) return 0 ;;
+    esac
+    printf 'animation {\n'
+    local blk
+    for blk in window-movement window-open window-close workspace-switch; do
+        printf '    %s {\n' "$blk"
+        printf '        spring damping-ratio=%s stiffness=%s epsilon=0.0001\n' "$dr" "$st"
+        printf '    }\n'
+    done
+    printf '}\n\n'
+}
+
 gen_input() {
     local body; body=$(mktemp)
     # gen_keyboard/gen_touchpad 直接写 stdout, 先收集到 body
@@ -249,7 +271,7 @@ gen_outputs() {
 gen_all() { # <outfile>
     local out="$1"; : > "$out"
     printf '// 由 desktop-toolkit niri-config.sh 生成；请用工具修改，手改可能被覆盖。\n' >> "$out"
-    { gen_layout; gen_input; gen_misc; gen_outputs; } >> "$out"
+    { gen_layout; gen_anim; gen_input; gen_misc; gen_outputs; } >> "$out"
 }
 
 # ---------------------------------------------------------------------------
@@ -465,6 +487,26 @@ seed_focus_follows() {
     state_set ffm_mode "$m"
 }
 
+seed_anim() {
+    state_has anim && return 0
+    # 仅用于菜单"当前"显示: 从主配置 animation{window-movement{spring...}} 尽力解析
+    local b; b=$(extract_block "$MAIN" animation)
+    local s=default
+    if [ -n "$b" ]; then
+        local st; st=$(echo "$b" | sed -n 's/.*stiffness=\([0-9]*\).*/\1/p' | head -1)
+        case "$st" in
+            400) s=fluid ;; 800) s=snappy ;; 10000) s=off ;;
+        esac
+    fi
+    state_set anim "$s"
+}
+
+anim_label() {
+    case "$(state_get anim default)" in
+        fluid) echo 流畅 ;; snappy) echo 快速 ;; off) echo 关闭 ;; *) echo 默认 ;;
+    esac
+}
+
 # ---------------------------------------------------------------------------
 # 子菜单: 布局
 # ---------------------------------------------------------------------------
@@ -529,7 +571,7 @@ menu_shadow() {
 menu_layout() {
     while true; do
         local c
-        c=$(dt_menu "布局与外观" "间距 / 居中 / 边框 / 焦点环 / 阴影 / 背景 / 窗口装饰：" \
+        c=$(dt_menu "布局与外观" "间距 / 居中 / 边框 / 焦点环 / 阴影 / 背景 / 窗口装饰 / 动画：" \
             "gaps|① 窗口间距|当前: $(state_get gaps 16) px" \
             "center|② 焦点列居中|当前: $(state_get center_focused never)" \
             "disp|③ 新列显示模式|当前: $(state_get default_column_display normal)" \
@@ -538,6 +580,7 @@ menu_layout() {
             "border|⑥ 窗口边框 border|宽 $(state_get border_width 4)px $(onoff "$(state_get border_on 0)")" \
             "shadow|⑦ 窗口阴影 shadow|$(onoff "$(state_get shadow_on 0)")" \
             "csd|⑧ 窗口按钮/装饰 prefer-no-csd|当前: $( [ "$(state_get prefer_no_csd 0)" = 1 ] && echo '隐藏(无边框)' || echo '显示(应用自绘)' )" \
+            "anim|⑨ 动画控制 animation|当前: $(anim_label)" \
             "back|← 返回|") || return 0
         case "$c" in
             gaps) num_int_set gaps "窗口间距(px)" 16 0 64 && save ;;
@@ -548,6 +591,7 @@ menu_layout() {
             border) menu_border ;;
             shadow) menu_shadow ;;
             csd) toggle_set prefer_no_csd "隐藏窗口按钮和标题栏？(开启后应用自绘的 关闭/最大化/最小化 按钮会消失，窗口变无边框)" 0 && save ;;
+            anim) enum_set anim "动画控制(窗口移动/开关/工作区切换)" default "default|fluid|snappy|off" && save ;;
             back) return 0 ;;
         esac
     done
@@ -823,6 +867,7 @@ CATALOG=(
     "窗口边框 border 边框 宽度 颜色|窗口边框|布局与外观|menu_border"
     "窗口阴影 shadow 阴影 柔和度 扩散 偏移 颜色|窗口阴影|布局与外观|menu_shadow"
     "窗口按钮 窗口装饰 标题栏 无边框 prefer-no-csd 关闭 最大化 最小化 客户端装饰 csd|窗口按钮/装饰|布局与外观|menu_layout"
+    "动画 animation 窗口移动 开关 工作区 切换 spring 曲线 流畅 快速 关闭|动画控制|布局与外观|menu_layout"
     "键盘 keyboard 布局 变体 选项 重复 delay rate 数字锁 numlock|键盘|输入与焦点|menu_keyboard"
     "触摸板 touchpad 点按 轻触 tap 自然滚动 加速 滚动方式 左手|触摸板|输入与焦点|menu_touchpad"
     "鼠标 mouse 自然滚动 加速 左手|鼠标|输入与焦点|menu_mouse"
