@@ -175,10 +175,12 @@ sub_dev() {
         local c
         c=$(dt_menu "开发环境" "git 配置与常用开发工具：" \
             "setup|① 开发环境配置|git 身份/默认分支 + 工具安装（需 sudo）" \
+            "fonts|② 字体安装|Nerd Fonts / 中文 CJK（终端/顶栏图标）" \
             "back|← 返回主菜单|") || return 0
         [ "$c" = back ] && return 0
         case "$c" in
             setup) bash "$DT_ROOT/modules/dev/setup-dev.sh" ;;
+            fonts) bash "$DT_ROOT/modules/dev/install-fonts.sh" ;;
         esac
     done
 }
