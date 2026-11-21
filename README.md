@@ -68,10 +68,13 @@ cd ~/code/desktop-toolkit
 | 桌面 | 桌面外壳切换（DMS ↔ Noctalia） | `bash modules/wm/niri-shell-switch.sh noctalia` |
 | 桌面 | Niri 可视化配置 | `bash modules/wm/niri-config.sh` |
 | 诊断 | Niri 环境体检 / 一键修复 | `bash modules/system/niri-doctor.sh` |
+| 诊断 | 通用环境体检（磁盘/内存/服务/更新） | `bash modules/system/env-doctor.sh` |
 | 网络 | GitHub 国内镜像（全局 git） | `bash modules/network/github-mirror.sh on` |
 | 网络 | 代理一键配置（git/dnf/pip/npm/cargo） | `bash modules/network/proxy-setup.sh on` |
 | 应用 | UU 远程被控端 安装/登录/体检/卸载 | `bash modules/apps/uu-remote.sh install` |
 | 应用 | WowType 输入法 安装/体检/卸载 | `bash modules/apps/wowtype.sh install` |
+| 开发 | git 配置 / 开发工具安装 | `bash modules/dev/setup-dev.sh` |
+| 备份 | 配置备份/恢复/清理 | `bash modules/backup/backup-config.sh` |
 
 ---
 
@@ -338,8 +341,7 @@ bash modules/apps/wowtype.sh remove         # 卸载
 
 ## 6. 待扩展分类
 
-`modules/dev/`（开发环境）、`modules/backup/`（备份与恢复）目前是占位分类，主菜单里会提示当前脚本数量。
-往对应目录放 `.sh` 即可（`system/` 是自动扫描的，其它分类需要在 `main.sh` 里加一行菜单项）。
+`modules/system/` 是**自动扫描目录**（丢 `.sh` 即出现在主菜单「系统诊断」）；`modules/dev/`（开发环境）、`modules/backup/`（备份与恢复）已在 `main.sh` 注册对应子菜单。新增分类需在 `main.sh` 里加一行菜单项。
 
 ---
 
@@ -414,15 +416,18 @@ desktop-toolkit/
 │   │   ├── niri-shell-switch.sh  # DMS ↔ Noctalia 外壳切换
 │   │   └── niri-config.sh        # Niri 可视化配置（生成 KDL + 校验 + 热重载）
 │   ├── system/             # 系统诊断（自动扫描）
-│   │   └── niri-doctor.sh       # Niri 环境体检 + 一键修复
+│   │   ├── niri-doctor.sh       # Niri 环境体检 + 一键修复
+│   │   └── env-doctor.sh        # 通用环境体检（磁盘/内存/服务/更新/输入法）
 │   ├── network/
 │   │   ├── github-mirror.sh     # 全局 git 镜像
 │   │   └── proxy-setup.sh       # git/dnf/pip/npm/cargo 代理 + no_proxy
 │   ├── apps/
 │   │   ├── uu-remote.sh         # UU 远程 Linux 被控端
 │   │   └── wowtype.sh           # WowType 输入法（fcitx5 插件）
-│   ├── dev/                # 开发环境（待扩展）
-│   └── backup/             # 备份与恢复（待扩展）
+│   ├── dev/
+│   │   └── setup-dev.sh         # git 配置 + 常用开发工具安装
+│   └── backup/
+│       └── backup-config.sh     # 用户级配置备份/恢复/清理
 └── assets/                  # 图标、SVG 等资源
     ├── cachyos-logo-symbolic.svg
     └── cachyos-logo-symbolic-dark.svg

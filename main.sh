@@ -168,6 +168,38 @@ sub_apps() {
 }
 
 # ---------------------------------------------------------------------------
+# 子菜单：开发环境
+# ---------------------------------------------------------------------------
+sub_dev() {
+    while true; do
+        local c
+        c=$(dt_menu "开发环境" "git 配置与常用开发工具：" \
+            "setup|① 开发环境配置|git 身份/默认分支 + 工具安装（需 sudo）" \
+            "back|← 返回主菜单|") || return 0
+        [ "$c" = back ] && return 0
+        case "$c" in
+            setup) bash "$DT_ROOT/modules/dev/setup-dev.sh" ;;
+        esac
+    done
+}
+
+# ---------------------------------------------------------------------------
+# 子菜单：备份与恢复
+# ---------------------------------------------------------------------------
+sub_backup() {
+    while true; do
+        local c
+        c=$(dt_menu "备份与恢复" "用户级配置备份/恢复（无需 sudo）：" \
+            "backup|① 配置备份|打包 fcitx5/uuremote/niri/git 等配置" \
+            "back|← 返回主菜单|") || return 0
+        [ "$c" = back ] && return 0
+        case "$c" in
+            backup) bash "$DT_ROOT/modules/backup/backup-config.sh" ;;
+        esac
+    done
+}
+
+# ---------------------------------------------------------------------------
 # 子菜单：系统配置 / 开发 / 备份（预留分类，后续往对应目录加脚本即可）
 # ---------------------------------------------------------------------------
 sub_placeholder() { # title
@@ -267,7 +299,8 @@ main() {
             network) sub_network ;;
             system) sub_system ;;
             apps) sub_apps ;;
-            dev|backup) sub_placeholder "$c" "$c" ;;
+            dev) sub_dev ;;
+            backup) sub_backup ;;
             about)
                 dt_info "desktop-toolkit\n\n仓库目录：$DT_ROOT\n\n用法：\n1) git clone 本仓库\n2) cd desktop-toolkit && ./main.sh\n3) 菜单选择对应分类，选中即开始\n\n脚本按分类放在 modules/ 下，公共库在 lib/，资源在 assets/。" ;;
         esac

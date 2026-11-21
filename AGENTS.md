@@ -31,11 +31,15 @@ desktop-toolkit/
     │   ├── niri-noctalia.sh     # 一键配置 Niri + Noctalia 桌面外壳
     │   └── niri-shell-switch.sh # DMS ↔ Noctalia 外壳切换(避免双壳抢顶栏)
     ├── system/              # 系统诊断(由 main.sh 的 sub_system 自动扫描)
-    │   └── niri-doctor.sh       # Niri 环境体检 + 一键修复
+    │   ├── niri-doctor.sh       # Niri 环境体检 + 一键修复
+    │   └── env-doctor.sh        # 通用环境体检(磁盘/内存/服务/更新/输入法)
     ├── apps/                # 应用安装(由 main.sh 的 sub_apps 列出)
     │   ├── uu-remote.sh         # UU 远程 Linux 被控端 安装/登录/体检/卸载
     │   └── wowtype.sh           # WowType 输入法(fcitx5 插件) 安装/体检/卸载
-    └── <分类>/…             # 其他待扩展分类
+    ├── dev/                 # 开发环境(由 main.sh 的 sub_dev 列出)
+    │   └── setup-dev.sh         # git 配置 + 常用开发工具安装
+    └── backup/              # 备份与恢复(由 main.sh 的 sub_backup 列出)
+        └── backup-config.sh     # 用户级配置备份/恢复/清理
 ```
 
 - 入口只认 `main.sh`；模块通过 `source lib/common.sh` / `source lib/ui.sh` 取公共能力。
