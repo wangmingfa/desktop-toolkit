@@ -95,6 +95,7 @@ sub_wm() {
             "niri-noctalia|② 一键配置 Niri + Noctalia|Noctalia 桌面外壳(需已装 niri；Fedora 45+ 默认源)" \
             "niri-shell-switch|③ 切换桌面外壳(DMS ↔ Noctalia)|两个外壳同时开会抢顶栏, 这里关掉一个开另一个" \
             "niri-config|④ Niri 可视化配置|常用配置菜单化: 布局/边框/阴影/输入/光标/显示器输出" \
+            "niri-tools|⑤ niri 日常工具|截图/录屏/剪贴板历史 + 快捷键(Print/Super+P/Super+V)" \
             "back|← 返回主菜单|") || return 0
         [ "$c" = back ] && return 0
         case "$c" in
@@ -113,6 +114,9 @@ sub_wm() {
                 ;;
             niri-config)
                 bash "$DT_ROOT/modules/wm/niri-config.sh"
+                ;;
+            niri-tools)
+                bash "$DT_ROOT/modules/wm/niri-tools.sh"
                 ;;
         esac
     done
