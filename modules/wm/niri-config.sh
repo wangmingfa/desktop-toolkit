@@ -810,20 +810,81 @@ uninstall_all() {
 }
 
 # ---------------------------------------------------------------------------
+# 搜索: 全量配置项目录(关键词|显示名|所属分类|要打开的菜单函数)
+#   功能越多越记不清某项在哪个菜单，搜索按关键词定位后直接跳进对应子菜单。
+#   关键词含中文名/配置键/英文，便于任意片段命中; 匹配用字面量(grep -F)防误正则。
+# ---------------------------------------------------------------------------
+CATALOG=(
+    "窗口间距 gaps 间距 窗口 距离|窗口间距|布局与外观|menu_layout"
+    "焦点列居中 center-focused-column 居中 列 位置|焦点列居中|布局与外观|menu_layout"
+    "新列显示模式 default-column-display 显示 列 标签 tabbed normal|新列显示模式|布局与外观|menu_layout"
+    "工作区背景色 background-color 背景 颜色 workspace|工作区背景色|布局与外观|menu_layout"
+    "焦点环 focus-ring 聚焦 边框 宽度 颜色 活动 非活动|焦点环|布局与外观|menu_focus_ring"
+    "窗口边框 border 边框 宽度 颜色|窗口边框|布局与外观|menu_border"
+    "窗口阴影 shadow 阴影 柔和度 扩散 偏移 颜色|窗口阴影|布局与外观|menu_shadow"
+    "窗口按钮 窗口装饰 标题栏 无边框 prefer-no-csd 关闭 最大化 最小化 客户端装饰 csd|窗口按钮/装饰|布局与外观|menu_layout"
+    "键盘 keyboard 布局 变体 选项 重复 delay rate 数字锁 numlock|键盘|输入与焦点|menu_keyboard"
+    "触摸板 touchpad 点按 轻触 tap 自然滚动 加速 滚动方式 左手|触摸板|输入与焦点|menu_touchpad"
+    "鼠标 mouse 自然滚动 加速 左手|鼠标|输入与焦点|menu_mouse"
+    "焦点跟随鼠标 focus-follows-mouse 悬停 hover 自动聚焦 跟随|焦点跟随鼠标|输入与焦点|menu_focus_follows"
+    "光标主题 cursor-theme xcursor 图标|光标主题|光标与杂项|menu_misc"
+    "光标大小 cursor-size 光标 大小|光标大小|光标与杂项|menu_misc"
+    "打字隐藏光标 hide-when-typing 光标 隐藏 输入|打字时隐藏光标|光标与杂项|menu_misc"
+    "截图路径 screenshot-path 截图 screenshot|截图保存路径|光标与杂项|menu_misc"
+    "概览缩放 overview zoom 缩放 概览|概览缩放|光标与杂项|menu_misc"
+    "概览背景色 overview backdrop 背景 概览|概览背景色|光标与杂项|menu_misc"
+    "跳过快捷键提示 hotkey-overlay 快捷键 提示 启动|跳过快捷键提示|光标与杂项|menu_misc"
+    "中键主选区 clipboard disable-primary 中键 主选区 剪贴板|禁用中键主选区|光标与杂项|menu_misc"
+    "背景模糊 blur 模糊 高斯 背景 透明|背景模糊|光标与杂项|menu_blur"
+    "显示器输出 output 缩放 scale 旋转 transform 开关 显示器|显示器输出|显示器输出|menu_output"
+)
+
+menu_search() {
+    local q
+    q=$(dt_ask_text "搜索配置项" "输入关键词(中文/英文/配置键)，如: 间距 / gaps / 模糊 / 焦点 / 鼠标" "") || return 0
+    [ -n "$q" ] || return 0
+    local -a matched=() rows=()
+    local entry kw disp cat fn
+    local i=0
+    for entry in "${CATALOG[@]}"; do
+        IFS='|' read -r kw disp cat fn <<< "$entry"
+        if printf '%s' "$kw" | grep -qiF "$q"; then
+            matched+=("$entry")
+            rows+=("$i|$disp|$cat")
+            i=$((i+1))
+        fi
+    done
+    if [ "${#matched[@]}" -eq 0 ]; then
+        err "未找到匹配 \"$q\" 的配置项"
+        return 0
+    fi
+    rows+=("back|← 返回|")
+    local sel
+    sel=$(dt_menu "搜索结果" "匹配 ${#matched[@]} 项，选择后进入对应菜单：" "${rows[@]}") || return 0
+    [ "$sel" = back ] && return 0
+    [[ "$sel" =~ ^[0-9]+$ ]] || return 0
+    [ "$sel" -lt "${#matched[@]}" ] || return 0
+    IFS='|' read -r kw disp cat fn <<< "${matched[$sel]}"
+    "$fn"
+}
+
+# ---------------------------------------------------------------------------
 # 主菜单
 # ---------------------------------------------------------------------------
 main_menu() {
     while true; do
         local c
         c=$(dt_menu "Niri 可视化配置" "改完自动生成 KDL + 校验 + 热重载；只影响你显式设置过的项：" \
-            "layout|① 布局与外观|间距/居中/边框/焦点环/阴影/背景/窗口装饰" \
-            "input|② 输入与焦点|键盘/触摸板/鼠标/焦点跟随" \
-            "misc|③ 光标与杂项|光标/截图/装饰/概览/模糊" \
-            "output|④ 显示器输出|缩放/旋转/开关（每台显示器）" \
-            "view|⑤ 查看当前配置|已设置项 + 校验结果" \
-            "reset|⑥ 全部重置|清空本工具的所有设置" \
+            "search|① 搜索配置项|按关键词找到对应菜单(支持中文/英文/配置键)" \
+            "layout|② 布局与外观|间距/居中/边框/焦点环/阴影/背景/窗口装饰" \
+            "input|③ 输入与焦点|键盘/触摸板/鼠标/焦点跟随" \
+            "misc|④ 光标与杂项|光标/截图/装饰/概览/模糊" \
+            "output|⑤ 显示器输出|缩放/旋转/开关（每台显示器）" \
+            "view|⑥ 查看当前配置|已设置项 + 校验结果" \
+            "reset|⑦ 全部重置|清空本工具的所有设置" \
             "back|← 退出|") || return 0
         case "$c" in
+            search) menu_search ;;
             layout) menu_layout ;;
             input) menu_input ;;
             misc) menu_misc ;;
