@@ -66,6 +66,7 @@ desktop-toolkit/
 4. **注册入口**：在 `main.sh` 对应分类菜单加一个选项；需要自动扫描的放对应目录。
 5. **可执行**：`chmod +x`（`.desktop` 启动器/`main.sh` 调用需要）。
 6. **自检后再提交**：`bash -n <file>` 语法通过，且跑一次关键路径验证，再 `git commit` + `push`。
+7. **发行版感知（默认强规则）**：新功能**必须支持各 Linux 发行版**（Fedora / Ubuntu / Debian / Arch），除非**明确无法支持**（如某包只在特定发行版、需要第三方源/编译、包名无对应）。做法：`wg_distro()` 读 `/etc/os-release` 的 `ID` 映射发行版；包名按发行版列进目录（参考 `app-installer.sh`/`windows-games.sh` 的 `id|...|fedora|ubuntu|debian|arch` 矩阵）；安装用 `dnf`/`apt`/`pacman` 分发。**不支持的情况要在菜单/说明里诚实标注原因**（不能静默失败或硬编码单一发行版）。
 
 ---
 
@@ -288,6 +289,21 @@ desktop-toolkit/
   `display-manager.service` 别名）+ `niri_restart_dm()`。**踩过的真实报错**：
   在 CachyOS 上硬编码 `sudo systemctl restart gdm` →
   `Failed to restart gdm.service: Unit gdm.service not found`。
+
+### 9.1b Windows 游戏运行环境（`modules/apps/windows-games.sh`）的发行版矩阵
+
+| 组件 | Fedora | Ubuntu | Debian | Arch |
+|---|---|---|---|---|
+| wine（必须） | wine | wine | wine | wine |
+| lutris（必须） | lutris | lutris | lutris | lutris |
+| steam（可选） | steam | steam ⚠需 multiverse | steam ⚠需 non-free | steam ⚠需 multilib |
+| gamescope | gamescope | gamescope | gamescope | gamescope |
+| mangohud | mangohud | mangohud | mangohud | mangohud |
+| vulkan | vulkan-loader | mesa-vulkan-drivers | mesa-vulkan-drivers | vulkan-icd-loader |
+
+- 安装分发 `dnf` / `apt`（含 `apt-get update`）/ `pacman --needed`；`wg_distro()` 读 `/etc/os-release` 的 `ID`。
+- `usage` 按发行版提示：Ubuntu/Debian 32 位需 `dpkg --add-architecture i386` + wine32；Arch 老 32 位游戏需 multilib + `lib32-*`；Fedora steam 走 rpmfusion-nonfree-steam。
+- **游戏本体需 Steam 账户/购买，脚本只装环境**（本机 VMware 虚拟显卡 → 3D 跑不动，2D 轻量可行，诚实标注）。
 
 ### 9.2 配置切换/卸载类脚本的三条铁律（`niri-shell-switch.sh` / `--uninstall` 踩过）
 
