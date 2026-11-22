@@ -147,6 +147,7 @@ desktop-toolkit/
 - **用进程替换取函数输出**：`read -r a b < <(func)`，避免命令替换在 `set -e` 下的隐性问题。
 - **`local` 只在函数内用**；数组用 `local -a`。
 - **函数返回非零要显式处理**：`"$fn"` 或 `|| return 1`，别让 `set -e` 在中间步意外中止。
+- **systemctl 状态判断的非零陷阱**：`systemctl --user is-enabled/is-active` 对 masked/inactive/未启用返回非零，`if systemctl ... is-active; then` 会**误判**（masked 服务被判为"未运行"）。用 `$( )` 收集 + 字符串比较：`[ "$(systemctl --user is-active x 2>/dev/null)" = active ]`。
 
 ---
 
@@ -314,6 +315,17 @@ desktop-toolkit/
 **shell 脚本两个易踩坑（`set -euo pipefail` 下）：**
 - **`cmd | head` 会让上游收到 SIGPIPE 非零 → pipefail 下整个管道返回非零**，`|| echo 失败` 会**误判**。要显示前 N 行：先 `out=$(cmd)` 收集，再 `echo "$out" | head`（echo 写完无 SIGPIPE）。
 - **python f-string 内复用同一种引号会语法报错**（`f"  {"✅" if x else "  "} "` 内层又用双引号，部分 python 版本报 `SyntaxError`）。改用字符串拼接 `"  " + ("✅" if x else "  ") + " " + x["id"]`。
+
+**include 行含双引号不能拼进 awk 程序（`niri-tools/audio/wlsunset/wallpaper` 同源 bug，已修）：**
+- `TOOLS_INCLUDE='include optional=true "tools.kdl"'` 直接 `awk '{...; print "'"$TOOLS_INCLUDE"'"}'` 会让**awk 语法错误、include 从未写入**（快捷键/配置不生效且无报错）。必须 `awk -v inc="$TOOLS_INCLUDE" '{...; print inc}'` 传变量。改 include 一律 `awk -v`，别拼引号。
+
+**测试 source 模块去 case 块：awk 模式必须匹配实际 case 模式：**
+- 模块入口多用 `case "${1:-menu}" in`（niri-tools/wallpaper/app-installer/cliphist），若 awk 按 `^case "\$\{1:-\}" in` 去 case，**case 块没去掉** → source 时 `$1` 空走 `*) menu` 弹 GUI（zenity）**挂起 exit 124 无输出**。统一 `awk '/^case "\$\{1:-menu\}" in/{exit} {print}'`（模块用啥模式就匹配啥）。
+
+**DMS 顶栏组件（barConfigs）—— 只存非默认值 + JS 默认解析：**
+- `~/.config/dms/settings.json` 是 DMS UI 设置（`configVersion` 与 `SettingsData.qml` 的 `settingsConfigVersion` 一致，当前 42），但**只存改过的键**（没改过就没有 `barConfigs`，DMS 用 `SettingsSpec.js` 的默认）。所以 status 要先看 settings 有没有 barConfigs，没有就回退 SPEC 默认。
+- **改 barConfigs 要写完整结构**（DMS 不深合并缺省字段），且**先备份 `.bak`、保留其他键**（`dmsWindowsFloatingSeeded`/`configVersion`）。组件 id 从 `BarWidgetCatalog.qml` 的 `"id":` 运行时解析；监控组件 id：`cpuUsage/memUsage/diskUsage/cpuTemp/gpuTemp/network_speed_monitor/battery`。
+- **解析 SettingsSpec.js 的 JS 对象字面量**（`def: [{ id: "default", ... }]` 键无引号）→ 先正则给键补引号、去 `//` 注释、去尾逗号，再 `json.loads`；`ast.literal_eval` 会因裸键名失败。
 
 ---
 
