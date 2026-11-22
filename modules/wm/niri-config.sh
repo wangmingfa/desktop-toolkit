@@ -283,6 +283,21 @@ gen_idle() {
     state_has idle_dpms_ms && [ "$(state_get idle_dpms_ms 0)" != 0 ] && printf 'idle { dpms-timeout-ms %s }\n' "$(state_get idle_dpms_ms)"
 }
 
+gen_window_rule() {
+    # 窗口规则(顶层): 一条规则(目标 app-id + 浮窗/最大化/无边框/固定工作区)
+    local appid; appid=$(state_get wr_appid '')
+    [ -n "$appid" ] || return 0
+    local body; body=$(mktemp)
+    printf 'window-rule {\n    match app-id="%s"\n' "$appid" >> "$body"
+    [ "$(state_get wr_float 0)" = 1 ] && printf '    is-floating true\n' >> "$body"
+    [ "$(state_get wr_max 0)" = 1 ] && printf '    open-maximized true\n' >> "$body"
+    [ "$(state_get wr_border 0)" = 1 ] && printf '    border off\n' >> "$body"
+    local ws; ws=$(state_get wr_ws '')
+    [ -n "$ws" ] && printf '    open-on-workspace "%s"\n' "$ws" >> "$body"
+    printf '}\n\n' >> "$body"
+    cat "$body"; rm -f "$body"
+}
+
 gen_outputs() {
     [ -f "$STATE" ] || return 0
     local line name n
@@ -306,7 +321,7 @@ gen_outputs() {
 gen_all() { # <outfile>
     local out="$1"; : > "$out"
     printf '// 由 desktop-toolkit niri-config.sh 生成；请用工具修改，手改可能被覆盖。\n' >> "$out"
-    { gen_layout; gen_anim; gen_input; gen_misc; gen_outputs; gen_spawn_at_startup; gen_environment; gen_notifications; gen_workspaces; gen_idle; } >> "$out"
+    { gen_layout; gen_anim; gen_input; gen_misc; gen_outputs; gen_spawn_at_startup; gen_environment; gen_notifications; gen_workspaces; gen_idle; gen_window_rule; } >> "$out"
 }
 
 # ---------------------------------------------------------------------------
@@ -844,6 +859,30 @@ menu_system() {
 }
 
 # ---------------------------------------------------------------------------
+# 子菜单: 窗口规则(window-rule)
+# ---------------------------------------------------------------------------
+menu_window_rule() {
+    while true; do
+        local c
+        c=$(dt_menu "窗口规则" "给某应用设置规则(浮窗/最大化/无边框/固定工作区)：" \
+            "appid|① 目标应用 app-id|当前: $(state_get wr_appid 未设置)" \
+            "float|② 浮窗|$(onoff "$(state_get wr_float 0)")" \
+            "max|③ 最大化|$(onoff "$(state_get wr_max 0)")" \
+            "border|④ 无边框|$(onoff "$(state_get wr_border 0)")" \
+            "ws|⑤ 固定工作区|当前: $(state_get wr_ws 未设置)" \
+            "back|← 返回|") || return 0
+        case "$c" in
+            appid) text_set wr_appid "目标应用 app-id(如 firefox / code; 留空=清除规则)" "" && save ;;
+            float) toggle_set wr_float "让该应用浮窗？" 0 && save ;;
+            max) toggle_set wr_max "让该应用打开时最大化？" 0 && save ;;
+            border) toggle_set wr_border "无边框(去掉窗口边框)？" 0 && save ;;
+            ws) text_set wr_ws "固定工作区(留空=不固定)" "" && save ;;
+            back) return 0 ;;
+        esac
+    done
+}
+
+# ---------------------------------------------------------------------------
 # 子菜单: 显示器输出
 # ---------------------------------------------------------------------------
 list_outputs() {
@@ -966,6 +1005,7 @@ CATALOG=(
     "通知 notifications timeout 超时 提示|通知超时|系统与开机|menu_system"
     "工作区 workspace 命名 名称 数量|工作区命名|系统与开机|menu_ws_names"
     "空闲 idle 电源 关屏 dpms 超时|空闲 DPMS 关屏|系统与开机|menu_system"
+    "窗口规则 window-rule 浮窗 最大化 无边框 固定工作区 app-id|窗口规则|窗口规则|menu_window_rule"
 )
 
 menu_search() {
@@ -1009,9 +1049,10 @@ main_menu() {
             "input|③ 输入与焦点|键盘/触摸板/鼠标/焦点跟随" \
             "misc|④ 光标与杂项|光标/截图/装饰/概览/模糊" \
             "output|⑤ 显示器输出|缩放/旋转/开关（每台显示器）" \
-            "system|⑥ 系统与开机|开机自启/环境变量/通知" \
-            "view|⑦ 查看当前配置|已设置项 + 校验结果" \
-            "reset|⑧ 全部重置|清空本工具的所有设置" \
+            "system|⑥ 系统与开机|开机自启/环境变量/通知/工作区/电源" \
+            "winrule|⑦ 窗口规则|浮窗/最大化/无边框/固定工作区(按应用)" \
+            "view|⑧ 查看当前配置|已设置项 + 校验结果" \
+            "reset|⑨ 全部重置|清空本工具的所有设置" \
             "back|← 退出|") || return 0
         case "$c" in
             search) menu_search ;;
@@ -1020,6 +1061,7 @@ main_menu() {
             misc) menu_misc ;;
             output) menu_output ;;
             system) menu_system ;;
+            winrule) menu_window_rule ;;
             view) show_current ;;
             reset) reset_all ;;
             back) return 0 ;;
