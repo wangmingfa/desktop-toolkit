@@ -248,6 +248,24 @@ gen_misc() {
     state_has screenshot_path && [ -n "$(state_get screenshot_path)" ] && printf 'screenshot-path "%s"\n' "$(state_get screenshot_path)"
 }
 
+gen_spawn_at_startup() {
+    # 开机自启(顶层, 合并): 单条命令; 多条可由用户手动加或后续扩展
+    local s; s=$(state_get spawn '')
+    [ -n "$s" ] && printf 'spawn-at-startup "%s"\n' "$s"
+}
+
+gen_environment() {
+    # 环境变量(顶层, 合并): 存 "KEY value"
+    local e; e=$(state_get env_var '')
+    [ -n "$e" ] || return 0
+    printf 'environment { %s }\n' "$e"
+}
+
+gen_notifications() {
+    # 通知(顶层): 超时(ms)
+    state_has notify_timeout_ms && printf 'notifications { timeout-ms %s }\n' "$(state_get notify_timeout_ms)"
+}
+
 gen_outputs() {
     [ -f "$STATE" ] || return 0
     local line name n
@@ -271,7 +289,7 @@ gen_outputs() {
 gen_all() { # <outfile>
     local out="$1"; : > "$out"
     printf '// 由 desktop-toolkit niri-config.sh 生成；请用工具修改，手改可能被覆盖。\n' >> "$out"
-    { gen_layout; gen_anim; gen_input; gen_misc; gen_outputs; } >> "$out"
+    { gen_layout; gen_anim; gen_input; gen_misc; gen_outputs; gen_spawn_at_startup; gen_environment; gen_notifications; } >> "$out"
 }
 
 # ---------------------------------------------------------------------------
@@ -764,6 +782,25 @@ menu_misc() {
     done
 }
 
+# 子菜单: 系统与开机(自启/环境变量/通知)
+# ---------------------------------------------------------------------------
+menu_system() {
+    while true; do
+        local c
+        c=$(dt_menu "系统与开机" "开机自启 / 环境变量 / 通知：" \
+            "spawn|① 开机自启 spawn-at-startup|当前: $(state_get spawn 未设置)" \
+            "env|② 环境变量 environment|当前: $(state_get env_var 未设置)" \
+            "notify|③ 通知超时 notifications|当前: $(state_get notify_timeout_ms 未设置) ms" \
+            "back|← 返回|") || return 0
+        case "$c" in
+            spawn) text_set spawn "开机自启命令(如: cliphist serve / 壁纸, 留空清除)" "" && save ;;
+            env) text_set env_var "环境变量(格式: KEY value, 如: QT_QPA_PLATFORM wayland)" "" && save ;;
+            notify) num_int_set notify_timeout_ms "通知超时(ms, 0=常驻)" 5000 0 60000 && save ;;
+            back) return 0 ;;
+        esac
+    done
+}
+
 # ---------------------------------------------------------------------------
 # 子菜单: 显示器输出
 # ---------------------------------------------------------------------------
@@ -882,6 +919,9 @@ CATALOG=(
     "中键主选区 clipboard disable-primary 中键 主选区 剪贴板|禁用中键主选区|光标与杂项|menu_misc"
     "背景模糊 blur 模糊 高斯 背景 透明|背景模糊|光标与杂项|menu_blur"
     "显示器输出 output 缩放 scale 旋转 transform 开关 显示器|显示器输出|显示器输出|menu_output"
+    "开机自启 spawn-at-startup 自启 启动 命令|开机自启|系统与开机|menu_system"
+    "环境变量 environment 环境 KEY|环境变量|系统与开机|menu_system"
+    "通知 notifications timeout 超时 提示|通知超时|系统与开机|menu_system"
 )
 
 menu_search() {
@@ -925,8 +965,9 @@ main_menu() {
             "input|③ 输入与焦点|键盘/触摸板/鼠标/焦点跟随" \
             "misc|④ 光标与杂项|光标/截图/装饰/概览/模糊" \
             "output|⑤ 显示器输出|缩放/旋转/开关（每台显示器）" \
-            "view|⑥ 查看当前配置|已设置项 + 校验结果" \
-            "reset|⑦ 全部重置|清空本工具的所有设置" \
+            "system|⑥ 系统与开机|开机自启/环境变量/通知" \
+            "view|⑦ 查看当前配置|已设置项 + 校验结果" \
+            "reset|⑧ 全部重置|清空本工具的所有设置" \
             "back|← 退出|") || return 0
         case "$c" in
             search) menu_search ;;
@@ -934,6 +975,7 @@ main_menu() {
             input) menu_input ;;
             misc) menu_misc ;;
             output) menu_output ;;
+            system) menu_system ;;
             view) show_current ;;
             reset) reset_all ;;
             back) return 0 ;;
