@@ -23,7 +23,9 @@ sub_appearance() {
             "kde|① KDE 外观美化|macOS 26 Tahoe / 15 经典 安装切换 + 微调工具|gui" \
             "gnome|② GNOME 外观美化|macOS 26 / 15 方案（适用于 GNOME 系统）|gui" \
             "wbtn|③ 窗口按钮布局|GTK/Electron 关闭按钮位置（macOS 左 / Windows 右）" \
-            "list|④ 查看当前所有配置|打印可调项清单" \
+            "fcitx5-style|④ fcitx5 输入法外观|中文输入法主题切换/下载/字体" \
+            "mako-style|⑤ mako 通知样式|透明/圆角/位置（DMS 环境 mako 被屏蔽则提示）" \
+            "list|⑥ 查看当前所有配置|打印可调项清单" \
             "back|← 返回主菜单|") || return 0
         [ "$c" = back ] && return 0
         case "$c" in
@@ -33,6 +35,10 @@ sub_appearance() {
                 bash "$APPEARANCE/gnome/gnome-config-center.sh" ;;
             wbtn)
                 bash "$APPEARANCE/window-buttons.sh" ;;
+            fcitx5-style)
+                bash "$APPEARANCE/fcitx5-style.sh" ;;
+            mako-style)
+                bash "$APPEARANCE/mako-style.sh" ;;
             list)
                 "$APPEARANCE/adjust-window.sh" list > /tmp/dt-config-list.txt 2>&1 || true
                 if [ "$GUI" = zenity ]; then
