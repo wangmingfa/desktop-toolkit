@@ -295,6 +295,26 @@ desktop-toolkit/
 - **`modules/system/` 由 `sub_system()` 自动扫描**：新增诊断工具只需往该目录丢一个 `.sh`，
   主菜单会自动出现，**不需要改 `main.sh`**。目录为空时回退 `sub_placeholder` 提示。
 
+### 9.3 niri 生态脚本踩坑（`niri-config.sh` / `niri-tools.sh` / `niri-wallpaper.sh` / `niri-dms-theme.sh` 实测）
+
+**niri 26.04 原生能力（实测 validate，优先用原生少装外部进程）：**
+- `binds { Print { screenshot-ui-open; } }` / `{ screenshot; }`：**截图动作内置**，`screenshot-ui-open` 开截图 UI（区域/全屏/窗口），`screenshot` 全屏；配 `screenshot-path "~/Pictures/..."`。
+- **无名字 `output { background-image "<path>" }` = 应用到所有输出**，**无需 swaybg/swww 额外进程**（per-output 才要写 `output "名字" {}`）。
+- `animation { window-movement|window-open|window-close|workspace-switch { spring damping-ratio=… stiffness=… epsilon=… } }`：内联 spring 语法，字段可 `niri validate` 验证。
+- **`niri validate` 从 stdin 读**，**不接受文件位置参数**（`niri validate < file`，写 `niri validate file` 会报 `unexpected argument`）；片段（仅 binds/output 等）也能 validate，不必拼完整配置。
+
+**多工具各自用独立 include 文件（避免互相覆盖）：**
+- niri-config 独占 `dt-settings.kdl`、niri-tools 用 `tools.kdl`、niri-wallpaper 用 `wallpaper.kdl`，各自在主配置末尾加 `include optional=true "xxx.kdl"`（awk 幂等，别拼 sed 引号）。
+- include 是**合并语义 + 末尾优先**：主配置里的 `animation{}`/`binds{}` 被各自 include 文件覆盖；删除某工具只需 `awk` 移除它的 include 行 + `rm` 它的 .kdl，不碰别的。
+
+**DMS 顶栏/全局主题机制（不是随便改 shell.qml）：**
+- 顶栏 QML 颜色来自 **`dms matugen generate --kind hex|image --value <hex|壁纸> --mode dark|light --spec dms`** 生成的 Material 主题，**同步 niri `colors.kdl` + gtk/fcitx5/终端等**（`dms matugen check` 输出 JSON 探测哪些应用可同步）。
+- 自定义整个 UI 才用 `dms -c <含 shell.qml 的目录>` / `env DMS_SHELL_DIR`；一般美化只用 matugen。
+
+**shell 脚本两个易踩坑（`set -euo pipefail` 下）：**
+- **`cmd | head` 会让上游收到 SIGPIPE 非零 → pipefail 下整个管道返回非零**，`|| echo 失败` 会**误判**。要显示前 N 行：先 `out=$(cmd)` 收集，再 `echo "$out" | head`（echo 写完无 SIGPIPE）。
+- **python f-string 内复用同一种引号会语法报错**（`f"  {"✅" if x else "  "} "` 内层又用双引号，部分 python 版本报 `SyntaxError`）。改用字符串拼接 `"  " + ("✅" if x else "  ") + " " + x["id"]`。
+
 ---
 
 ## 10. GDM / Wayland 会话文件（"登录界面没有会话切换项"= 这几个坑）
