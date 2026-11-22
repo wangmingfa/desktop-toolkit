@@ -218,6 +218,7 @@ sub_apps() {
             "app-installer|3. 常用应用安装器|Chromium/Firefox/VLC/LibreOffice/Podman 等, 发行版感知" \
             "flatpak-mgr|4. Flatpak 应用管理|隔离运行 GUI 应用(装/卸/更新)" \
             "windows-games|5. Windows 游戏运行环境|Wine/Lutris/Steam 平台(勾选装)" \
+            "qemu-installer|6. QEMU/KVM 虚拟机|QEMU+libvirt+UEFI+建虚拟机(装完直接加VM)" \
             "back|← 返回主菜单|") || return 0
         [ "$c" = back ] && return 0
         [ "$c" = __quit ] && exit 0
@@ -232,6 +233,8 @@ sub_apps() {
                 bash "$DT_ROOT/modules/apps/flatpak-mgr.sh" ;;
             windows-games)
                 bash "$DT_ROOT/modules/apps/windows-games.sh" ;;
+            qemu-installer)
+                bash "$DT_ROOT/modules/apps/qemu-installer.sh" ;;
         esac
     done
 }
