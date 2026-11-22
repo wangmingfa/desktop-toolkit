@@ -149,6 +149,73 @@ bk_prune() {
 # ---------------------------------------------------------------------------
 # 菜单 / 分发
 # ---------------------------------------------------------------------------
+# ---------------------------------------------------------------------------
+# 定时备份（systemd 用户 timer）
+# ---------------------------------------------------------------------------
+bk_timer_setup() { # <daily|hourly|weekly>
+    local when="$1"
+    local unit_dir="$HOME/.config/systemd/user"
+    mkdir -p "$unit_dir"
+    cat > "$unit_dir/backup-config.service" <<EOF
+[Unit]
+Description=Backup user configs (desktop-toolkit)
+[Service]
+Type=oneshot
+ExecStart=$DT_ROOT/modules/backup/backup-config.sh backup
+EOF
+    cat > "$unit_dir/backup-config.timer" <<EOF
+[Unit]
+Description=Backup user configs ${when}
+[Timer]
+OnCalendar=${when}
+Persistent=true
+[Install]
+WantedBy=timers.target
+EOF
+    systemctl --user daemon-reload
+    systemctl --user enable --now backup-config.timer
+    log "已开启定时备份（${when}）"
+}
+
+bk_timer_disable() {
+    systemctl --user disable --now backup-config.timer 2>/dev/null || true
+    rm -f "$HOME/.config/systemd/user/backup-config.service" \
+          "$HOME/.config/systemd/user/backup-config.timer"
+    systemctl --user daemon-reload 2>/dev/null || true
+    log "已关闭定时备份"
+}
+
+bk_timer_status() {
+    if systemctl --user is-enabled backup-config.timer >/dev/null 2>&1; then
+        echo -e "  ${DT_GREEN}✅${DT_NC} 定时备份 timer 已启用"
+        systemctl --user list-timers backup-config.timer --no-pager 2>/dev/null \
+            | tail -2 | head -1 | sed 's/^/  /'
+    else
+        echo -e "  ${DT_YELLOW}❌${DT_NC} 定时备份 timer 未启用"
+    fi
+}
+
+bk_menu_timer() {
+    while true; do
+        local c
+        c=$(dt_menu "定时备份" "systemd 用户 timer 自动备份配置到 ~/backups：" \
+            "hourly|① 每小时|OnCalendar=hourly" \
+            "daily|② 每天|OnCalendar=daily（推荐）" \
+            "weekly|③ 每周|OnCalendar=weekly" \
+            "off|④ 关闭定时备份|停 timer + 删单元" \
+            "status|⑤ 状态|timer 启用情况" \
+            "back|← 返回|") || return 0
+        case "$c" in
+            hourly) bk_timer_setup hourly ;;
+            daily) bk_timer_setup daily ;;
+            weekly) bk_timer_setup weekly ;;
+            off) bk_timer_disable ;;
+            status) bk_timer_status ;;
+            back) return 0 ;;
+        esac
+    done
+}
+
 bk_menu() {
     while true; do
         local c
@@ -157,6 +224,7 @@ bk_menu() {
             "list|② 列出备份|显示 ~/backups 下的备份" \
             "restore|③ 恢复|选择备份并覆盖还原" \
             "prune|④ 清理旧备份|只保留最近 N 份（默认 10）" \
+            "timer|⑤ 定时备份|systemd timer 自动备份（每小时/每天/每周）" \
             "back|← 返回|") || return 0
         case "$c" in
             back) return 0 ;;
@@ -164,6 +232,7 @@ bk_menu() {
             list) bk_list ;;
             restore) bk_restore "" ;;
             prune) bk_prune ;;
+            timer) bk_menu_timer ;;
         esac
         echo
     done
