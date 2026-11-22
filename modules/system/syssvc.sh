@@ -34,8 +34,8 @@ sv_need_sudo() {
 sv_list() {
     echo -e "  ${DT_BOLD}═══ 运行中系统服务（前 20）═══${DT_NC}"
     systemctl list-units --type=service --state=running --no-pager 2>/dev/null \
-        | grep -E '^[a-z0-9@_.-]+\.service' | head -20 \
-        || sv_err "读取失败"
+        | grep -E '^\s+[a-z0-9@_.-]+\.service' | head -20 \
+        || sv_err "读取失败（或没有运行中服务）"
 }
 
 sv_failed() {
