@@ -56,6 +56,7 @@ desktop-toolkit/
 3. **GUI 自适应**：交互一律走 `dt_detect_gui` + `dt_menu` / `dt_confirm` / `dt_info` / `dt_ask_num` / `dt_ask_text`；**不要直接调 zenity/kdialog**（容器/宿主机两套工具要通用）。纯终端兜底用 `read -p`。
    - **TUI 兜底已内置**：`dt_detect_gui` 找不到 zenity/kdialog 时（`GUI=none`），`ui.sh` 的 `dt_menu`/`dt_confirm`/`dt_info`/`dt_ask_*` 自动退化为**文本交互**，无需额外 `read -p` 分支。
    - **菜单行第 4 字段 `|gui`**：表示"需要 GUI 环境"的选项，TUI 下由 `dt_menu` 自动隐藏（如 `main.sh` 的"外观美化"）。新增 GUI 专属菜单项时**必须**加 `|gui` 后缀，否则 headless 机器上会误显示。
+   - **`__quit` 直接退出（多级菜单不再逐级退）**：`dt_menu` 自动追加"退出程序"项（返回 `__quit` + 写标志文件）。**每个菜单循环的 `case` 必须加 `__quit) exit 0 ;;`**（嵌套 `xxx=$(dt_menu ...)` 后加 `[ "$xxx" = __quit ] && exit 0`），否则该项无效。`main.sh` 子菜单循环顶用 `dt_quit_pending && exit 0` 让"模块内退出"连带退出主程序（模块是子进程，`exit` 杀不到父进程，靠标志文件传播）。新模块按此约定，勿再自设 `exit|N. 退出` 菜单项（已由 `__quit` 统一）。
    - **stdout/stderr**：TUI 的菜单文本/提示一律走 **stderr**，`dt_menu` 的 stdout 只输出所选 key（它常被 `c=$(dt_menu ...)` 捕获；若提示打到 stdout 会被吞掉，且前导换行会让 `case` 匹配失败）。
    - **ui.sh 无多选，勾选-确认模式要自建**：`dt_menu` 是单选；需要"多选/复选框"（如 de-installer 可选依赖去掉勾选）时，用"**点击切换 + 确认安装**"模式：
      - 可选依赖**默认全勾选**（一键语义），数组 `sel` 存勾选 id；`de_in_sel <id> "${sel[@]}"` 判断，选中即从数组移除（重建数组），未选则加入。
