@@ -25,7 +25,8 @@ sub_appearance() {
             "wbtn|③ 窗口按钮布局|GTK/Electron 关闭按钮位置（macOS 左 / Windows 右）" \
             "fcitx5-style|④ fcitx5 输入法外观|中文输入法主题切换/下载/字体" \
             "mako-style|⑤ mako 通知样式|透明/圆角/位置（DMS 环境 mako 被屏蔽则提示）" \
-            "list|⑥ 查看当前所有配置|打印可调项清单" \
+            "font-manager|⑥ 字体管理|已装字体列表 + Nerd Font 编程字体" \
+            "list|⑦ 查看当前所有配置|打印可调项清单" \
             "back|← 返回主菜单|") || return 0
         [ "$c" = back ] && return 0
         case "$c" in
@@ -39,6 +40,8 @@ sub_appearance() {
                 bash "$APPEARANCE/fcitx5-style.sh" ;;
             mako-style)
                 bash "$APPEARANCE/mako-style.sh" ;;
+            font-manager)
+                bash "$APPEARANCE/font-manager.sh" ;;
             list)
                 "$APPEARANCE/adjust-window.sh" list > /tmp/dt-config-list.txt 2>&1 || true
                 if [ "$GUI" = zenity ]; then
