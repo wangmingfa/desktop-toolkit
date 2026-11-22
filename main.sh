@@ -62,6 +62,7 @@ sub_network() {
         c=$(dt_menu "网络工具" "网络相关脚本：" \
             "mirror|① GitHub 国内镜像一键配置|对大陆网络下 github 慢/不通的场景" \
             "proxy|② 代理一键配置|git/dnf/pip/npm/cargo 代理 + no_proxy（受限网络）" \
+            "speedtest|③ 网络测速|speedtest-cli 测下行/上行/延迟" \
             "back|← 返回主菜单|") || return 0
         [ "$c" = back ] && return 0
         case "$c" in
@@ -86,6 +87,8 @@ sub_network() {
                 fi
                 bash "$DT_ROOT/modules/network/proxy-setup.sh" "$action" "${url:-}"
                 ;;
+            speedtest)
+                bash "$DT_ROOT/modules/network/speedtest.sh" ;;
         esac
     done
 }
