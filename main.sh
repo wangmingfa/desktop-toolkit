@@ -98,6 +98,7 @@ sub_wm() {
             "niri-tools|⑤ niri 日常工具|截图/录屏/剪贴板历史 + 快捷键(Print/Super+P/Super+V)" \
             "niri-wallpaper|⑥ niri 壁纸/锁屏|原生 background-image 壁纸 + swaylock 锁屏样式" \
             "dms-theme|⑦ DMS 顶栏主题|dms matugen 生成 Material 主题(顶栏+niri+gtk+终端)" \
+            "wm-installer|⑧ WM / 桌面环境安装器|KDE/GNOME/sway/i3/Hyprland 等常见 WM/DE, 发行版感知安装" \
             "back|← 返回主菜单|") || return 0
         [ "$c" = back ] && return 0
         case "$c" in
@@ -125,6 +126,9 @@ sub_wm() {
                 ;;
             dms-theme)
                 bash "$DT_ROOT/modules/wm/niri-dms-theme.sh"
+                ;;
+            wm-installer)
+                bash "$DT_ROOT/modules/wm/wm-installer.sh"
                 ;;
         esac
     done
