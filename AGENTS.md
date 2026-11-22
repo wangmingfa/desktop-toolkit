@@ -104,6 +104,13 @@ desktop-toolkit/
 - `dt_download <github_asset_url> <dest>` 已实现：与 `dt_clone` 同一套镜像回退（直连 → gh-proxy.com → ghfast.top），单源硬上限用外部 `timeout`（`DT_DL_KILL`，默认 300s，大包慢网可放宽）。
 - 成功 `0` / 失败 `1`；**stdout 不输出**（进度/错误全走 stderr），避免被 `$( )` 捕获污染。
 - 适用：GitHub Release 的 `tar.gz` / `deb` / `rpm` / `.sha256` 等**文件**下载（与克隆仓库的 `dt_clone` 互补）。
+- **取"最新 release 的资产 URL"（版本会变，别硬编码 tag）**：先问 GitHub API，用
+  `grep -o 'https://[^"]*\.iso' | head -1` 从 `releases/latest` 解析 `browser_download_url`；
+  **必须 `--max-time 10` 限时 + 保留一个硬编码稳定 tag 的兜底 URL**（解析失败/无 curl 时用它），
+  且管道尾加 `|| true`（`set -o pipefail` 下 grep 无匹配会让 `$( )` 静默失败）。
+  `qemu-installer.sh` 的 `q_virtio_slim_url` 即此写法。
+- **`DT_DL_KILL` 按包体调**：默认 300s 只够小文件；几百 MB 的 ISO 用 `DT_DL_KILL=3600 dt_download …`
+  临时放宽（前缀赋值只作用于这一次调用，不改全局）。
 
 ### 3.1 克隆一律走 `dt_clone`（不要裸 `git clone`）
 - `dt_clone <github_url> <dest> [branch]` 已实现：**直连 → gh-proxy.com → ghfast.top → fastgit.org** 自动回退。
