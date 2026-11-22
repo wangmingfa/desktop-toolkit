@@ -110,6 +110,7 @@ sub_wm() {
             "wm-installer|⑧ WM / 桌面环境安装器|KDE/GNOME/sway/i3/Hyprland 等常见 WM/DE, 发行版感知安装" \
             "niri-audio|⑨ niri 音频控制|音量/静音/媒体键快捷键(pamixer + playerctl)" \
             "wlsunset|⑩ niri 护眼色温|夜间屏幕调暖(wlsunset, 自动日落)" \
+            "dms-topbar|⑪ DMS 顶栏监控|CPU/内存/磁盘/温度/网速/电池 组件开关" \
             "back|← 返回主菜单|") || return 0
         [ "$c" = back ] && return 0
         case "$c" in
@@ -137,6 +138,9 @@ sub_wm() {
                 ;;
             dms-theme)
                 bash "$DT_ROOT/modules/wm/niri-dms-theme.sh"
+                ;;
+            dms-topbar)
+                bash "$DT_ROOT/modules/wm/dms-topbar.sh"
                 ;;
             wm-installer)
                 bash "$DT_ROOT/modules/wm/wm-installer.sh"
