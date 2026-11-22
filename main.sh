@@ -205,6 +205,7 @@ sub_apps() {
             "wowtype|② WowType 输入法|fcitx5 插件，镜像下载 + fcitx5 一键配置" \
             "app-installer|③ 常用应用安装器|Chromium/Firefox/VLC/LibreOffice/Podman 等, 发行版感知" \
             "flatpak-mgr|④ Flatpak 应用管理|隔离运行 GUI 应用(装/卸/更新)" \
+            "windows-games|⑤ Windows 游戏运行环境|Wine/Lutris/Steam 平台(勾选装)" \
             "back|← 返回主菜单|") || return 0
         [ "$c" = back ] && return 0
         case "$c" in
@@ -216,6 +217,8 @@ sub_apps() {
                 bash "$DT_ROOT/modules/apps/app-installer.sh" ;;
             flatpak-mgr)
                 bash "$DT_ROOT/modules/apps/flatpak-mgr.sh" ;;
+            windows-games)
+                bash "$DT_ROOT/modules/apps/windows-games.sh" ;;
         esac
     done
 }
