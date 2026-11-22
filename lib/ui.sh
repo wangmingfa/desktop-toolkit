@@ -5,7 +5,7 @@
 # 使用前先 source common.sh（提供 dt_detect_gui）
 # =============================================================================
 
-GUI="$(dt_detect_gui)"
+GUI="${GUI:-$(dt_detect_gui)}"
 
 # dt_menu：GUI 用 zenity/kdialog；GUI=none 时退化为文本菜单(TUI)。
 # 行格式: "key|label|desc[|gui]" —— 第 4 字段为 gui 表示"需要 GUI 环境"，
@@ -96,12 +96,12 @@ dt_ask_text() { # title text default_value
 
 dt_confirm() {
     if [ "$GUI" = zenity ]; then
-        zenity --question --title="确认" --text="$1" 2>/dev/null
+        zenity --question --title="确认" --text="$(printf '%b' "$1")" 2>/dev/null
     elif [ "$GUI" = kdialog ]; then
-        kdialog --title "确认" --yesno "$1" 2>/dev/null
+        kdialog --title "确认" --yesno "$(printf '%b' "$1")" 2>/dev/null
     else
         local ans
-        printf '%s [y/N] ' "$1" >&2
+        printf '%b [y/N] ' "$1" >&2
         read -r ans || return 1
         case "${ans:-}" in y|Y|yes|YES|是) return 0 ;; *) return 1 ;; esac
     fi
@@ -109,9 +109,9 @@ dt_confirm() {
 
 dt_info() {
     if [ "$GUI" = zenity ]; then
-        zenity --info --title="完成" --text="$1" 2>/dev/null || true
+        zenity --info --title="完成" --text="$(printf '%b' "$1")" 2>/dev/null || true
     elif [ "$GUI" = kdialog ]; then
-        kdialog --title "完成" --msgbox "$1" 2>/dev/null || true
+        kdialog --title "完成" --msgbox "$(printf '%b' "$1")" 2>/dev/null || true
     else
         printf '%b\n' "$1"
     fi
