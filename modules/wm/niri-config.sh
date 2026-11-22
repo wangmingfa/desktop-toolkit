@@ -298,6 +298,20 @@ gen_window_rule() {
     cat "$body"; rm -f "$body"
 }
 
+gen_gestures() {
+    # 触摸手势(顶层): 默认开; 只在显式关闭时生成 enabled false
+    local ws ov body
+    ws=$(state_get gesture_ws_swipe on)
+    ov=$(state_get gesture_ov_swipe on)
+    if state_has gesture_ws_swipe || state_has gesture_ov_swipe; then
+        body=$(mktemp)
+        [ "$ws" = off ] && printf '    workspace-switch swipe { enabled false }\n' >> "$body"
+        [ "$ov" = off ] && printf '    open-overview swipe { enabled false }\n' >> "$body"
+        if [ -s "$body" ]; then printf 'gestures {\n'; cat "$body"; printf '}\n\n'; fi
+        rm -f "$body"
+    fi
+}
+
 gen_outputs() {
     [ -f "$STATE" ] || return 0
     local line name n
@@ -321,7 +335,7 @@ gen_outputs() {
 gen_all() { # <outfile>
     local out="$1"; : > "$out"
     printf '// 由 desktop-toolkit niri-config.sh 生成；请用工具修改，手改可能被覆盖。\n' >> "$out"
-    { gen_layout; gen_anim; gen_input; gen_misc; gen_outputs; gen_spawn_at_startup; gen_environment; gen_notifications; gen_workspaces; gen_idle; gen_window_rule; } >> "$out"
+    { gen_layout; gen_anim; gen_input; gen_misc; gen_outputs; gen_spawn_at_startup; gen_environment; gen_notifications; gen_workspaces; gen_idle; gen_window_rule; gen_gestures; } >> "$out"
 }
 
 # ---------------------------------------------------------------------------
@@ -741,20 +755,52 @@ menu_focus_follows() {
         esac
     done
 }
+menu_gestures() {
+    while true; do
+        local c ws ov
+        ws=$(state_get gesture_ws_swipe on); ov=$(state_get gesture_ov_swipe on)
+        [ "$ws" = off ] && ws_disp=关 || ws_disp=开
+        [ "$ov" = off ] && ov_disp=关 || ov_disp=开
+        c=$(dt_menu "触摸手势" "触摸板手势开关(默认开，可单独禁用)：" \
+            "ws|① 三指切换工作区|当前: $ws_disp" \
+            "ov|② 三指开概览|当前: $ov_disp" \
+            "back|← 返回|") || return 0
+        case "$c" in
+            ws) toggle_gset gesture_ws_swipe "工作区切换手势" && save ;;
+            ov) toggle_gset gesture_ov_swipe "开概览手势" && save ;;
+            back) return 0 ;;
+        esac
+    done
+}
+
+toggle_gset() { # key label —— on/off 字符串开关
+    local k="$1" label="$2" cur
+    cur=$(state_get "$k" on)
+    if [ "$cur" = off ]; then
+        state_set "$k" on
+        dt_info "手势" "$label：已开启"
+    else
+        state_set "$k" off
+        dt_info "手势" "$label：已关闭"
+    fi
+}
+
 menu_input() {
     while true; do
         local c
-        c=$(dt_menu "输入与焦点" "键盘 / 触摸板 / 鼠标 / 焦点跟随：" \
+        c=$(dt_menu "输入与焦点" "键盘 / 触摸板 / 鼠标 / 焦点跟随 / 手势：" \
             "kb|① 键盘|布局/变体/选项/重复/数字锁" \
             "tp|② 触摸板|点按/自然滚动/打字禁用/加速/滚动方式" \
             "mouse|③ 鼠标|自然滚动/加速/左手" \
             "ffm|④ 焦点跟随鼠标|鼠标移到窗口自动聚焦" \
+            "gest|⑤ 触摸手势|工作区切换/概览 手势开关" \
             "back|← 返回|") || return 0
         case "$c" in
             kb) menu_keyboard ;;
             tp) menu_touchpad ;;
             mouse) menu_mouse ;;
             ffm) menu_focus_follows ;;
+            gest) menu_gestures ;;
             back) return 0 ;;
         esac
     done
@@ -1006,6 +1052,7 @@ CATALOG=(
     "工作区 workspace 命名 名称 数量|工作区命名|系统与开机|menu_ws_names"
     "空闲 idle 电源 关屏 dpms 超时|空闲 DPMS 关屏|系统与开机|menu_system"
     "窗口规则 window-rule 浮窗 最大化 无边框 固定工作区 app-id|窗口规则|窗口规则|menu_window_rule"
+    "手势 gestures 触摸 三指 切换 概览 swipe|触摸手势|输入与焦点|menu_gestures"
 )
 
 menu_search() {
