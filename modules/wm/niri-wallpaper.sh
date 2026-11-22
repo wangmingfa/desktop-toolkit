@@ -67,7 +67,7 @@ KDL
 
 ensure_include() {
     grep -q 'wallpaper\.kdl' "$MAIN" 2>/dev/null && return 0
-    awk '{ print } END { print ""; print "// dt-wallpaper include (niri-wallpaper.sh 管理)"; print "'"$TOOLS_INCLUDE"'" }' "$MAIN" > "$MAIN.tmp" \
+    awk -v inc="$TOOLS_INCLUDE" '{ print } END { print ""; print "// dt-wallpaper include (niri-wallpaper.sh 管理)"; print inc }' "$MAIN" > "$MAIN.tmp" \
         && mv "$MAIN.tmp" "$MAIN"
     log "已在主配置末尾加入 include wallpaper.kdl"
 }
@@ -95,6 +95,75 @@ clear_wallpaper() {
     remove_include
     rm -f "$WALL"
     log "已清除壁纸（主配置 background-color 等保留）"
+}
+
+# ---------------------------------------------------------------------------
+# 随机壁纸轮换：立即换一张 + systemd 用户 timer 定时轮换
+# ---------------------------------------------------------------------------
+wp_list() { # 列出 WP_DIR 里的图片
+    [ -d "$WP_DIR" ] && ls "$WP_DIR"/*.{png,jpg,jpeg,webp} 2>/dev/null
+}
+
+rotate_once() { # 随机选一张, 写 wallpaper.kdl + reload
+    local -a imgs
+    mapfile -t imgs < <(wp_list)
+    if [ "${#imgs[@]}" -eq 0 ]; then
+        err "无图片。请先放图片到 $WP_DIR（png/jpg/webp）"
+        return 1
+    fi
+    local p
+    p=${imgs[$((RANDOM % ${#imgs[@]}))]}
+    mkdir -p "$NIRI_DIR"
+    gen_wallpaper_kdl "$p"
+    ensure_include
+    command -v niri >/dev/null 2>&1 && timeout 5 niri msg reload-config 2>/dev/null || true
+    log "已轮换壁纸: $(basename "$p")"
+}
+
+rotate_setup() { # <分钟>
+    local mins="${1:-30}"
+    local unit_dir="$HOME/.config/systemd/user"
+    rotate_once || true
+    mkdir -p "$unit_dir"
+    cat > "$unit_dir/wallpaper-rotate.service" <<EOF
+[Unit]
+Description=Rotate niri wallpaper (desktop-toolkit)
+[Service]
+Type=oneshot
+ExecStart=$DT_ROOT/modules/wm/niri-wallpaper.sh rotate
+EOF
+    cat > "$unit_dir/wallpaper-rotate.timer" <<EOF
+[Unit]
+Description=Rotate niri wallpaper every ${mins} min
+[Timer]
+OnBootSec=${mins}min
+OnUnitActiveSec=${mins}min
+Persistent=true
+[Install]
+WantedBy=timers.target
+EOF
+    systemctl --user daemon-reload
+    systemctl --user enable --now wallpaper-rotate.timer
+    log "已开启壁纸轮换（每 ${mins} 分钟）"
+}
+
+rotate_disable() {
+    systemctl --user disable --now wallpaper-rotate.timer 2>/dev/null || true
+    rm -f "$HOME/.config/systemd/user/wallpaper-rotate.service" \
+          "$HOME/.config/systemd/user/wallpaper-rotate.timer"
+    systemctl --user daemon-reload 2>/dev/null || true
+    log "已关闭壁纸轮换"
+}
+
+rotate_status() {
+    if systemctl --user is-enabled wallpaper-rotate.timer >/dev/null 2>&1; then
+        echo "  ✅ 轮换 timer 已启用"
+        systemctl --user list-timers wallpaper-rotate.timer --no-pager 2>/dev/null \
+            | tail -2 | head -1 | sed 's/^/  /'
+    else
+        echo "  ❌ 轮换 timer 未启用"
+    fi
+    echo "  图片数量: $(wp_list | wc -l)（$WP_DIR）"
 }
 
 # ---------------------------------------------------------------------------
@@ -149,15 +218,37 @@ status() {
     command -v swaylock >/dev/null 2>&1 && echo "  ✅ swaylock $(swaylock --version 2>/dev/null | head -1 | awk '{print $2}')" || echo "  ❌ swaylock 未装"
 }
 
+menu_rotate() {
+    while true; do
+        local c
+        c=$(dt_menu "随机壁纸轮换" "立即换一张或 systemd 定时轮换（图片放 $WP_DIR）：" \
+            "once|① 立即换一张|随机选一张 + 热重载" \
+            "30|② 开启轮换(30 分钟)|systemd 用户 timer" \
+            "60|③ 开启轮换(60 分钟)|systemd 用户 timer" \
+            "off|④ 关闭轮换|停 timer + 删单元" \
+            "status|⑤ 状态|timer/图片数量" \
+            "back|← 返回|") || return 0
+        case "$c" in
+            once) rotate_once ;;
+            30) rotate_setup 30 ;;
+            60) rotate_setup 60 ;;
+            off) rotate_disable ;;
+            status) rotate_status ;;
+            back) return 0 ;;
+        esac
+    done
+}
+
 menu() {
     while true; do
         local c
         c=$(dt_menu "niri 壁纸 / 锁屏" "壁纸用 niri 原生 background-image; 锁屏 swaylock 样式" \
             "set|① 设置壁纸|从 ~/Pictures/Wallpapers 选或输入路径" \
             "lock|② 锁屏样式|swaylock 预设(极简/磨砂玻璃/默认)" \
-            "status|③ 查看状态|壁纸 + 锁屏配置" \
-            "clear|④ 清除壁纸|移除 wallpaper.kdl 与 include" \
-            "uninstall|⑤ 卸载|清壁纸 + 锁屏样式恢复默认" \
+            "rotate|③ 随机壁纸轮换|立即换一张 / 定时轮换" \
+            "status|④ 查看状态|壁纸 + 锁屏配置" \
+            "clear|⑤ 清除壁纸|移除 wallpaper.kdl 与 include" \
+            "uninstall|⑥ 卸载|清壁纸 + 锁屏样式恢复默认" \
             "back|← 返回|") || return 0
         case "$c" in
             set) set_wallpaper ;;
@@ -165,6 +256,7 @@ menu() {
                 local s
                 s=$(dt_menu "锁屏样式" "swaylock 预设:" "simple|极简|纯色+圆角时钟" "frost|磨砂玻璃|模糊截图+透明" "default|恢复默认|移除本工具配置") || continue
                 lock_preset "$s" ;;
+            rotate) menu_rotate ;;
             status) status ;;
             clear) clear_wallpaper ;;
             uninstall) clear_wallpaper; lock_preset default ;;
@@ -175,6 +267,10 @@ menu() {
 
 case "${1:-menu}" in
     set) set_wallpaper ;;
+    rotate) rotate_once ;;
+    rotate-setup) rotate_setup "${2:-30}" ;;
+    rotate-off) rotate_disable ;;
+    rotate-status) rotate_status ;;
     clear) clear_wallpaper ;;
     status) status ;;
     uninstall) clear_wallpaper; lock_preset default ;;
