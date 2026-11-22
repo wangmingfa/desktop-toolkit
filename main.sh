@@ -106,10 +106,10 @@ sub_wm() {
     while true; do
         local c
         c=$(dt_menu "窗口管理器 / 桌面方案" "平铺 Wayland 合成器与桌面外壳方案：" \
-            "niri-dms|1. 一键安装 Niri + DMS|滚动平铺 Niri + Dux Modular Shell(DMS) 桌面外壳" \
-            "niri-noctalia|2. 一键配置 Niri + Noctalia|Noctalia 桌面外壳(需已装 niri；Fedora 45+ 默认源)" \
+            "niri-dms|1. 一键安装 niri + DMS|滚动平铺 niri + Dux Modular Shell(DMS) 桌面外壳" \
+            "niri-noctalia|2. 一键配置 niri + Noctalia|Noctalia 桌面外壳(需已装 niri；Fedora 45+ 默认源)" \
             "niri-shell-switch|3. 切换桌面外壳(DMS ↔ Noctalia)|两个外壳同时开会抢顶栏, 这里关掉一个开另一个" \
-            "niri-config|4. Niri 可视化配置|常用配置菜单化: 布局/边框/阴影/输入/光标/显示器输出" \
+            "niri-config|4. niri 可视化配置|常用配置菜单化: 布局/边框/阴影/输入/光标/显示器输出" \
             "niri-tools|5. niri 日常工具|截图/录屏/剪贴板历史 + 快捷键(Print/Super+P/Super+V)" \
             "niri-wallpaper|6. niri 壁纸/锁屏|原生 background-image 壁纸 + swaylock 锁屏样式" \
             "dms-theme|7. DMS 顶栏主题|dms matugen 生成 Material 主题(顶栏+niri+gtk+终端)" \
@@ -122,14 +122,14 @@ sub_wm() {
         [ "$c" = back ] && return 0
         case "$c" in
             niri-dms)
-                if dt_confirm "一键安装 Niri + DMS（Dux Modular Shell）？\n需要网络 + sudo 密码，安装几分钟。"; then
+                if dt_confirm "一键安装 niri + DMS（Dux Modular Shell）？\n需要网络 + sudo 密码，安装几分钟。"; then
                     bash "$DT_ROOT/modules/wm/niri-dms.sh"
-                    dt_info "Niri + DMS 安装流程结束。注销后登录界面选 Niri 会话。"
+                    dt_info "niri + DMS 安装流程结束。注销后登录界面选 niri 会话。"
                 fi ;;
             niri-noctalia)
                 if dt_confirm "为当前 niri 配置 Noctalia 桌面外壳？\n需要 sudo 密码安装 noctalia（Fedora 45+ 默认源）。"; then
                     bash "$DT_ROOT/modules/wm/niri-noctalia.sh"
-                    dt_info "Niri + Noctalia 配置完成。注销后登录界面选 Niri 会话。"
+                    dt_info "niri + Noctalia 配置完成。注销后登录界面选 niri 会话。"
                 fi ;;
             niri-shell-switch)
                 bash "$DT_ROOT/modules/wm/niri-shell-switch.sh"
@@ -342,7 +342,7 @@ main() {
         local c
         c=$(dt_menu "desktop-toolkit" "选择要执行的分类（脚本集中管理，拉下来即可用）：" \
             "appearance|1. 外观美化|macOS 美化 / 主题 / 配置中心 / 性能模式|gui" \
-            "wm|2. 窗口管理器 / 桌面方案|Niri + DMS 等平铺 Wayland 方案" \
+            "wm|2. 窗口管理器 / 桌面方案|niri + DMS 等平铺 Wayland 方案" \
             "system|3. 系统诊断|会话/显示管理器/依赖体检（自动扫描 modules/system/）" \
             "network|4. 网络工具|GitHub 镜像 / 代理配置 / 网络相关脚本" \
             "apps|5. 应用安装|UU 远程 等应用一键安装（受限网络镜像）" \

@@ -1,6 +1,6 @@
 #!/usr/bin/env bash
 # =============================================================================
-# Niri + DMS (Dux Modular Shell) 一键安装
+# niri + DMS (Dux Modular Shell) 一键安装
 #   niri  : 滚动平铺 Wayland 合成器（横向无限卷轴式布局）
 #   DMS   : Quickshell 桌面外壳（Dux Modular Shell，原 DankMaterialShell）
 #           官方推荐搭配 niri（"DMS Team's choice of Wayland compositor"）
@@ -13,7 +13,7 @@ set -euo pipefail
 source "$(cd "$(dirname "${BASH_SOURCE[0]}")/../.." && pwd)/lib/common.sh"
 # ui.sh 提供 dt_confirm 等交互控件(含 TUI 兜底)，收尾时用来问"是否现在重启 GDM"
 source "$(cd "$(dirname "${BASH_SOURCE[0]}")/../.." && pwd)/lib/ui.sh"
-# niri.sh 提供 dnf 弱网兜底 / 会话文件修正 / 收尾横幅(Niri + Noctalia 两个方案共用)
+# niri.sh 提供 dnf 弱网兜底 / 会话文件修正 / 收尾横幅(niri + Noctalia 两个方案共用)
 source "$(cd "$(dirname "${BASH_SOURCE[0]}")/../.." && pwd)/lib/niri.sh"
 # 保持本方案历史的下载目录名，续传进度不丢
 export DT_DL_DIR="${DT_DL_DIR:-/tmp/dt-niridms-rpms}"
@@ -41,7 +41,7 @@ err() { echo "  [niri-dms] 错误: $*" >&2; }
 # ---------------------------------------------------------------------------
 uninstall_dms() {
     local cfg="$HOME/.config/niri/config.kdl"
-    echo "==> 卸载 Niri + DMS 配置…"
+    echo "==> 卸载 niri + DMS 配置…"
 
     # 1) 停用 systemd 用户服务(niri-dms.sh 的 bind_systemd 用 add-wants 绑定)
     systemctl --user disable dms 2>/dev/null && log "已停用 dms 用户服务" || true
@@ -79,14 +79,14 @@ uninstall_dms() {
     fi
 
     echo
-    echo "  DMS 配置已移除。niri 本体保留(登录界面仍可选 Niri 会话)。"
+    echo "  DMS 配置已移除。niri 本体保留(登录界面仍可选 niri 会话)。"
     echo "  想连 niri 一起移除: sudo dnf remove niri"
 }
 
 niri_color_init
 
 echo "══════════════════════════════════════════"
-echo " 安装 Niri + DMS (Dux Modular Shell)"
+echo " 安装 niri + DMS (Dux Modular Shell)"
 echo "══════════════════════════════════════════"
 
 # ---------------------------------------------------------------------------
@@ -205,7 +205,7 @@ strip_waybar() {
 }
 
 # ---------------------------------------------------------------------------
-# 5) 确保登录界面有 Niri 会话项
+# 5) 确保登录界面有 niri 会话项
 #    会话文件的三个硬约束(系统级目录 / X-GDM-CanRunHeadless=true / Exec 绝对路径)
 #    已抽到 lib/niri.sh 的 niri_ensure_dm_session，此处不再重复。
 
@@ -234,8 +234,8 @@ strip_waybar
 niri_ensure_dm_session
 
 # 收尾横幅 + 交互代跑"重启 GDM"见 lib/niri.sh 的 niri_finish_banner
-niri_finish_banner "Niri + DMS 已安装。" \
+niri_finish_banner "niri + DMS 已安装。" \
     "1) 快捷键: Super+T 开终端($TERMINAL) · Super+D 应用启动器 · Super+Shift+E 退出" \
     "2) DMS 顶栏/设置: 按 Super 打开面板进一步微调" \
-    "3) 若登录界面仍无 Niri: 检查 /usr/share/wayland-sessions/niri.desktop 是否含 X-GDM-CanRunHeadless=true" \
+    "3) 若登录界面仍无 niri: 检查 /usr/share/wayland-sessions/niri.desktop 是否含 X-GDM-CanRunHeadless=true" \
     "4) 双栏(waybar+DMS)残留: 重跑本脚本会自动清理，或删 config.kdl 里 spawn-at-startup \"waybar\""

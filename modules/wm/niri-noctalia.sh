@@ -1,6 +1,6 @@
 #!/usr/bin/env bash
 # =============================================================================
-# Niri + Noctalia 一键配置
+# niri + Noctalia 一键配置
 #   niri     : 滚动平铺 Wayland 合成器（横向无限卷轴式布局）
 #   Noctalia : Wayland 桌面外壳（顶栏 / 程序坞 / 启动器 / 控制中心 / 桌面组件）
 #
@@ -22,7 +22,7 @@ set -euo pipefail
 source "$(cd "$(dirname "${BASH_SOURCE[0]}")/../.." && pwd)/lib/common.sh"
 # ui.sh 提供 dt_confirm 等交互控件(含 TUI 兜底)，收尾时用来问"是否现在重启 GDM"
 source "$(cd "$(dirname "${BASH_SOURCE[0]}")/../.." && pwd)/lib/ui.sh"
-# niri.sh 提供 dnf 弱网兜底 / 会话文件修正 / 收尾横幅(Niri + DMS 两个方案共用)
+# niri.sh 提供 dnf 弱网兜底 / 会话文件修正 / 收尾横幅(niri + DMS 两个方案共用)
 source "$(cd "$(dirname "${BASH_SOURCE[0]}")/../.." && pwd)/lib/niri.sh"
 export DT_DL_DIR="${DT_DL_DIR:-/tmp/dt-nirinoc-rpms}"
 
@@ -53,7 +53,7 @@ err() { echo "  [niri-noctalia] 错误: $*" >&2; }
 #   在主流程 install_pkgs 之前调用并 exit, 避免卸载时又去装包。
 # ---------------------------------------------------------------------------
 uninstall_noctalia() {
-    echo "==> 卸载 Niri + Noctalia 配置…"
+    echo "==> 卸载 niri + Noctalia 配置…"
     # 1) 停用 systemd 用户服务
     if systemctl --user is-enabled noctalia.service >/dev/null 2>&1; then
         systemctl --user disable noctalia.service 2>/dev/null && log "已停用 noctalia.service" || true
@@ -95,7 +95,7 @@ NMOD="$HOME/.config/niri/noctalia.kdl"
 SVCDIR="$HOME/.config/systemd/user"
 
 echo "══════════════════════════════════════════"
-echo " 配置 Niri + Noctalia"
+echo " 配置 niri + Noctalia"
 echo "══════════════════════════════════════════"
 
 # ---------------------------------------------------------------------------
@@ -147,7 +147,7 @@ install_pkgs() {
             err "  sudo dnf install niri noctalia $TERMINAL"
             return 1
         fi
-        # niri 是刚装的: 登录界面还没有 Niri 会话项, 必须补上
+        # niri 是刚装的: 登录界面还没有 niri 会话项, 必须补上
         # (系统级目录 + X-GDM-CanRunHeadless=true, 细节见 lib/niri.sh)
         if [ "$NEED_NIRI" = 1 ]; then
             niri_ensure_dm_session
@@ -213,7 +213,7 @@ window-rule {
 }
 EOF
 
-    # ---- 壁纸 / 总览背景（三种方案三选一，官方 Niri 页） ----
+    # ---- 壁纸 / 总览背景（三种方案三选一，官方 niri 页） ----
     case "$WP" in
         backdrop)
             cat >> "$NMOD" <<'EOF'
@@ -243,7 +243,7 @@ EOF
             cat >> "$NMOD" <<'EOF'
 
 # 方案3: 纯色总览(最省资源, 不依赖 Noctalia 的 backdrop 设置)
-# 想改颜色直接改下面这行; 方案1/2 见 Noctalia 官方 Niri 页
+# 想改颜色直接改下面这行; 方案1/2 见 Noctalia 官方 niri 页
 overview {
     backdrop-color "#26233a"
 }
@@ -300,7 +300,7 @@ EOF
     cat >> "$NMOD" <<'EOF'
 
 # 可选: 总览中直接打字即拉起启动器 / 启动后自动收起总览
-# (也可在 Noctalia 设置 -> Niri -> Overview 里开, 不必改文件)
+# (也可在 Noctalia 设置 -> niri -> Overview 里开, 不必改文件)
 # [shell]
 # niri_overview_type_to_launch_enabled = true
 # niri_overview_close_on_launch_enabled = true
@@ -357,7 +357,7 @@ EOF
 # ---------------------------------------------------------------------------
 # 4) systemd 用户服务: 比 spawn 更稳(Type=notify, 保证在 XDG autostart 之前就绪)
 #    官方安装法: 拷 assets/noctalia.service -> ~/.config/systemd/user/ 并取消注释
-#    对应合成器的 WantedBy。Niri 跑在 niri.service 下。
+#    对应合成器的 WantedBy。niri 跑在 niri.service 下。
 # ---------------------------------------------------------------------------
 setup_service() {
     [ "$NO_SYSTEMD" = 1 ] && { log "--no-systemd 已指定，跳过 systemd 服务"; return 0; }
@@ -438,14 +438,14 @@ reload_now
 
 # 收尾横幅 + 交互代跑"重启 GDM"见 lib/niri.sh 的 niri_finish_banner
 if [ "$NEED_NIRI" = 1 ]; then
-    niri_finish_banner "Niri + Noctalia 已安装并配置。" \
-        "1) 本次连 niri 一起新装了: 登录界面选 Niri 会话才会启动(会话切换处选)" \
+    niri_finish_banner "niri + Noctalia 已安装并配置。" \
+        "1) 本次连 niri 一起新装了: 登录界面选 niri 会话才会启动(会话切换处选)" \
         "2) 外壳自启: spawn-at-startup \"noctalia\" + systemd 用户服务" \
         "3) 快捷键: Super+Space 启动器 · Super+S 控制中心 · Super+Shift+Comma 设置" \
         "4) 音量/亮度 OSD 走 Noctalia; Alt+Tab 用 Noctalia 窗口切换器" \
         "5) 壁纸/模糊想调整: 编辑 $NMOD 后跑 niri msg action config-reload"
 else
-    niri_finish_banner "Niri + Noctalia 已配置。" \
+    niri_finish_banner "niri + Noctalia 已配置。" \
         "1) 外壳自启: 已在 $NCFG 加 spawn-at-startup \"noctalia\"（systemd 服务也已启用）" \
         "2) 快捷键: Super+Space 启动器 · Super+S 控制中心 · Super+Shift+Comma 设置" \
         "3) 音量/亮度 OSD 走 Noctalia; Alt+Tab 用 Noctalia 窗口切换器(想换回原生见 noctalia.kdl 注释)" \

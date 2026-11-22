@@ -1,6 +1,6 @@
 #!/usr/bin/env bash
 # =============================================================================
-# niri-doctor.sh — Niri 环境体检
+# niri-doctor.sh — niri 环境体检
 #
 # 背景: "装完 niri 但登录界面出不来 / 起来后顶栏缺失"这类问题, 原因散落在
 #   包是否装好、会话文件写法、显示管理器单元名、niri 版本门槛、用户级文件残留
@@ -69,7 +69,7 @@ bad() {
 }
 
 echo
-echo -e "${C_BOLD}═══ Niri 环境体检 ═══${C_NC}"
+echo -e "${C_BOLD}═══ niri 环境体检 ═══${C_NC}"
 
 # ---------------------------------------------------------------------------
 # 1) niri 本体
@@ -103,10 +103,10 @@ if [ -f "$SYS_FILE" ]; then
     if grep -q '^X-GDM-CanRunHeadless=true' "$SYS_FILE" 2>/dev/null; then
         ok "含 X-GDM-CanRunHeadless=true(GDM 不会静默丢弃该会话)"
     else
-        bad "缺 X-GDM-CanRunHeadless=true(GDM 下登录界面不会出现 Niri)" fix_headless "补 headless 键"
+        bad "缺 X-GDM-CanRunHeadless=true(GDM 下登录界面不会出现 niri)" fix_headless "补 headless 键"
     fi
 else
-    bad "系统级会话文件缺失: $SYS_FILE(登录界面不会列出 Niri)" fix_session "补系统级会话文件"
+    bad "系统级会话文件缺失: $SYS_FILE(登录界面不会列出 niri)" fix_session "补系统级会话文件"
 fi
 
 # ---------------------------------------------------------------------------

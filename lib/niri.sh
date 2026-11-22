@@ -1,5 +1,5 @@
 # =============================================================================
-# Niri 系方案共享能力
+# niri 系方案共享能力
 #   供 modules/wm/niri-*.sh 复用，避免每个方案各自复制一份 dnf 弱网兜底、
 #   会话文件修正与收尾横幅。
 #
@@ -144,7 +144,7 @@ dnf_install_from_local() { # <包名>...
 }
 
 # ---------------------------------------------------------------------------
-# 确保登录界面有 Niri 会话项
+# 确保登录界面有 niri 会话项
 #
 # 三个硬约束（读 GDM 51 源码 libgdm/gdm-sessions.c 的 key_file_is_relevant 得出）:
 #   a) 必须写在【系统级】目录。GDM 只扫 <system_data_dir>/wayland-sessions 与
@@ -190,7 +190,7 @@ niri_ensure_dm_session() {
 
     if ! sudo tee "$sys_file" >/dev/null <<'EOF'
 [Desktop Entry]
-Name=Niri
+Name=niri
 Comment=A scrollable-tiling Wayland compositor
 Exec=/usr/bin/niri-session
 TryExec=/usr/bin/niri-session
@@ -264,11 +264,11 @@ niri_finish_banner() { # 完成标题 [额外提示行...]
     echo -e "${DT_GREEN}${DT_BOLD}✅ 完成！${title}${DT_NC}"
     echo -e "${DT_GREEN}${DT_BOLD}════════════════════════════════════════════════════════════════${DT_NC}"
     echo
-    echo -e "${DT_YELLOW}${DT_BOLD}★ 下一步（必做）：重启 ${dm_name}，登录界面才会出现 Niri${DT_NC}"
+    echo -e "${DT_YELLOW}${DT_BOLD}★ 下一步（必做）：重启 ${dm_name}，登录界面才会出现 niri${DT_NC}"
     echo -e "${DT_YELLOW}  ${dm_name} 只在【启动时】扫一次会话文件，单纯“注销”不会重新扫描，所以必须重启它。${DT_NC}"
     echo -e "${DT_YELLOW}  手动执行:${DT_NC}"
     echo -e "      ${DT_CYAN}${DT_BOLD}sudo systemctl restart ${dm_unit:-<你的显示管理器>}${DT_NC}"
-    echo -e "  重启后在登录界面【会话切换处】里选 Niri(GDM 在左下角齿轮 ⚙️，SDDM 在右下角)。"
+    echo -e "  重启后在登录界面【会话切换处】里选 niri(GDM 在左下角齿轮 ⚙️，SDDM 在右下角)。"
     echo -e "  也可以不进登录界面，在 TTY 直接跑: ${DT_CYAN}${DT_BOLD}niri-session${DT_NC}"
     if [ "$#" -gt 0 ]; then
         echo
@@ -284,7 +284,7 @@ niri_finish_banner() { # 完成标题 [额外提示行...]
             wayland|x11) echo -e "  ${DT_YELLOW}提示: 你当前在桌面会话里，重启 ${dm_name} 会立即注销本桌面(这是预期行为)。${DT_NC}" ;;
         esac
         echo
-        if dt_confirm "要现在重启 ${dm_name} 吗？（会立即注销当前桌面，之后在登录界面选 Niri）"; then
+        if dt_confirm "要现在重启 ${dm_name} 吗？（会立即注销当前桌面，之后在登录界面选 niri）"; then
             echo -e "  ${DT_CYAN}==> 重启 ${dm_name}…（本终端会被关闭）${DT_NC}"
             niri_restart_dm \
                 || echo -e "  ${DT_YELLOW}重启失败，请手动执行: sudo systemctl restart ${dm_unit}${DT_NC}"
