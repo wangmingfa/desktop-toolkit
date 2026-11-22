@@ -201,6 +201,7 @@ sub_apps() {
             "uu-remote|① UU 远程 Linux 被控端|社区开源实现，官方客户端远程控制本机" \
             "wowtype|② WowType 输入法|fcitx5 插件，镜像下载 + fcitx5 一键配置" \
             "app-installer|③ 常用应用安装器|Chromium/Firefox/VLC/LibreOffice/Podman 等, 发行版感知" \
+            "flatpak-mgr|④ Flatpak 应用管理|隔离运行 GUI 应用(装/卸/更新)" \
             "back|← 返回主菜单|") || return 0
         [ "$c" = back ] && return 0
         case "$c" in
@@ -210,6 +211,8 @@ sub_apps() {
                 bash "$DT_ROOT/modules/apps/wowtype.sh" ;;
             app-installer)
                 bash "$DT_ROOT/modules/apps/app-installer.sh" ;;
+            flatpak-mgr)
+                bash "$DT_ROOT/modules/apps/flatpak-mgr.sh" ;;
         esac
     done
 }
