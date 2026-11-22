@@ -77,6 +77,56 @@ dev_tools() {
 }
 
 # ---------------------------------------------------------------------------
+# 语言运行时（Go / Rust）与容器
+# ---------------------------------------------------------------------------
+dev_langs() {
+    local -a pkgs=()
+    if command -v dnf >/dev/null 2>&1; then
+        pkgs=(golang rust cargo)
+    elif command -v apt-get >/dev/null 2>&1; then
+        pkgs=(golang rustc cargo)
+    elif command -v pacman >/dev/null 2>&1; then
+        pkgs=(go rust)
+    else
+        err "未识别包管理器"; return 1
+    fi
+    echo -e "${DT_BOLD}═══ 安装语言运行时 ═══${DT_NC}"
+    log "将安装：${pkgs[*]}"
+    if ! dt_confirm "继续？（需要 sudo 密码）"; then return 0; fi
+    case "$(command -v dnf >/dev/null 2>&1 && echo dnf || command -v apt-get >/dev/null 2>&1 && echo apt || echo pacman)" in
+        dnf)  sudo dnf install -y "${pkgs[@]}" ;;
+        apt)  sudo apt-get update -qq && sudo apt-get install -y "${pkgs[@]}" ;;
+        *)    sudo pacman -S --needed --noconfirm "${pkgs[@]}" ;;
+    esac || { err "安装失败"; return 1; }
+    log "语言运行时安装完成（go/rustc/cargo）"
+}
+
+dev_docker() {
+    echo -e "${DT_BOLD}═══ 容器 ═══${DT_NC}"
+    if command -v dnf >/dev/null 2>&1; then
+        if command -v podman >/dev/null 2>&1; then
+            log "Podman 已装（当前 Fedora 默认容器方案）"
+        else
+            if dt_confirm "安装 Podman（Fedora 官方源，Docker 需 docker-ce 第三方源不自动装）？"; then
+                sudo dnf install -y podman && log "Podman 安装完成"
+            fi
+        fi
+        log "Docker 需 docker-ce 第三方源（Fedora 官方源没有），如需请手动配置："
+        log "  https://docs.docker.com/engine/install/fedora/"
+    elif command -v apt-get >/dev/null 2>&1; then
+        if dt_confirm "安装 Docker（docker.io）？"; then
+            sudo apt-get update -qq && sudo apt-get install -y docker.io && log "Docker 安装完成"
+        fi
+    elif command -v pacman >/dev/null 2>&1; then
+        if dt_confirm "安装 Docker？"; then
+            sudo pacman -S --needed --noconfirm docker && log "Docker 安装完成"
+        fi
+    else
+        err "未识别包管理器"; return 1
+    fi
+}
+
+# ---------------------------------------------------------------------------
 # 状态
 # ---------------------------------------------------------------------------
 dev_status() {
@@ -89,6 +139,10 @@ dev_status() {
     log "git user.name: $(git config --get user.name 2>/dev/null || echo 未设置)"
     log "git user.email: $(git config --get user.email 2>/dev/null || echo 未设置)"
     log "git 默认分支: $(git config --get init.defaultBranch 2>/dev/null || echo 未设置)"
+    log "go: $(go version 2>/dev/null || echo 未安装)"
+    log "rustc: $(rustc --version 2>/dev/null || echo 未安装)"
+    log "cargo: $(cargo --version 2>/dev/null || echo 未安装)"
+    log "podman: $(podman --version 2>/dev/null || echo 未安装)"
 }
 
 # ---------------------------------------------------------------------------
@@ -100,12 +154,16 @@ dev_menu() {
         c=$(dt_menu "开发环境" "git 配置与常用开发工具：" \
             "git|① 配置 git|user.name/email/默认分支" \
             "tools|② 安装开发工具|git/python/node/gcc/cmake 等（需 sudo）" \
-            "status|③ 查看状态|当前 git/工具版本" \
+            "langs|③ 语言运行时|Go/Rust（需 sudo）" \
+            "docker|④ 容器|Podman（Fedora 官方源）/ Docker（第三方源）" \
+            "status|⑤ 查看状态|当前 git/工具/语言版本" \
             "back|← 返回|") || return 0
         case "$c" in
             back) return 0 ;;
             git) dev_git ;;
             tools) dev_tools ;;
+            langs) dev_langs ;;
+            docker) dev_docker ;;
             status) dev_status ;;
         esac
         echo
