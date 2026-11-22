@@ -70,10 +70,11 @@ rd_vnc() { # 安装 VNC + 提示配置
 rd_status() {
     echo -e "  ${DT_BOLD}═══ 远程桌面状态 ═══${DT_NC}"
     local xrdp_st vnc_st
-    xrdp_st=$(systemctl is-active xrdp 2>/dev/null || echo inactive)
-    vnc_st=$(systemctl is-active vncserver@:1 2>/dev/null || echo inactive)
-    echo "  RDP (xrdp, 3389):  ${xrdp_st}"
-    echo "  VNC (vncserver@:1): ${vnc_st}"
+    # is-active 对 inactive 输出 "inactive" 且退出非零；用 || true 保留输出, 别追加 echo
+    xrdp_st=$(systemctl is-active xrdp 2>/dev/null || true)
+    vnc_st=$(systemctl is-active vncserver@:1 2>/dev/null || true)
+    echo "  RDP (xrdp, 3389):  ${xrdp_st:-inactive}"
+    echo "  VNC (vncserver@:1): ${vnc_st:-inactive}"
     echo "  本机 IP: $(hostname -I 2>/dev/null | awk '{print $1}')"
 }
 
