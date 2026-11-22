@@ -218,6 +218,30 @@ status() {
     command -v swaylock >/dev/null 2>&1 && echo "  ✅ swaylock $(swaylock --version 2>/dev/null | head -1 | awk '{print $2}')" || echo "  ❌ swaylock 未装"
 }
 
+# ---------------------------------------------------------------------------
+# 壁纸网络下载（受限网络走 dt_download 镜像回退）
+# ---------------------------------------------------------------------------
+dl_wallpaper() { # [url] —— 输入 URL → 下载到 WP_DIR，可设为壁纸
+    local url="${1:-}"
+    [ -n "$url" ] || url=$(dt_ask_text "壁纸 URL" "输入图片直链(png/jpg/webp)。GitHub 链接自动走镜像。" "") || return 0
+    [ -n "$url" ] || return 0
+    mkdir -p "$WP_DIR"
+    name=$(basename "$url" | sed 's/[^A-Za-z0-9._-]/_/g')
+    [ -n "$name" ] && [ "$name" != "." ] || name="wallpaper-$(date +%s).jpg"
+    log "下载 $name ..."
+    if dt_download "$url" "$WP_DIR/$name"; then
+        log "已下载: $WP_DIR/$name（${name}）"
+        if dt_confirm "下载完成。立即设为壁纸？"; then
+            gen_wallpaper_kdl "$WP_DIR/$name"
+            ensure_include
+            command -v niri >/dev/null 2>&1 && timeout 5 niri msg reload-config 2>/dev/null || true
+            log "已设为壁纸"
+        fi
+    else
+        err "下载失败（网络受限时已尝试镜像）。可稍后重试或换源。"
+    fi
+}
+
 menu_rotate() {
     while true; do
         local c
@@ -246,9 +270,10 @@ menu() {
             "set|① 设置壁纸|从 ~/Pictures/Wallpapers 选或输入路径" \
             "lock|② 锁屏样式|swaylock 预设(极简/磨砂玻璃/默认)" \
             "rotate|③ 随机壁纸轮换|立即换一张 / 定时轮换" \
-            "status|④ 查看状态|壁纸 + 锁屏配置" \
-            "clear|⑤ 清除壁纸|移除 wallpaper.kdl 与 include" \
-            "uninstall|⑥ 卸载|清壁纸 + 锁屏样式恢复默认" \
+            "download|④ 下载壁纸|URL 下载到 Wallpapers(镜像回退)" \
+            "status|⑤ 查看状态|壁纸 + 锁屏配置" \
+            "clear|⑥ 清除壁纸|移除 wallpaper.kdl 与 include" \
+            "uninstall|⑦ 卸载|清壁纸 + 锁屏样式恢复默认" \
             "back|← 返回|") || return 0
         case "$c" in
             set) set_wallpaper ;;
@@ -257,6 +282,7 @@ menu() {
                 s=$(dt_menu "锁屏样式" "swaylock 预设:" "simple|极简|纯色+圆角时钟" "frost|磨砂玻璃|模糊截图+透明" "default|恢复默认|移除本工具配置") || continue
                 lock_preset "$s" ;;
             rotate) menu_rotate ;;
+            download) dl_wallpaper ;;
             status) status ;;
             clear) clear_wallpaper ;;
             uninstall) clear_wallpaper; lock_preset default ;;
@@ -271,6 +297,7 @@ case "${1:-menu}" in
     rotate-setup) rotate_setup "${2:-30}" ;;
     rotate-off) rotate_disable ;;
     rotate-status) rotate_status ;;
+    download) dl_wallpaper "${2:-}" ;;
     clear) clear_wallpaper ;;
     status) status ;;
     uninstall) clear_wallpaper; lock_preset default ;;
