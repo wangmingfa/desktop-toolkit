@@ -154,6 +154,8 @@ desktop-toolkit/
 - **`local` 只在函数内用**；数组用 `local -a`。
 - **函数返回非零要显式处理**：`"$fn"` 或 `|| return 1`，别让 `set -e` 在中间步意外中止。
 - **systemctl 状态判断的非零陷阱**：`systemctl --user is-enabled/is-active` 对 masked/inactive/未启用返回非零，`if systemctl ... is-active; then` 会**误判**（masked 服务被判为"未运行"）。用 `$( )` 收集 + 字符串比较：`[ "$(systemctl --user is-active x 2>/dev/null)" = active ]`。
+  - **`is-active` 对 inactive 会输出 "inactive" 且退出非零**：`x=$(systemctl is-active x 2>/dev/null || echo inactive)` 会**双写**（输出+追加 echo 各一个 "inactive"）。正确：`x=$(systemctl is-active x 2>/dev/null || true); echo "${x:-inactive}"`（`|| true` 保留输出不追加，再 `${x:-...}` 兜底空值）。
+  - **`systemctl list-units` 的 UNIT 列有前导空格**：`grep '^[a-z0-9@_.-]+\.service'` 匹配不到（行首是空格）→ pipefail 下报"读取失败"。用 `grep -E '^\s+[a-z0-9@_.-]+\.service'` 或 awk 跳过含表头行。
 
 ---
 
@@ -207,6 +209,9 @@ desktop-toolkit/
    - `dt_confirm` 需要 `source lib/ui.sh`；交互分支要受 `[ -t 0 ]` 保护，非交互环境（管道/CI）别卡在 `read`。
    - ⚠ **单测陷阱**：`dt_confirm` 在 `GUI=zenity` 时会**真的在桌面弹对话框**。测试时强制 `GUI=none`
      走 TUI 分支，否则会弹出若干窗口（本次踩过，弹了 7 个，事后用 `pkill -x zenity` 清）。
+      **不只是 `dt_confirm`**：测试**任何**含 `dt_ask_text`/`dt_ask_num`/`dt_menu` 的模块都要 `GUI=none`
+      （`echo | bash module.sh ...` 不设 GUI=none 会走 zenity 弹窗挂起 exit 124，如 fsearch 的
+      `dt_ask_text` 踩过）。CLI 入口测试同理。
      另外**别用 `pkill -f` 带会出现在自己命令行里的 pattern**，会把自己的 shell 杀了。
 
 ---
