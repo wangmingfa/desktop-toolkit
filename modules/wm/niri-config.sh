@@ -578,10 +578,10 @@ menu_focus_ring() {
     while true; do
         local c
         c=$(dt_menu "焦点环 focus-ring" "只绘制在当前窗口周围：" \
-            "on|① 启用/停用|当前: $(onoff "$(state_get focus_ring_on 1)")" \
-            "w|② 宽度|当前: $(state_get focus_ring_width 4) px" \
-            "a|③ 活动色|当前: $(state_get focus_ring_active '#7fc8ff')" \
-            "i|④ 非活动色|当前: $(state_get focus_ring_inactive '#505050')" \
+            "on|1. 启用/停用|当前: $(onoff "$(state_get focus_ring_on 1)")" \
+            "w|2. 宽度|当前: $(state_get focus_ring_width 4) px" \
+            "a|3. 活动色|当前: $(state_get focus_ring_active '#7fc8ff')" \
+            "i|4. 非活动色|当前: $(state_get focus_ring_inactive '#505050')" \
             "back|← 返回|") || return 0
         case "$c" in
             on) toggle_set focus_ring_on "启用焦点环？" 1 && save ;;
@@ -596,10 +596,10 @@ menu_border() {
     while true; do
         local c
         c=$(dt_menu "窗口边框 border" "绘制在所有窗口周围（会占用窗口尺寸）：" \
-            "on|① 启用/停用|当前: $(onoff "$(state_get border_on 0)")" \
-            "w|② 宽度|当前: $(state_get border_width 4) px" \
-            "a|③ 活动色|当前: $(state_get border_active '#ffc87f')" \
-            "i|④ 非活动色|当前: $(state_get border_inactive '#505050')" \
+            "on|1. 启用/停用|当前: $(onoff "$(state_get border_on 0)")" \
+            "w|2. 宽度|当前: $(state_get border_width 4) px" \
+            "a|3. 活动色|当前: $(state_get border_active '#ffc87f')" \
+            "i|4. 非活动色|当前: $(state_get border_inactive '#505050')" \
             "back|← 返回|") || return 0
         case "$c" in
             on) toggle_set border_on "启用边框？" 0 && save ;;
@@ -614,12 +614,12 @@ menu_shadow() {
     while true; do
         local c
         c=$(dt_menu "窗口阴影 shadow" "窗口后面的阴影：" \
-            "on|① 启用/停用|当前: $(onoff "$(state_get shadow_on 0)")" \
-            "so|② 柔和度 softness|当前: $(state_get shadow_softness 30)" \
-            "sp|③ 扩散 spread|当前: $(state_get shadow_spread 5)" \
-            "ox|④ 水平偏移|当前: $(state_get shadow_offset_x 0)" \
-            "oy|⑤ 垂直偏移|当前: $(state_get shadow_offset_y 5)" \
-            "col|⑥ 颜色|当前: $(state_get shadow_color '#00000070')" \
+            "on|1. 启用/停用|当前: $(onoff "$(state_get shadow_on 0)")" \
+            "so|2. 柔和度 softness|当前: $(state_get shadow_softness 30)" \
+            "sp|3. 扩散 spread|当前: $(state_get shadow_spread 5)" \
+            "ox|4. 水平偏移|当前: $(state_get shadow_offset_x 0)" \
+            "oy|5. 垂直偏移|当前: $(state_get shadow_offset_y 5)" \
+            "col|6. 颜色|当前: $(state_get shadow_color '#00000070')" \
             "back|← 返回|") || return 0
         case "$c" in
             on) toggle_set shadow_on "启用阴影？" 0 && save ;;
@@ -636,15 +636,15 @@ menu_layout() {
     while true; do
         local c
         c=$(dt_menu "布局与外观" "间距 / 居中 / 边框 / 焦点环 / 阴影 / 背景 / 窗口装饰 / 动画：" \
-            "gaps|① 窗口间距|当前: $(state_get gaps 16) px" \
-            "center|② 焦点列居中|当前: $(state_get center_focused never)" \
-            "disp|③ 新列显示模式|当前: $(state_get default_column_display normal)" \
-            "bg|④ 工作区背景色|当前: $(state_get background_color 未设置)" \
-            "focus|⑤ 焦点环 focus-ring|宽 $(state_get focus_ring_width 4)px $(onoff "$(state_get focus_ring_on 1)")" \
-            "border|⑥ 窗口边框 border|宽 $(state_get border_width 4)px $(onoff "$(state_get border_on 0)")" \
-            "shadow|⑦ 窗口阴影 shadow|$(onoff "$(state_get shadow_on 0)")" \
-            "csd|⑧ 窗口按钮/装饰 prefer-no-csd|当前: $( [ "$(state_get prefer_no_csd 0)" = 1 ] && echo '隐藏(无边框)' || echo '显示(应用自绘)' )" \
-            "anim|⑨ 动画控制 animation|当前: $(anim_label)" \
+            "gaps|1. 窗口间距|当前: $(state_get gaps 16) px" \
+            "center|2. 焦点列居中|当前: $(state_get center_focused never)" \
+            "disp|3. 新列显示模式|当前: $(state_get default_column_display normal)" \
+            "bg|4. 工作区背景色|当前: $(state_get background_color 未设置)" \
+            "focus|5. 焦点环 focus-ring|宽 $(state_get focus_ring_width 4)px $(onoff "$(state_get focus_ring_on 1)")" \
+            "border|6. 窗口边框 border|宽 $(state_get border_width 4)px $(onoff "$(state_get border_on 0)")" \
+            "shadow|7. 窗口阴影 shadow|$(onoff "$(state_get shadow_on 0)")" \
+            "csd|8. 窗口按钮/装饰 prefer-no-csd|当前: $( [ "$(state_get prefer_no_csd 0)" = 1 ] && echo '隐藏(无边框)' || echo '显示(应用自绘)' )" \
+            "anim|9. 动画控制 animation|当前: $(anim_label)" \
             "back|← 返回|") || return 0
         case "$c" in
             gaps) num_int_set gaps "窗口间距(px)" 16 0 64 && save ;;
@@ -668,12 +668,12 @@ menu_keyboard() {
     while true; do
         local c
         c=$(dt_menu "键盘 keyboard" "布局 / 变体 / 选项 / 重复 / 数字锁：" \
-            "layout|① 布局 layout|当前: $(state_get kb_layout 继承系统)" \
-            "variant|② 变体 variant|当前: $(state_get kb_variant 未设置)" \
-            "options|③ 选项 options|当前: $(state_get kb_options 未设置)" \
-            "delay|④ 重复延迟 repeat-delay|当前: $(state_get kb_repeat_delay 600) ms" \
-            "rate|⑤ 重复速率 repeat-rate|当前: $(state_get kb_repeat_rate 25)/s" \
-            "num|⑥ 数字锁 numlock|当前: $(onoff "$(state_get kb_numlock 0)")" \
+            "layout|1. 布局 layout|当前: $(state_get kb_layout 继承系统)" \
+            "variant|2. 变体 variant|当前: $(state_get kb_variant 未设置)" \
+            "options|3. 选项 options|当前: $(state_get kb_options 未设置)" \
+            "delay|4. 重复延迟 repeat-delay|当前: $(state_get kb_repeat_delay 600) ms" \
+            "rate|5. 重复速率 repeat-rate|当前: $(state_get kb_repeat_rate 25)/s" \
+            "num|6. 数字锁 numlock|当前: $(onoff "$(state_get kb_numlock 0)")" \
             "back|← 返回|") || return 0
         case "$c" in
             layout) text_set kb_layout "键盘布局(如 us / us,ru / de)" "" && save ;;
@@ -691,14 +691,14 @@ menu_touchpad() {
     while true; do
         local c
         c=$(dt_menu "触摸板 touchpad" "首次调整会完整接管该配置块（其余项已从主配置播种）：" \
-            "tap|① 点按(轻触) tap|当前: $(onoff "$(state_get tp_tap 1)")" \
-            "nat|② 自然滚动 natural-scroll|当前: $(onoff "$(state_get tp_natural 1)")" \
-            "dwt|③ 打字时禁用 dwt|当前: $(onoff "$(state_get tp_dwt 0)")" \
-            "lh|④ 左手模式|当前: $(onoff "$(state_get tp_left_handed 0)")" \
-            "sp|⑤ 加速速度 accel-speed|当前: $(state_get tp_accel_speed 0.0)" \
-            "prof|⑥ 加速方式 accel-profile|当前: $(state_get tp_accel_profile adaptive)" \
-            "sm|⑦ 滚动方式 scroll-method|当前: $(state_get tp_scroll_method two-finger)" \
-            "cm|⑧ 点击方式 click-method|当前: $(state_get tp_click_method button-areas)" \
+            "tap|1. 点按(轻触) tap|当前: $(onoff "$(state_get tp_tap 1)")" \
+            "nat|2. 自然滚动 natural-scroll|当前: $(onoff "$(state_get tp_natural 1)")" \
+            "dwt|3. 打字时禁用 dwt|当前: $(onoff "$(state_get tp_dwt 0)")" \
+            "lh|4. 左手模式|当前: $(onoff "$(state_get tp_left_handed 0)")" \
+            "sp|5. 加速速度 accel-speed|当前: $(state_get tp_accel_speed 0.0)" \
+            "prof|6. 加速方式 accel-profile|当前: $(state_get tp_accel_profile adaptive)" \
+            "sm|7. 滚动方式 scroll-method|当前: $(state_get tp_scroll_method two-finger)" \
+            "cm|8. 点击方式 click-method|当前: $(state_get tp_click_method button-areas)" \
             "back|← 返回|") || return 0
         case "$c" in
             tap) toggle_set tp_tap "启用轻触点按？" 1 && save ;;
@@ -718,10 +718,10 @@ menu_mouse() {
     while true; do
         local c
         c=$(dt_menu "鼠标 mouse" "首次调整会完整接管该配置块：" \
-            "nat|① 自然滚动 natural-scroll|当前: $(onoff "$(state_get mouse_natural 0)")" \
-            "lh|② 左手模式|当前: $(onoff "$(state_get mouse_left_handed 0)")" \
-            "sp|③ 加速速度 accel-speed|当前: $(state_get mouse_accel_speed 0.0)" \
-            "prof|④ 加速方式 accel-profile|当前: $(state_get mouse_accel_profile adaptive)" \
+            "nat|1. 自然滚动 natural-scroll|当前: $(onoff "$(state_get mouse_natural 0)")" \
+            "lh|2. 左手模式|当前: $(onoff "$(state_get mouse_left_handed 0)")" \
+            "sp|3. 加速速度 accel-speed|当前: $(state_get mouse_accel_speed 0.0)" \
+            "prof|4. 加速方式 accel-profile|当前: $(state_get mouse_accel_profile adaptive)" \
             "back|← 返回|") || return 0
         case "$c" in
             nat) toggle_set mouse_natural "启用自然滚动？" 0 && save ;;
@@ -744,10 +744,10 @@ menu_focus_follows() {
         esac
         c=$(dt_menu "焦点跟随鼠标 focus-follows-mouse" \
             "鼠标移到窗口上自动聚焦。当前: $lbl（关闭=不生成该行; 若主配置已写需手动注释）" \
-            "off|① 关闭|不启用" \
-            "always|② 始终跟随|移到任何窗口立即聚焦" \
-            "0|③ 仅完全可见时|窗口已完整显示、不滚动视图才聚焦(最稳)" \
-            "10|④ 允许少量滚动|滚动量≤10%屏幕宽才聚焦" \
+            "off|1. 关闭|不启用" \
+            "always|2. 始终跟随|移到任何窗口立即聚焦" \
+            "0|3. 仅完全可见时|窗口已完整显示、不滚动视图才聚焦(最稳)" \
+            "10|4. 允许少量滚动|滚动量≤10%屏幕宽才聚焦" \
             "back|← 返回|") || return 0
         case "$c" in
             off|always|0|10) state_set ffm_mode "$c"; save ;;
@@ -762,8 +762,8 @@ menu_gestures() {
         [ "$ws" = off ] && ws_disp=关 || ws_disp=开
         [ "$ov" = off ] && ov_disp=关 || ov_disp=开
         c=$(dt_menu "触摸手势" "触摸板手势开关(默认开，可单独禁用)：" \
-            "ws|① 三指切换工作区|当前: $ws_disp" \
-            "ov|② 三指开概览|当前: $ov_disp" \
+            "ws|1. 三指切换工作区|当前: $ws_disp" \
+            "ov|2. 三指开概览|当前: $ov_disp" \
             "back|← 返回|") || return 0
         case "$c" in
             ws) toggle_gset gesture_ws_swipe "工作区切换手势" && save ;;
@@ -789,11 +789,11 @@ menu_input() {
     while true; do
         local c
         c=$(dt_menu "输入与焦点" "键盘 / 触摸板 / 鼠标 / 焦点跟随 / 手势：" \
-            "kb|① 键盘|布局/变体/选项/重复/数字锁" \
-            "tp|② 触摸板|点按/自然滚动/打字禁用/加速/滚动方式" \
-            "mouse|③ 鼠标|自然滚动/加速/左手" \
-            "ffm|④ 焦点跟随鼠标|鼠标移到窗口自动聚焦" \
-            "gest|⑤ 触摸手势|工作区切换/概览 手势开关" \
+            "kb|1. 键盘|布局/变体/选项/重复/数字锁" \
+            "tp|2. 触摸板|点按/自然滚动/打字禁用/加速/滚动方式" \
+            "mouse|3. 鼠标|自然滚动/加速/左手" \
+            "ffm|4. 焦点跟随鼠标|鼠标移到窗口自动聚焦" \
+            "gest|5. 触摸手势|工作区切换/概览 手势开关" \
             "back|← 返回|") || return 0
         case "$c" in
             kb) menu_keyboard ;;
@@ -813,11 +813,11 @@ menu_blur() {
     while true; do
         local c
         c=$(dt_menu "模糊 blur" "背景模糊参数（需 niri >= 26.04）：" \
-            "off|① 全部关闭/允许|当前: $( [ "$(state_get blur_off 0)" = 1 ] && echo 关闭 || echo 允许 )" \
-            "passes|② 模糊轮数 passes|当前: $(state_get blur_passes 3)" \
-            "offset|③ 偏移 offset|当前: $(state_get blur_offset 3.0)" \
-            "noise|④ 噪点 noise|当前: $(state_get blur_noise 0.02)" \
-            "sat|⑤ 饱和度 saturation|当前: $(state_get blur_saturation 1.5)" \
+            "off|1. 全部关闭/允许|当前: $( [ "$(state_get blur_off 0)" = 1 ] && echo 关闭 || echo 允许 )" \
+            "passes|2. 模糊轮数 passes|当前: $(state_get blur_passes 3)" \
+            "offset|3. 偏移 offset|当前: $(state_get blur_offset 3.0)" \
+            "noise|4. 噪点 noise|当前: $(state_get blur_noise 0.02)" \
+            "sat|5. 饱和度 saturation|当前: $(state_get blur_saturation 1.5)" \
             "back|← 返回|") || return 0
         case "$c" in
             off) toggle_set blur_off "关闭全部模糊？" 0 && save ;;
@@ -832,16 +832,16 @@ menu_blur() {
 menu_misc() {
     while true; do
         local -a rows=(
-            "ct|① 光标主题|当前: $(state_get cursor_theme 继承)"
-            "cs|② 光标大小|当前: $(state_get cursor_size 继承)"
-            "hit|③ 打字时隐藏光标|当前: $(onoff "$(state_get cursor_hide_typing 0)")"
-            "sp|④ 截图保存路径|当前: $(state_get screenshot_path 未设置)"
-            "oz|⑤ 概览缩放 zoom|当前: $(state_get overview_zoom 未设置)"
-            "ob|⑥ 概览背景色|当前: $(state_get overview_backdrop 未设置)"
-            "hs|⑦ 跳过启动快捷键提示|当前: $(onoff "$(state_get hotkey_skip 0)")"
-            "cl|⑧ 禁用中键主选区|当前: $(onoff "$(state_get clipboard_disable_primary 0)")"
+            "ct|1. 光标主题|当前: $(state_get cursor_theme 继承)"
+            "cs|2. 光标大小|当前: $(state_get cursor_size 继承)"
+            "hit|3. 打字时隐藏光标|当前: $(onoff "$(state_get cursor_hide_typing 0)")"
+            "sp|4. 截图保存路径|当前: $(state_get screenshot_path 未设置)"
+            "oz|5. 概览缩放 zoom|当前: $(state_get overview_zoom 未设置)"
+            "ob|6. 概览背景色|当前: $(state_get overview_backdrop 未设置)"
+            "hs|7. 跳过启动快捷键提示|当前: $(onoff "$(state_get hotkey_skip 0)")"
+            "cl|8. 禁用中键主选区|当前: $(onoff "$(state_get clipboard_disable_primary 0)")"
         )
-        niri_ge_2604 && rows+=("blur|⑨ 背景模糊 blur|参数调整")
+        niri_ge_2604 && rows+=("blur|9. 背景模糊 blur|参数调整")
         rows+=("back|← 返回|")
         local c
         c=$(dt_menu "光标与杂项" "光标 / 截图 / 概览 / 模糊：" "${rows[@]}") || return 0
@@ -887,11 +887,11 @@ menu_system() {
     while true; do
         local c
         c=$(dt_menu "系统与开机" "开机自启 / 环境变量 / 通知 / 工作区 / 电源：" \
-            "spawn|① 开机自启 spawn-at-startup|当前: $(state_get spawn 未设置)" \
-            "env|② 环境变量 environment|当前: $(state_get env_var 未设置)" \
-            "notify|③ 通知超时 notifications|当前: $(state_get notify_timeout_ms 未设置) ms" \
-            "ws|④ 工作区命名 workspace|给 1-6 号工作区设名称" \
-            "idle|⑤ 空闲 DPMS 关屏 idle|当前: $(state_get idle_dpms_ms 未设置) ms" \
+            "spawn|1. 开机自启 spawn-at-startup|当前: $(state_get spawn 未设置)" \
+            "env|2. 环境变量 environment|当前: $(state_get env_var 未设置)" \
+            "notify|3. 通知超时 notifications|当前: $(state_get notify_timeout_ms 未设置) ms" \
+            "ws|4. 工作区命名 workspace|给 1-6 号工作区设名称" \
+            "idle|5. 空闲 DPMS 关屏 idle|当前: $(state_get idle_dpms_ms 未设置) ms" \
             "back|← 返回|") || return 0
         case "$c" in
             spawn) text_set spawn "开机自启命令(如: cliphist serve / 壁纸, 留空清除)" "" && save ;;
@@ -911,11 +911,11 @@ menu_window_rule() {
     while true; do
         local c
         c=$(dt_menu "窗口规则" "给某应用设置规则(浮窗/最大化/无边框/固定工作区)：" \
-            "appid|① 目标应用 app-id|当前: $(state_get wr_appid 未设置)" \
-            "float|② 浮窗|$(onoff "$(state_get wr_float 0)")" \
-            "max|③ 最大化|$(onoff "$(state_get wr_max 0)")" \
-            "border|④ 无边框|$(onoff "$(state_get wr_border 0)")" \
-            "ws|⑤ 固定工作区|当前: $(state_get wr_ws 未设置)" \
+            "appid|1. 目标应用 app-id|当前: $(state_get wr_appid 未设置)" \
+            "float|2. 浮窗|$(onoff "$(state_get wr_float 0)")" \
+            "max|3. 最大化|$(onoff "$(state_get wr_max 0)")" \
+            "border|4. 无边框|$(onoff "$(state_get wr_border 0)")" \
+            "ws|5. 固定工作区|当前: $(state_get wr_ws 未设置)" \
             "back|← 返回|") || return 0
         case "$c" in
             appid) text_set wr_appid "目标应用 app-id(如 firefox / code; 留空=清除规则)" "" && save ;;
@@ -942,9 +942,9 @@ menu_output_cfg() { # <name>
     while true; do
         local c
         c=$(dt_menu "输出: $n" "该显示器的缩放 / 旋转 / 开关：" \
-            "scale|① 缩放 scale|当前: $(state_get "out.$n.scale" 未设置)" \
-            "transform|② 旋转 transform|当前: $(state_get "out.$n.transform" normal)" \
-            "off|③ 开关|当前: $( [ "$(state_get "out.$n.off" 0)" = 1 ] && echo 关闭 || echo 开启 )" \
+            "scale|1. 缩放 scale|当前: $(state_get "out.$n.scale" 未设置)" \
+            "transform|2. 旋转 transform|当前: $(state_get "out.$n.transform" normal)" \
+            "off|3. 开关|当前: $( [ "$(state_get "out.$n.off" 0)" = 1 ] && echo 关闭 || echo 开启 )" \
             "back|← 返回|") || return 0
         case "$c" in
             scale) float_set "out.$n.scale" "缩放(如 1.0 / 1.25 / 2.0)" 1.0 0.5 4.0 && save ;;
@@ -1091,15 +1091,15 @@ main_menu() {
     while true; do
         local c
         c=$(dt_menu "Niri 可视化配置" "改完自动生成 KDL + 校验 + 热重载；只影响你显式设置过的项：" \
-            "search|① 搜索配置项|按关键词找到对应菜单(支持中文/英文/配置键)" \
-            "layout|② 布局与外观|间距/居中/边框/焦点环/阴影/背景/窗口装饰" \
-            "input|③ 输入与焦点|键盘/触摸板/鼠标/焦点跟随" \
-            "misc|④ 光标与杂项|光标/截图/装饰/概览/模糊" \
-            "output|⑤ 显示器输出|缩放/旋转/开关（每台显示器）" \
-            "system|⑥ 系统与开机|开机自启/环境变量/通知/工作区/电源" \
-            "winrule|⑦ 窗口规则|浮窗/最大化/无边框/固定工作区(按应用)" \
-            "view|⑧ 查看当前配置|已设置项 + 校验结果" \
-            "reset|⑨ 全部重置|清空本工具的所有设置" \
+            "search|1. 搜索配置项|按关键词找到对应菜单(支持中文/英文/配置键)" \
+            "layout|2. 布局与外观|间距/居中/边框/焦点环/阴影/背景/窗口装饰" \
+            "input|3. 输入与焦点|键盘/触摸板/鼠标/焦点跟随" \
+            "misc|4. 光标与杂项|光标/截图/装饰/概览/模糊" \
+            "output|5. 显示器输出|缩放/旋转/开关（每台显示器）" \
+            "system|6. 系统与开机|开机自启/环境变量/通知/工作区/电源" \
+            "winrule|7. 窗口规则|浮窗/最大化/无边框/固定工作区(按应用)" \
+            "view|8. 查看当前配置|已设置项 + 校验结果" \
+            "reset|9. 全部重置|清空本工具的所有设置" \
             "back|← 退出|") || return 0
         case "$c" in
             search) menu_search ;;

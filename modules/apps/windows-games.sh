@@ -148,7 +148,7 @@ wg_install() { # 勾选安装运行环境
     dt_confirm "安装 ${#pkgs[@]} 个运行环境包（$distro）？\n需 sudo 密码，下载可能较大。\n\n继续？" || return 0
     wg_log "安装 ${#pkgs[@]} 个包 ..."
     if wg_install_pkgs "${pkgs[@]}"; then
-        wg_log "✅ 运行环境安装完成。使用方式见 ② 环境说明。"
+        wg_log "✅ 运行环境安装完成。使用方式见 2. 环境说明。"
     else
         wg_err "安装失败（可能中断）。包名: ${pkgs[*]}"
     fi
@@ -200,9 +200,9 @@ wg_menu() {
     while true; do
         local c
         c=$(dt_menu "Windows 游戏运行环境" "装好能玩 Windows 游戏的环境（不装游戏本体）：" \
-            "install|① 安装运行环境|Wine/Lutris 必须 + Steam/gamescope 等可选（勾选）" \
-            "usage|② 环境说明|各组件作用 + 怎么用" \
-            "status|③ 状态|wine/lutris/steam 版本" \
+            "install|1. 安装运行环境|Wine/Lutris 必须 + Steam/gamescope 等可选（勾选）" \
+            "usage|2. 环境说明|各组件作用 + 怎么用" \
+            "status|3. 状态|wine/lutris/steam 版本" \
             "back|← 返回|") || return 0
         case "$c" in
             install) wg_install ;;

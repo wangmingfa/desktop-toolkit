@@ -96,13 +96,13 @@ nm_menu() {
     while true; do
         local c
         c=$(dt_menu "网络连接管理" "nmcli 查看/连接网络（nmcli 已装）：" \
-            "status|① 网络状态|general status + 活动连接" \
-            "list|② 已保存连接|nmcli connection show" \
-            "scan|③ 扫描 Wi-Fi 连接|选择网络连接（可输密码）" \
-            "wifi-on|④ Wi-Fi 开|nmcli radio wifi on" \
-            "wifi-off|⑤ Wi-Fi 关|nmcli radio wifi off" \
-            "up|⑥ 连接已有|输入连接名 up" \
-            "down|⑦ 断开|输入连接名 down" \
+            "status|1. 网络状态|general status + 活动连接" \
+            "list|2. 已保存连接|nmcli connection show" \
+            "scan|3. 扫描 Wi-Fi 连接|选择网络连接（可输密码）" \
+            "wifi-on|4. Wi-Fi 开|nmcli radio wifi on" \
+            "wifi-off|5. Wi-Fi 关|nmcli radio wifi off" \
+            "up|6. 连接已有|输入连接名 up" \
+            "down|7. 断开|输入连接名 down" \
             "back|← 返回|") || return 0
         case "$c" in
             status) nm_status ;;

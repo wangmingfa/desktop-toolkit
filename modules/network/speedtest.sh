@@ -47,9 +47,9 @@ sp_menu() {
     while true; do
         local c
         c=$(dt_menu "网络测速" "speedtest-cli 测下行/上行/延迟：" \
-            "run|① 测速|Ping/Download/Upload（约 30 秒）" \
-            "install|② 安装 speedtest-cli|需 sudo" \
-            "status|③ 状态|已装/未装" \
+            "run|1. 测速|Ping/Download/Upload（约 30 秒）" \
+            "install|2. 安装 speedtest-cli|需 sudo" \
+            "status|3. 状态|已装/未装" \
             "back|← 返回|") || return 0
         case "$c" in
             run) sp_run ;;

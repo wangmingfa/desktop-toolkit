@@ -111,10 +111,10 @@ menu() {
     while true; do
         local c
         c=$(dt_menu "mako 通知样式" "透明/圆角/位置。当前环境 mako 状态见下：" \
-            "translucent|① 透明圆角|黑色半透明 + 大圆角(12px) + 右上角" \
-            "compact|② 紧凑深色|猫猫配色 + 小圆角(8px) + 短超时" \
-            "default|③ 恢复默认|删除 mako 配置" \
-            "status|④ 状态|mako 服务/配置/预设" \
+            "translucent|1. 透明圆角|黑色半透明 + 大圆角(12px) + 右上角" \
+            "compact|2. 紧凑深色|猫猫配色 + 小圆角(8px) + 短超时" \
+            "default|3. 恢复默认|删除 mako 配置" \
+            "status|4. 状态|mako 服务/配置/预设" \
             "back|← 返回|") || return 0
         case "$c" in
             translucent) apply_preset translucent ;;

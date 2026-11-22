@@ -97,11 +97,11 @@ menu() {
     while true; do
         local c
         c=$(dt_menu "DMS 顶栏主题" "dms matugen 生成 Material 主题(顶栏+niri+gtk+终端)" \
-            "hex|① 按主色生成|输入 hex 主色(深色默认)" \
-            "image|② 从壁纸生成|用当前 niri 壁纸图" \
-            "light|③ 浅色模式|重新生成 light" \
-            "dark|④ 深色模式|重新生成 dark" \
-            "status|⑤ 查看状态|上次主题 + 可同步应用" \
+            "hex|1. 按主色生成|输入 hex 主色(深色默认)" \
+            "image|2. 从壁纸生成|用当前 niri 壁纸图" \
+            "light|3. 浅色模式|重新生成 light" \
+            "dark|4. 深色模式|重新生成 dark" \
+            "status|5. 查看状态|上次主题 + 可同步应用" \
             "back|← 返回|") || return 0
         case "$c" in
             hex) apply_hex dark ;;

@@ -83,9 +83,9 @@ menu() {
     while true; do
         local c
         c=$(dt_menu "字体安装" "终端/顶栏等宽与图标字体（用户级，无需 sudo；中文需 sudo）" \
-            "nerd|① 安装推荐 Nerd Fonts|JetBrainsMono / Hack / FiraCode（镜像下载）" \
-            "noto|② 安装 Noto CJK 中文字体|dnf，需 sudo" \
-            "status|③ 查看已装字体|列出 Nerd/CJK 字体" \
+            "nerd|1. 安装推荐 Nerd Fonts|JetBrainsMono / Hack / FiraCode（镜像下载）" \
+            "noto|2. 安装 Noto CJK 中文字体|dnf，需 sudo" \
+            "status|3. 查看已装字体|列出 Nerd/CJK 字体" \
             "back|← 返回|") || return 0
         case "$c" in
             nerd) install_nerd_all ;;

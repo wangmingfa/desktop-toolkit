@@ -51,11 +51,11 @@ mo_menu() {
     while true; do
         local c
         c=$(dt_menu "系统监控工具" "终端资源监控（btop 更美观 / htop 经典 / nvtop 显卡）：" \
-            "btop|① 安装 btop|终端 CPU/内存/磁盘/网络(美观)" \
-            "htop|② 安装 htop|经典进程监控" \
-            "nvtop|③ 安装 nvtop|显卡监控(需独显)" \
-            "all|④ 全部安装|btop + htop + nvtop" \
-            "status|⑤ 状态|已装/未装" \
+            "btop|1. 安装 btop|终端 CPU/内存/磁盘/网络(美观)" \
+            "htop|2. 安装 htop|经典进程监控" \
+            "nvtop|3. 安装 nvtop|显卡监控(需独显)" \
+            "all|4. 全部安装|btop + htop + nvtop" \
+            "status|5. 状态|已装/未装" \
             "back|← 返回|") || return 0
         case "$c" in
             btop) mo_install btop ;;

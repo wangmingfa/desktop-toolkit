@@ -283,10 +283,10 @@ wm_menu() {
         distro=$(wm_distro)
         c=$(dt_menu "WM / 桌面环境 安装器" \
             "当前发行版: $distro；安装前会探测源里是否有对应包。" \
-            "de|① 桌面环境|KDE/GNOME/Xfce/MATE/Cinnamon/LXQt（依赖多、下载大）" \
-            "wm|② 平铺窗口管理器|sway/i3/Hyprland/river/bspwm/awesome/xmonad/qtile" \
-            "float|③ 堆叠/浮动窗口管理器|openbox/fluxbox/wayfire/labwc/herbstluftwm/dwm/leftwm" \
-            "matrix|④ 查看支持矩阵|各 WM/DE 在当前发行版的包名与状态" \
+            "de|1. 桌面环境|KDE/GNOME/Xfce/MATE/Cinnamon/LXQt（依赖多、下载大）" \
+            "wm|2. 平铺窗口管理器|sway/i3/Hyprland/river/bspwm/awesome/xmonad/qtile" \
+            "float|3. 堆叠/浮动窗口管理器|openbox/fluxbox/wayfire/labwc/herbstluftwm/dwm/leftwm" \
+            "matrix|4. 查看支持矩阵|各 WM/DE 在当前发行版的包名与状态" \
             "back|← 返回|") || return 0
         case "$c" in
             de) wm_pick de ;;

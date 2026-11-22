@@ -358,10 +358,10 @@ wt_menu() {
     while true; do
         local c
         c=$(dt_menu "WowType 输入法" "fcitx5 输入法插件，镜像下载 + 校验 + fcitx5 配置：" \
-            "install|① 安装 / 更新|下载 + 校验 + 包管理器安装 + fcitx5 设置（需 sudo）" \
-            "status|② 查看状态|包/fcitx5/自启动/环境变量/输入法" \
-            "doctor|③ 体检修复|一键检测并修复常见问题" \
-            "remove|④ 卸载|删除软件包（保留 fcitx5）" \
+            "install|1. 安装 / 更新|下载 + 校验 + 包管理器安装 + fcitx5 设置（需 sudo）" \
+            "status|2. 查看状态|包/fcitx5/自启动/环境变量/输入法" \
+            "doctor|3. 体检修复|一键检测并修复常见问题" \
+            "remove|4. 卸载|删除软件包（保留 fcitx5）" \
             "back|← 返回|") || return 0
         case "$c" in
             back) return 0 ;;

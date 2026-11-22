@@ -51,12 +51,12 @@ sv_op() { # <svc> <start|stop|restart|enable|disable>
     [ -n "$svc" ] || return 0
     case "$svc" in *.service|*.socket|*.timer) ;; *) svc="$svc.service" ;; esac
     [ -n "$op" ] || op=$(dt_menu "操作" "对 $svc 执行：" \
-        "start|① 启动|立即运行" \
-        "stop|② 停止|立即停止" \
-        "restart|③ 重启|停止再启动" \
-        "enable|④ 开机自启|enable（下次开机启用）" \
-        "disable|⑤ 取消自启|disable（下次开机停用）" \
-        "status|⑥ 查看状态|") || return 0
+        "start|1. 启动|立即运行" \
+        "stop|2. 停止|立即停止" \
+        "restart|3. 重启|停止再启动" \
+        "enable|4. 开机自启|enable（下次开机启用）" \
+        "disable|5. 取消自启|disable（下次开机停用）" \
+        "status|6. 查看状态|") || return 0
     if [ "$op" = status ]; then
         systemctl status "$svc" --no-pager 2>/dev/null | head -12 || sv_err "查看失败"
         return 0
@@ -82,10 +82,10 @@ sv_menu() {
     while true; do
         local c
         c=$(dt_menu "系统服务管理" "systemctl 系统级服务（与用户级 autostart 互补）：" \
-            "list|① 运行中服务|列出前 20 个 running" \
-            "op|② 启停服务|输入服务名 + start/stop/restart/enable/disable" \
-            "failed|③ 失败服务|列出 failed/加载失败" \
-            "status|④ 状态|输入服务名看状态" \
+            "list|1. 运行中服务|列出前 20 个 running" \
+            "op|2. 启停服务|输入服务名 + start/stop/restart/enable/disable" \
+            "failed|3. 失败服务|列出 failed/加载失败" \
+            "status|4. 状态|输入服务名看状态" \
             "back|← 返回|") || return 0
         case "$c" in
             list) sv_list ;;

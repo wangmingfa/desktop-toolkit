@@ -76,11 +76,11 @@ tu_menu() {
     while true; do
         local c
         c=$(dt_menu "tuned 性能调优" "电源/性能自动调优方案管理：" \
-            "install|① 安装 tuned+服务|需 sudo，装完自动启用" \
-            "active|② 当前方案|tuned-adm active" \
-            "recommend|③ 推荐方案|tuned-adm recommend" \
-            "set|④ 切换方案|输入方案名（list 查看）" \
-            "list|⑤ 可用方案|tuned-adm list" \
+            "install|1. 安装 tuned+服务|需 sudo，装完自动启用" \
+            "active|2. 当前方案|tuned-adm active" \
+            "recommend|3. 推荐方案|tuned-adm recommend" \
+            "set|4. 切换方案|输入方案名（list 查看）" \
+            "list|5. 可用方案|tuned-adm list" \
             "back|← 返回|") || return 0
         case "$c" in
             install) tu_install ;;

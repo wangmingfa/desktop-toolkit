@@ -92,10 +92,10 @@ rd_menu() {
     while true; do
         local c
         c=$(dt_menu "远程桌面" "xrdp RDP / tigervnc VNC（开放端口有风险，用后关闭）：" \
-            "xrdp|① 安装启用 RDP|xrdp 端口 3389（需 sudo + 防火墙）" \
-            "vnc|② 安装 VNC|tigervnc 端口 5901（需 sudo + vncpasswd）" \
-            "status|③ 查看状态|RDP/VNC 服务 + 本机 IP" \
-            "off|④ 关闭远程|停服务 + 移除防火墙端口" \
+            "xrdp|1. 安装启用 RDP|xrdp 端口 3389（需 sudo + 防火墙）" \
+            "vnc|2. 安装 VNC|tigervnc 端口 5901（需 sudo + vncpasswd）" \
+            "status|3. 查看状态|RDP/VNC 服务 + 本机 IP" \
+            "off|4. 关闭远程|停服务 + 移除防火墙端口" \
             "back|← 返回|") || return 0
         case "$c" in
             xrdp) rd_xrdp ;;

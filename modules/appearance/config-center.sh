@@ -231,7 +231,7 @@ PY
         local c tr_cur
         tr_cur=$("$ADJUST" launcher-transparency get 2>/dev/null | sed -n 's/.*透明度 \([0-9][0-9]*\)%.*/\1/p' | head -1 || true)
         c=$(menu "透明度" "0 = 完全不透明，100 = 完全透明。选择组件调整：" \
-            "dock|① Dock 栏透明度|当前 $(mat_val dock)% (已调低40%→58.5)" \
+            "dock|1. Dock 栏透明度|当前 $(mat_val dock)% (已调低40%→58.5)" \
             "all|全部组件统一|当前常规窗口: ${mats_cur}" \
             "global|全局顶层值|$(kw_get 'Effect-liquidglass' 'SurfaceTransparencyLight')" \
             "general|常规窗口 general|$(mat_val general)" \
@@ -469,8 +469,8 @@ else: print("110")
 PY
 )
         c=$(menu "Dock 尺寸" "调整 Dock 栏高度与图标大小（改完自动重启桌面，闪一下即可）：" \
-            "height|① Dock 栏高度|当前 ${cur_h}px (默认68, 范围40-140)" \
-            "zoom|② 图标悬停放大|当前 ${cur_z}% (默认110, 范围100-150)" \
+            "height|1. Dock 栏高度|当前 ${cur_h}px (默认68, 范围40-140)" \
+            "zoom|2. 图标悬停放大|当前 ${cur_z}% (默认110, 范围100-150)" \
             "back|← 返回主菜单|") || return 0
         [ "$c" = back ] && return 0
         if [ "$c" = height ]; then
@@ -506,10 +506,10 @@ PY
         esac
         local c
         c=$(menu "顶部任务栏 Logo" "左上角菜单按钮图标（当前: ${label}）。切换后桌面自动重启：" \
-            "cachy|① CachyOS 标志|推荐, 纯白色" \
-            "apple|② 苹果标志 (原版)|恢复 macOS 默认苹果剪影" \
-            "plasma|③ KDE Plasma 标志|Plasma 官方 logo" \
-            "custom|④ 自定义图标名|输入图标主题里的图标名" \
+            "cachy|1. CachyOS 标志|推荐, 纯白色" \
+            "apple|2. 苹果标志 (原版)|恢复 macOS 默认苹果剪影" \
+            "plasma|3. KDE Plasma 标志|Plasma 官方 logo" \
+            "custom|4. 自定义图标名|输入图标主题里的图标名" \
             "back|← 返回主菜单|") || return 0
         case "$c" in
             back) return 0 ;;
@@ -536,15 +536,15 @@ sub_winanimi() {
         speed=$(echo "$st"  | sed -n 's/.*全局动画速度 *= //p' | head -1 | cut -dx -f1)
         local c
         c=$(menu "窗口动画" "当前: 神灯最小化=${genie} 滑入=${glide} 桌面滑动=${slide} 速度=${speed}x。（软件渲染下已强制开启动画，极少数场景可能轻微掉帧）" \
-            "preset-macos|① 预设 · macOS 风格|神灯最小化 + 滑入 + 标准速度" \
-            "preset-windows|② 预设 · Windows 11|无神灯, 滑入 + 标准速度 (Fluent 推荐)" \
-            "preset-balanced|③ 预设 · 均衡|神灯 + 稍快速度" \
-            "preset-fast|④ 预设 · 快速|关闭动画, 性能优先" \
-            "preset-off|⑤ 预设 · 全部关闭|关闭所有窗口动画" \
-            "genie|⑥ 最小化神灯 genie (单独)|当前 ${genie} — macOS 的神奇效果" \
-            "glide|⑦ 窗口打开/关闭滑入 (单独)|当前 ${glide}" \
-            "slide|⑧ 桌面切换滑动 (单独)|当前 ${slide}" \
-            "speed|⑨ 全局动画速度|当前 ${speed}x" \
+            "preset-macos|1. 预设 · macOS 风格|神灯最小化 + 滑入 + 标准速度" \
+            "preset-windows|2. 预设 · Windows 11|无神灯, 滑入 + 标准速度 (Fluent 推荐)" \
+            "preset-balanced|3. 预设 · 均衡|神灯 + 稍快速度" \
+            "preset-fast|4. 预设 · 快速|关闭动画, 性能优先" \
+            "preset-off|5. 预设 · 全部关闭|关闭所有窗口动画" \
+            "genie|6. 最小化神灯 genie (单独)|当前 ${genie} — macOS 的神奇效果" \
+            "glide|7. 窗口打开/关闭滑入 (单独)|当前 ${glide}" \
+            "slide|8. 桌面切换滑动 (单独)|当前 ${slide}" \
+            "speed|9. 全局动画速度|当前 ${speed}x" \
             "back|← 返回主菜单|") || return 0
         [ "$c" = back ] && return 0
         case "$c" in
@@ -600,19 +600,19 @@ main() {
     while true; do
         local c
         c=$(menu "桌面外观配置中心" "全部配置都在这里交互式调整，无需记命令。当前风格：$(kde_style_label)" \
-            "corner|① 窗口圆角|窗口/ Dock / 弹窗圆角半径" \
-            "transparency|② 透明度|全局与 10 个组件的透明程度" \
-            "glass|③ 玻璃质感|模糊/折射/色散等（完整模式可见）" \
-            "effects|④ 特效开关|液态玻璃 / 圆角特效 开关" \
-            "gradient|⑤ 渐变与装饰|渐变透明度、模糊范围" \
-            "gtk|⑥ GTK 应用透明度|Nautilus 侧栏/窗口" \
-            "docksize|⑦ Dock 尺寸|高度 + 图标悬停放大" \
-            "logo|⑧ 顶部任务栏 Logo|CachyOS / 苹果 / Plasma" \
-            "winanim|⑨ 窗口动画|神灯 genie + 滑入 + 速度（本次新增）" \
-            "list|⑩ 查看当前配置|打印所有可调项" \
-            "reset|⑪ 恢复默认|圆角与透明度恢复默认" \
-            "mode|⑫ 性能 / 完整模式|切换（完整模式可能卡顿）" \
-            "exit|⑬ 退出|") || exit 0
+            "corner|1. 窗口圆角|窗口/ Dock / 弹窗圆角半径" \
+            "transparency|2. 透明度|全局与 10 个组件的透明程度" \
+            "glass|3. 玻璃质感|模糊/折射/色散等（完整模式可见）" \
+            "effects|4. 特效开关|液态玻璃 / 圆角特效 开关" \
+            "gradient|5. 渐变与装饰|渐变透明度、模糊范围" \
+            "gtk|6. GTK 应用透明度|Nautilus 侧栏/窗口" \
+            "docksize|7. Dock 尺寸|高度 + 图标悬停放大" \
+            "logo|8. 顶部任务栏 Logo|CachyOS / 苹果 / Plasma" \
+            "winanim|9. 窗口动画|神灯 genie + 滑入 + 速度（本次新增）" \
+            "list|10. 查看当前配置|打印所有可调项" \
+            "reset|11. 恢复默认|圆角与透明度恢复默认" \
+            "mode|12. 性能 / 完整模式|切换（完整模式可能卡顿）" \
+            "exit|13. 退出|") || exit 0
         case "$c" in
             exit) exit 0 ;;
             corner)       sub_corner ;;

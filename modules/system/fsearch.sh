@@ -114,11 +114,11 @@ fs_menu() {
     while true; do
         local c
         c=$(dt_menu "文件快速搜索" "fd/fzf 模糊查找 + bat 预览 + rg 内容搜索：" \
-            "find|① 查找文件|fd + fzf 选择，bat 预览，Enter 打开" \
-            "content|② 内容搜索|rg 正则搜文件内容" \
-            "big|③ 大文件定位|找 >100M（可调）的文件" \
-            "install|④ 安装 bat|fd/fzf/rg 已装，bat 需 sudo" \
-            "status|⑤ 状态|已装/未装" \
+            "find|1. 查找文件|fd + fzf 选择，bat 预览，Enter 打开" \
+            "content|2. 内容搜索|rg 正则搜文件内容" \
+            "big|3. 大文件定位|找 >100M（可调）的文件" \
+            "install|4. 安装 bat|fd/fzf/rg 已装，bat 需 sudo" \
+            "status|5. 状态|已装/未装" \
             "back|← 返回|") || return 0
         case "$c" in
             find) fs_find ;;

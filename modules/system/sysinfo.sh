@@ -88,11 +88,11 @@ si_menu() {
     while true; do
         local c
         c=$(dt_menu "系统信息 + 存储分析" "硬件摘要 / 磁盘使用 / 目录分析：" \
-            "sys|① 系统摘要|发行版/内核/CPU/内存/会话(inxi)" \
-            "disks|② 磁盘使用|duf 直观显示各挂载点使用" \
-            "dir|③ 目录分析|ncdu 交互式找大文件(需终端)" \
-            "install|④ 安装工具|inxi/duf/ncdu（需 sudo）" \
-            "status|⑤ 状态|已装/未装" \
+            "sys|1. 系统摘要|发行版/内核/CPU/内存/会话(inxi)" \
+            "disks|2. 磁盘使用|duf 直观显示各挂载点使用" \
+            "dir|3. 目录分析|ncdu 交互式找大文件(需终端)" \
+            "install|4. 安装工具|inxi/duf/ncdu（需 sudo）" \
+            "status|5. 状态|已装/未装" \
             "back|← 返回|") || return 0
         case "$c" in
             sys) si_sysinfo ;;

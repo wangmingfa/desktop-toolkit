@@ -59,12 +59,12 @@ jn_menu() {
     while true; do
         local c
         c=$(dt_menu "系统日志查看" "journalctl 日志 + 启动分析（systemd 自带）：" \
-            "err|① 错误日志|最近 50 条错误/严重（-p err）" \
-            "boot|② 本次启动日志|最近 80 条" \
-            "svc|③ 某服务日志|输入服务名查最近 50 条" \
-            "kernel|④ 内核日志|最近 30 条内核消息" \
-            "blame|⑤ 启动耗时|systemd-analyze blame Top 12" \
-            "clean|⑥ 清理旧日志|保留最近 N 天（需 sudo）" \
+            "err|1. 错误日志|最近 50 条错误/严重（-p err）" \
+            "boot|2. 本次启动日志|最近 80 条" \
+            "svc|3. 某服务日志|输入服务名查最近 50 条" \
+            "kernel|4. 内核日志|最近 30 条内核消息" \
+            "blame|5. 启动耗时|systemd-analyze blame Top 12" \
+            "clean|6. 清理旧日志|保留最近 N 天（需 sudo）" \
             "back|← 返回|") || return 0
         case "$c" in
             err) jn_err_log ;;

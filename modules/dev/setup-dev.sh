@@ -152,11 +152,11 @@ dev_menu() {
     while true; do
         local c
         c=$(dt_menu "开发环境" "git 配置与常用开发工具：" \
-            "git|① 配置 git|user.name/email/默认分支" \
-            "tools|② 安装开发工具|git/python/node/gcc/cmake 等（需 sudo）" \
-            "langs|③ 语言运行时|Go/Rust（需 sudo）" \
-            "docker|④ 容器|Podman（Fedora 官方源）/ Docker（第三方源）" \
-            "status|⑤ 查看状态|当前 git/工具/语言版本" \
+            "git|1. 配置 git|user.name/email/默认分支" \
+            "tools|2. 安装开发工具|git/python/node/gcc/cmake 等（需 sudo）" \
+            "langs|3. 语言运行时|Go/Rust（需 sudo）" \
+            "docker|4. 容器|Podman（Fedora 官方源）/ Docker（第三方源）" \
+            "status|5. 查看状态|当前 git/工具/语言版本" \
             "back|← 返回|") || return 0
         case "$c" in
             back) return 0 ;;

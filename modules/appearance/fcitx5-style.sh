@@ -76,7 +76,7 @@ fc5_install_repo() { # <github_url> —— 克隆仓库，找含 theme.conf 的�
         log "已安装主题: $name"
     done
     rm -rf "$tmp"
-    log "安装完成。可到菜单①切换。"
+    log "安装完成。可到菜单1.切换。"
 }
 
 fc5_status() {
@@ -91,11 +91,11 @@ fc5_menu() {
     while true; do
         local c
         c=$(dt_menu "fcitx5 输入法外观" "中文输入法主题/字体（当前: $(fc5_current 未设置)）：" \
-            "set|① 切换主题|列出可用主题选择" \
-            "dl|② 下载第三方主题|material-color/nord/gruvbox（镜像下载）" \
-            "font|③ 字体/大小|编辑 classicui.conf 的 Font" \
-            "status|④ 状态|当前主题/可用主题/运行状态" \
-            "reload|⑤ 重载 fcitx5|让主题生效" \
+            "set|1. 切换主题|列出可用主题选择" \
+            "dl|2. 下载第三方主题|material-color/nord/gruvbox（镜像下载）" \
+            "font|3. 字体/大小|编辑 classicui.conf 的 Font" \
+            "status|4. 状态|当前主题/可用主题/运行状态" \
+            "reload|5. 重载 fcitx5|让主题生效" \
             "back|← 返回|") || return 0
         case "$c" in
             set) menu_set ;;
@@ -124,9 +124,9 @@ menu_set() {
 menu_dl() {
     local c
     c=$(dt_menu "下载 fcitx5 主题" "第三方主题（镜像下载）" \
-        "mc|① Material Color|fcitx5/fcitx5-material-color（经典 Material 风格）" \
-        "nord|② Nord|fcitx5/fcitx5-nord（北欧冷色）" \
-        "gruvbox|③ Gruvbox|fcitx5/fcitx5-gruvbox（复古暖色）" \
+        "mc|1. Material Color|fcitx5/fcitx5-material-color（经典 Material 风格）" \
+        "nord|2. Nord|fcitx5/fcitx5-nord（北欧冷色）" \
+        "gruvbox|3. Gruvbox|fcitx5/fcitx5-gruvbox（复古暖色）" \
         "back|← 返回|") || return 0
     case "$c" in
         mc) fc5_install_repo "https://github.com/fcitx5/fcitx5-material-color" ;;
@@ -139,8 +139,8 @@ menu_dl() {
 menu_font() {
     local c
     c=$(dt_menu "fcitx5 字体" "设置输入法候选/菜单字体（写 classicui.conf）：" \
-        "set|① 设置字体|如: Noto Sans CJK SC 12" \
-        "reset|② 恢复默认|删除 Font 行" \
+        "set|1. 设置字体|如: Noto Sans CJK SC 12" \
+        "reset|2. 恢复默认|删除 Font 行" \
         "back|← 返回|") || return 0
     case "$c" in
         set)
