@@ -266,6 +266,23 @@ gen_notifications() {
     state_has notify_timeout_ms && printf 'notifications { timeout-ms %s }\n' "$(state_get notify_timeout_ms)"
 }
 
+gen_workspaces() {
+    # 工作区命名(顶层, 合并): 给 1-6 号工作区设 name
+    local body n
+    body=$(mktemp)
+    for n in 1 2 3 4 5 6; do
+        local nm; nm=$(state_get "ws_name_$n" '')
+        [ -n "$nm" ] && printf '    "%s" { name "%s" }\n' "$n" "$nm" >> "$body"
+    done
+    if [ -s "$body" ]; then printf 'workspaces {\n'; cat "$body"; printf '}\n\n'; fi
+    rm -f "$body"
+}
+
+gen_idle() {
+    # 空闲/电源(顶层): DPMS 关屏超时(0=不设)
+    state_has idle_dpms_ms && [ "$(state_get idle_dpms_ms 0)" != 0 ] && printf 'idle { dpms-timeout-ms %s }\n' "$(state_get idle_dpms_ms)"
+}
+
 gen_outputs() {
     [ -f "$STATE" ] || return 0
     local line name n
@@ -289,7 +306,7 @@ gen_outputs() {
 gen_all() { # <outfile>
     local out="$1"; : > "$out"
     printf '// 由 desktop-toolkit niri-config.sh 生成；请用工具修改，手改可能被覆盖。\n' >> "$out"
-    { gen_layout; gen_anim; gen_input; gen_misc; gen_outputs; gen_spawn_at_startup; gen_environment; gen_notifications; } >> "$out"
+    { gen_layout; gen_anim; gen_input; gen_misc; gen_outputs; gen_spawn_at_startup; gen_environment; gen_notifications; gen_workspaces; gen_idle; } >> "$out"
 }
 
 # ---------------------------------------------------------------------------
@@ -784,18 +801,43 @@ menu_misc() {
 
 # 子菜单: 系统与开机(自启/环境变量/通知)
 # ---------------------------------------------------------------------------
+menu_ws_names() {
+    while true; do
+        local rows=() n
+        for n in 1 2 3 4 5 6; do
+            local cur; cur=$(state_get "ws_name_$n" '')
+            rows+=("$n|工作区 $n|当前: ${cur:-未命名}")
+        done
+        rows+=("back|← 返回|")
+        local c
+        c=$(dt_menu "工作区命名" "给 1-6 号工作区设名称（留空=清除）" "${rows[@]}") || return 0
+        [ "$c" = back ] && return 0
+        case "$c" in
+            [1-6])
+                local v
+                v=$(dt_ask_text "工作区 $c 名称" "输入名称(留空=恢复默认)" "$(state_get "ws_name_$c" '')") || continue
+                if [ -n "$v" ]; then state_set "ws_name_$c" "$v"; else state_set "ws_name_$c" ""; fi
+                save ;;
+        esac
+    done
+}
+
 menu_system() {
     while true; do
         local c
-        c=$(dt_menu "系统与开机" "开机自启 / 环境变量 / 通知：" \
+        c=$(dt_menu "系统与开机" "开机自启 / 环境变量 / 通知 / 工作区 / 电源：" \
             "spawn|① 开机自启 spawn-at-startup|当前: $(state_get spawn 未设置)" \
             "env|② 环境变量 environment|当前: $(state_get env_var 未设置)" \
             "notify|③ 通知超时 notifications|当前: $(state_get notify_timeout_ms 未设置) ms" \
+            "ws|④ 工作区命名 workspace|给 1-6 号工作区设名称" \
+            "idle|⑤ 空闲 DPMS 关屏 idle|当前: $(state_get idle_dpms_ms 未设置) ms" \
             "back|← 返回|") || return 0
         case "$c" in
             spawn) text_set spawn "开机自启命令(如: cliphist serve / 壁纸, 留空清除)" "" && save ;;
             env) text_set env_var "环境变量(格式: KEY value, 如: QT_QPA_PLATFORM wayland)" "" && save ;;
             notify) num_int_set notify_timeout_ms "通知超时(ms, 0=常驻)" 5000 0 60000 && save ;;
+            ws) menu_ws_names ;;
+            idle) num_int_set idle_dpms_ms "DPMS 关屏超时(ms, 0=不设)" 300000 0 3600000 && save ;;
             back) return 0 ;;
         esac
     done
@@ -922,6 +964,8 @@ CATALOG=(
     "开机自启 spawn-at-startup 自启 启动 命令|开机自启|系统与开机|menu_system"
     "环境变量 environment 环境 KEY|环境变量|系统与开机|menu_system"
     "通知 notifications timeout 超时 提示|通知超时|系统与开机|menu_system"
+    "工作区 workspace 命名 名称 数量|工作区命名|系统与开机|menu_ws_names"
+    "空闲 idle 电源 关屏 dpms 超时|空闲 DPMS 关屏|系统与开机|menu_system"
 )
 
 menu_search() {
