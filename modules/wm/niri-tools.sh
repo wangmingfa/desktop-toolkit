@@ -44,8 +44,8 @@ KDL
 
 ensure_include() {
     grep -q 'tools\.kdl' "$MAIN" 2>/dev/null && return 0
-    # 幂等: 在主配置末尾追加 include(awk 避免 sed 引号问题)
-    awk '{ print } END { print ""; print "// dt-tools include (niri-tools.sh 管理)"; print "'"$TOOLS_INCLUDE"'" }' "$MAIN" > "$MAIN.tmp" \
+    # 幂等: 在主配置末尾追加 include(awk -v 传变量, 避免含双引号的 include 行拼进 awk 程序)
+    awk -v inc="$TOOLS_INCLUDE" '{ print } END { print ""; print "// dt-tools include (niri-tools.sh 管理)"; print inc }' "$MAIN" > "$MAIN.tmp" \
         && mv "$MAIN.tmp" "$MAIN"
     log "已在主配置末尾加入 include tools.kdl"
 }
