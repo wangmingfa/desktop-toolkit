@@ -99,6 +99,8 @@ sub_wm() {
             "niri-wallpaper|⑥ niri 壁纸/锁屏|原生 background-image 壁纸 + swaylock 锁屏样式" \
             "dms-theme|⑦ DMS 顶栏主题|dms matugen 生成 Material 主题(顶栏+niri+gtk+终端)" \
             "wm-installer|⑧ WM / 桌面环境安装器|KDE/GNOME/sway/i3/Hyprland 等常见 WM/DE, 发行版感知安装" \
+            "niri-audio|⑨ niri 音频控制|音量/静音/媒体键快捷键(pamixer + playerctl)" \
+            "wlsunset|⑩ niri 护眼色温|夜间屏幕调暖(wlsunset, 自动日落)" \
             "back|← 返回主菜单|") || return 0
         [ "$c" = back ] && return 0
         case "$c" in
@@ -129,6 +131,12 @@ sub_wm() {
                 ;;
             wm-installer)
                 bash "$DT_ROOT/modules/wm/wm-installer.sh"
+                ;;
+            niri-audio)
+                bash "$DT_ROOT/modules/wm/niri-audio.sh"
+                ;;
+            wlsunset)
+                bash "$DT_ROOT/modules/wm/niri-wlsunset.sh"
                 ;;
         esac
     done
