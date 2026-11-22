@@ -63,6 +63,7 @@ mo_menu() {
             nvtop) mo_install nvtop ;;
             all) mo_install btop; mo_install htop; mo_install nvtop ;;
             status) mo_status ;;
+            __quit) exit 0 ;;
             back) return 0 ;;
         esac
     done

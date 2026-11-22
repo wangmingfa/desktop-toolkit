@@ -113,6 +113,7 @@ wg_install() { # 勾选安装运行环境
         local c
         c=$(dt_menu "Windows 游戏运行环境（$distro）" "*必须(Wine/Lutris)；[x]可选勾选，点击切换。" "${rows[@]}") || return 0
         case "$c" in
+            __quit) exit 0 ;;
             back) return 0 ;;
             __install) break ;;
             req-*) : ;;
@@ -208,6 +209,7 @@ wg_menu() {
             install) wg_install ;;
             usage) wg_usage ;;
             status) wg_status ;;
+            __quit) exit 0 ;;
             back) return 0 ;;
         esac
     done

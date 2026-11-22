@@ -52,6 +52,7 @@ fm_nerd() { # <family>
         "UbuntuMono|UbuntuMono Nerd Font|Ubuntu 风格" \
         "Noto|Noto Nerd Font|Noto 无衬线" \
         "back|← 返回|") || return 0
+    [ "$family" = __quit ] && exit 0
     [ "$family" = back ] && return 0
     local url dest
     url=$(fm_family_url "$family")
@@ -83,6 +84,7 @@ fm_menu() {
         case "$c" in
             list) fm_list ;;
             nerd) fm_nerd ;;
+            __quit) exit 0 ;;
             back) return 0 ;;
         esac
     done

@@ -124,6 +124,7 @@ menu() {
             play) play ;;
             status) status ;;
             uninstall) do_uninstall ;;
+            __quit) exit 0 ;;
             back) return 0 ;;
         esac
     done

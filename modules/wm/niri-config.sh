@@ -465,6 +465,7 @@ enum_set() { # key label default "v1|v2|..."
     for v in $vals; do rows+=("$v|$v|"); done
     unset IFS
     local sel; sel=$(dt_menu "$label" "当前: $cur" "${rows[@]}") || return 2
+    [ "$sel" = __quit ] && exit 0
     [ -n "$sel" ] || return 2
     state_set "$key" "$sel"
 }
@@ -472,6 +473,7 @@ toggle_set() { # key label default
     local key="$1" label="$2" def="$3"
     local cur sel; cur=$(state_get "$key" "$def")
     sel=$(dt_menu "$label" "当前: $(onoff "$cur")" "1|开启|" "0|关闭|") || return 2
+    [ "$sel" = __quit ] && exit 0
     [ -n "$sel" ] || return 2
     state_set "$key" "$sel"
 }
@@ -588,6 +590,7 @@ menu_focus_ring() {
             w) num_int_set focus_ring_width "焦点环宽度(px)" 4 0 32 && save ;;
             a) text_set focus_ring_active "活动色(#rrggbb 或颜色名)" "#7fc8ff" && save ;;
             i) text_set focus_ring_inactive "非活动色" "#505050" && save ;;
+            __quit) exit 0 ;;
             back) return 0 ;;
         esac
     done
@@ -606,6 +609,7 @@ menu_border() {
             w) num_int_set border_width "边框宽度(px)" 4 0 32 && save ;;
             a) text_set border_active "活动色" "#ffc87f" && save ;;
             i) text_set border_inactive "非活动色" "#505050" && save ;;
+            __quit) exit 0 ;;
             back) return 0 ;;
         esac
     done
@@ -628,6 +632,7 @@ menu_shadow() {
             ox) num_int_set shadow_offset_x "水平偏移(px)" 0 -60 60 && save ;;
             oy) num_int_set shadow_offset_y "垂直偏移(px)" 5 -60 60 && save ;;
             col) text_set shadow_color "阴影颜色(#rrggbbaa)" "#00000070" && save ;;
+            __quit) exit 0 ;;
             back) return 0 ;;
         esac
     done
@@ -656,6 +661,7 @@ menu_layout() {
             shadow) menu_shadow ;;
             csd) toggle_set prefer_no_csd "隐藏窗口按钮和标题栏？(开启后应用自绘的 关闭/最大化/最小化 按钮会消失，窗口变无边框)" 0 && save ;;
             anim) enum_set anim "动画控制(窗口移动/开关/工作区切换)" default "default|fluid|snappy|off" && save ;;
+            __quit) exit 0 ;;
             back) return 0 ;;
         esac
     done
@@ -682,6 +688,7 @@ menu_keyboard() {
             delay) num_int_set kb_repeat_delay "重复延迟(ms)" 600 100 2000 && save ;;
             rate) num_int_set kb_repeat_rate "重复速率(次/秒)" 25 1 200 && save ;;
             num) toggle_set kb_numlock "启动时开启数字锁？" 0 && save ;;
+            __quit) exit 0 ;;
             back) return 0 ;;
         esac
     done
@@ -709,6 +716,7 @@ menu_touchpad() {
             prof) enum_set tp_accel_profile "加速方式" adaptive "adaptive|flat" && save ;;
             sm) enum_set tp_scroll_method "滚动方式" two-finger "no-scroll|two-finger|edge|on-button-down" && save ;;
             cm) enum_set tp_click_method "点击方式" button-areas "button-areas|clickfinger" && save ;;
+            __quit) exit 0 ;;
             back) return 0 ;;
         esac
     done
@@ -728,6 +736,7 @@ menu_mouse() {
             lh) toggle_set mouse_left_handed "左手模式？" 0 && save ;;
             sp) float_set mouse_accel_speed "加速速度" 0.0 -1.0 1.0 && save ;;
             prof) enum_set mouse_accel_profile "加速方式" adaptive "adaptive|flat" && save ;;
+            __quit) exit 0 ;;
             back) return 0 ;;
         esac
     done
@@ -751,6 +760,7 @@ menu_focus_follows() {
             "back|← 返回|") || return 0
         case "$c" in
             off|always|0|10) state_set ffm_mode "$c"; save ;;
+            __quit) exit 0 ;;
             back) return 0 ;;
         esac
     done
@@ -768,6 +778,7 @@ menu_gestures() {
         case "$c" in
             ws) toggle_gset gesture_ws_swipe "工作区切换手势" && save ;;
             ov) toggle_gset gesture_ov_swipe "开概览手势" && save ;;
+            __quit) exit 0 ;;
             back) return 0 ;;
         esac
     done
@@ -801,6 +812,7 @@ menu_input() {
             mouse) menu_mouse ;;
             ffm) menu_focus_follows ;;
             gest) menu_gestures ;;
+            __quit) exit 0 ;;
             back) return 0 ;;
         esac
     done
@@ -825,6 +837,7 @@ menu_blur() {
             offset) float_set blur_offset "偏移(1-6)" 3.0 0.0 6.0 && save ;;
             noise) float_set blur_noise "噪点(0-0.2)" 0.02 0.0 0.2 && save ;;
             sat) float_set blur_saturation "饱和度(0-3)" 1.5 0.0 3.0 && save ;;
+            __quit) exit 0 ;;
             back) return 0 ;;
         esac
     done
@@ -855,6 +868,7 @@ menu_misc() {
             hs) toggle_set hotkey_skip "启动时跳过快捷键提示？" 0 && save ;;
             cl) toggle_set clipboard_disable_primary "禁用中键主选区粘贴？" 0 && save ;;
             blur) menu_blur ;;
+            __quit) exit 0 ;;
             back) return 0 ;;
         esac
     done
@@ -899,6 +913,7 @@ menu_system() {
             notify) num_int_set notify_timeout_ms "通知超时(ms, 0=常驻)" 5000 0 60000 && save ;;
             ws) menu_ws_names ;;
             idle) num_int_set idle_dpms_ms "DPMS 关屏超时(ms, 0=不设)" 300000 0 3600000 && save ;;
+            __quit) exit 0 ;;
             back) return 0 ;;
         esac
     done
@@ -923,6 +938,7 @@ menu_window_rule() {
             max) toggle_set wr_max "让该应用打开时最大化？" 0 && save ;;
             border) toggle_set wr_border "无边框(去掉窗口边框)？" 0 && save ;;
             ws) text_set wr_ws "固定工作区(留空=不固定)" "" && save ;;
+            __quit) exit 0 ;;
             back) return 0 ;;
         esac
     done
@@ -950,6 +966,7 @@ menu_output_cfg() { # <name>
             scale) float_set "out.$n.scale" "缩放(如 1.0 / 1.25 / 2.0)" 1.0 0.5 4.0 && save ;;
             transform) enum_set "out.$n.transform" "旋转" normal "normal|90|180|270" && save ;;
             off) toggle_set "out.$n.off" "关闭该显示器？" 0 && save ;;
+            __quit) exit 0 ;;
             back) return 0 ;;
         esac
     done
@@ -966,6 +983,7 @@ menu_output() {
         local c
         c=$(dt_menu "显示器输出" "检测到的输出(在 niri 会话内可见)：" "${rows[@]}") || return 0
         case "$c" in
+            __quit) exit 0 ;;
             back) return 0 ;;
             manual)
                 local name; name=$(dt_ask_text "显示器名" "如 eDP-1 / HDMI-A-1" "eDP-1") || continue
@@ -1077,6 +1095,7 @@ menu_search() {
     rows+=("back|← 返回|")
     local sel
     sel=$(dt_menu "搜索结果" "匹配 ${#matched[@]} 项，选择后进入对应菜单：" "${rows[@]}") || return 0
+    [ "$sel" = __quit ] && exit 0
     [ "$sel" = back ] && return 0
     [[ "$sel" =~ ^[0-9]+$ ]] || return 0
     [ "$sel" -lt "${#matched[@]}" ] || return 0
@@ -1111,6 +1130,7 @@ main_menu() {
             winrule) menu_window_rule ;;
             view) show_current ;;
             reset) reset_all ;;
+            __quit) exit 0 ;;
             back) return 0 ;;
         esac
     done

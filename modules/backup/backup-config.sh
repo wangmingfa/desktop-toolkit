@@ -211,6 +211,7 @@ bk_menu_timer() {
             weekly) bk_timer_setup weekly ;;
             off) bk_timer_disable ;;
             status) bk_timer_status ;;
+            __quit) exit 0 ;;
             back) return 0 ;;
         esac
     done
@@ -227,6 +228,7 @@ bk_menu() {
             "timer|5. 定时备份|systemd timer 自动备份（每小时/每天/每周）" \
             "back|← 返回|") || return 0
         case "$c" in
+            __quit) exit 0 ;;
             back) return 0 ;;
             backup) bk_create ;;
             list) bk_list ;;

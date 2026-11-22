@@ -39,6 +39,7 @@ pick_wallpaper() {
         rows+=("back|← 取消|")
         local sel
         sel=$(dt_menu "选择壁纸" "从 ~/Pictures/Wallpapers 选择：" "${rows[@]}") || return 2
+        [ "$sel" = __quit ] && exit 0
         [ -z "$sel" ] && return 2
         [ "$sel" = back ] && return 2
         if [ "$sel" = custom ]; then
@@ -258,6 +259,7 @@ menu_rotate() {
             60) rotate_setup 60 ;;
             off) rotate_disable ;;
             status) rotate_status ;;
+            __quit) exit 0 ;;
             back) return 0 ;;
         esac
     done
@@ -280,12 +282,14 @@ menu() {
             lock)
                 local s
                 s=$(dt_menu "锁屏样式" "swaylock 预设:" "simple|极简|纯色+圆角时钟" "frost|磨砂玻璃|模糊截图+透明" "default|恢复默认|移除本工具配置") || continue
+                [ "$s" = __quit ] && exit 0
                 lock_preset "$s" ;;
             rotate) menu_rotate ;;
             download) dl_wallpaper ;;
             status) status ;;
             clear) clear_wallpaper ;;
             uninstall) clear_wallpaper; lock_preset default ;;
+            __quit) exit 0 ;;
             back) return 0 ;;
         esac
     done

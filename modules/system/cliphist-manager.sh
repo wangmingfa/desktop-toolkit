@@ -138,6 +138,7 @@ ch_menu() {
             wipe) ch_wipe ;;
             store-off) ch_store_off ;;
             status) ch_status ;;
+            __quit) exit 0 ;;
             back) return 0 ;;
         esac
     done

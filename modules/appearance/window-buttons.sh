@@ -127,6 +127,7 @@ menu() {
             gnome) apply_layout "$LAYOUT_GENOME" "GNOME 默认" ;;
             custom) apply_custom ;;
             status) echo "当前 button-layout: $(get_layout)" ;;
+            __quit) exit 0 ;;
             back) return 0 ;;
         esac
     done

@@ -293,6 +293,7 @@ wm_menu() {
             wm) wm_pick wm ;;
             float) wm_pick float ;;
             matrix) wm_show_matrix ;;
+            __quit) exit 0 ;;
             back) return 0 ;;
         esac
     done

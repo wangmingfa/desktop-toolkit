@@ -55,6 +55,7 @@ sp_menu() {
             run) sp_run ;;
             install) sp_install ;;
             status) sp_status ;;
+            __quit) exit 0 ;;
             back) return 0 ;;
         esac
     done

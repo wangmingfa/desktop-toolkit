@@ -100,6 +100,7 @@ si_menu() {
             dir) si_dirscan ;;
             install) si_install ;;
             status) si_status ;;
+            __quit) exit 0 ;;
             back) return 0 ;;
         esac
     done

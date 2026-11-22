@@ -194,6 +194,7 @@ sub_corner() {
             "all|一键设置常用圆角|同时设置窗口+特效+非激活" \
             "back|← 返回主菜单|") || return 0
         case "$c" in
+            __quit) exit 0 ;;
             back) return 0 ;;
             all)
                 local v; v=$(ask_num "窗口圆角" "常用圆角半径 (建议 12-28)：" \
@@ -247,6 +248,7 @@ PY
             "default|恢复主题默认|各组件恢复原始值" \
             "back|← 返回主菜单|") || return 0
         case "$c" in
+            __quit) exit 0 ;;
             back) return 0 ;;
             default)
                 "$ADJUST" transparency default; info "已恢复主题默认透明度" ;;
@@ -324,6 +326,7 @@ sub_effects() {
             "shapecorners|圆角特效 shapecorners|$(kw_get 'Plugins' 'shapecornersEnabled')" \
             "back|← 返回主菜单|") || return 0
         case "$c" in
+            __quit) exit 0 ;;
             back) return 0 ;;
             liquidglass|shapecorners)
                 local cur label id
@@ -512,6 +515,7 @@ PY
             "custom|4. 自定义图标名|输入图标主题里的图标名" \
             "back|← 返回主菜单|") || return 0
         case "$c" in
+            __quit) exit 0 ;;
             back) return 0 ;;
             cachy|apple|plasma)
                 "$ADJUST" logo "$c"
@@ -611,10 +615,9 @@ main() {
             "winanim|9. 窗口动画|神灯 genie + 滑入 + 速度（本次新增）" \
             "list|10. 查看当前配置|打印所有可调项" \
             "reset|11. 恢复默认|圆角与透明度恢复默认" \
-            "mode|12. 性能 / 完整模式|切换（完整模式可能卡顿）" \
-            "exit|13. 退出|") || exit 0
+            "mode|12. 性能 / 完整模式|切换（完整模式可能卡顿）") || exit 0
         case "$c" in
-            exit) exit 0 ;;
+            __quit) exit 0 ;;
             corner)       sub_corner ;;
             transparency) sub_transparency ;;
             glass)        sub_glass ;;

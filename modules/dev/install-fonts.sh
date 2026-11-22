@@ -93,6 +93,7 @@ menu() {
             status)
                 echo "已装 Nerd/JetBrains/Fira 字体: $(fc-list 2>/dev/null | grep -icE 'nerd|jetbrains|firacode' || true) 条"
                 echo "已装 CJK 字体: $(fc-list 2>/dev/null | grep -icE 'cjk|noto sans cjk' || true) 条" ;;
+            __quit) exit 0 ;;
             back) return 0 ;;
         esac
     done

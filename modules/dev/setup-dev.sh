@@ -159,6 +159,7 @@ dev_menu() {
             "status|5. 查看状态|当前 git/工具/语言版本" \
             "back|← 返回|") || return 0
         case "$c" in
+            __quit) exit 0 ;;
             back) return 0 ;;
             git) dev_git ;;
             tools) dev_tools ;;

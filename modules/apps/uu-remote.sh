@@ -393,6 +393,7 @@ uu_menu() {
             "remove|6. 卸载|删除程序与用户服务（保留 ffmpeg）" \
             "back|← 返回|") || return 0
         case "$c" in
+            __quit) exit 0 ;;
             back) return 0 ;;
             install) uu_install ;;
             login) uu_login ;;

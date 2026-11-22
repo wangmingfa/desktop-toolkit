@@ -114,6 +114,7 @@ ob_menu() {
         local c
         c=$(dt_menu "新系统初始化" "装机后要做的事（✓完成/○待办，选中执行）：" "${rows[@]}") || return 0
         case "$c" in
+            __quit) exit 0 ;;
             back) return 0 ;;
             all)
                 ob_list

@@ -118,6 +118,7 @@ fp_menu() {
             uninstall) fp_uninstall ;;
             update) fp_update ;;
             clean) fp_clean ;;
+            __quit) exit 0 ;;
             back) return 0 ;;
         esac
     done

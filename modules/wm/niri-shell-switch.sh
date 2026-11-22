@@ -171,6 +171,7 @@ if [ -z "$TARGET" ]; then
         "cancel|取消|") || { err "已取消"; exit 0; }
     case "$TARGET" in
         dms|noctalia|none) ;;
+        __quit) exit 0 ;;
         *) err "已取消"; exit 0 ;;
     esac
 fi

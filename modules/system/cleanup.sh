@@ -116,6 +116,7 @@ cl_menu() {
             journal) cl_journal_clean ;;
             kernels) cl_kernels_clean ;;
             all) cl_dnf_clean; cl_journal_clean; cl_kernels_clean ;;
+            __quit) exit 0 ;;
             back) return 0 ;;
         esac
     done

@@ -109,6 +109,7 @@ menu() {
             light) apply_mode light ;;
             dark) apply_mode dark ;;
             status) status ;;
+            __quit) exit 0 ;;
             back) return 0 ;;
         esac
     done

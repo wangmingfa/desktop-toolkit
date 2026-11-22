@@ -121,6 +121,7 @@ menu() {
             compact) apply_preset compact ;;
             default) apply_preset default ;;
             status) mako_status ;;
+            __quit) exit 0 ;;
             back) return 0 ;;
         esac
     done

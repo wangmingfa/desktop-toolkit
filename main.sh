@@ -10,6 +10,7 @@ DT_ROOT="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 source "$DT_ROOT/lib/common.sh"
 source "$DT_ROOT/lib/ui.sh"
 source "$DT_ROOT/modules/appearance/gnome/lib-gnome.sh"
+dt_quit_clear   # 清上次残留的退出标志（模块内退出会写它）
 
 APPEARANCE="$DT_ROOT/modules/appearance"
 
@@ -18,6 +19,7 @@ APPEARANCE="$DT_ROOT/modules/appearance"
 # ---------------------------------------------------------------------------
 sub_appearance() {
     while true; do
+        dt_quit_pending && exit 0
         local c
         c=$(dt_menu "外观美化" "桌面环境与 macOS 版本方案（KDE / GNOME 均支持 macOS 26 与 15）：" \
             "kde|1. KDE 外观美化|macOS 26 Tahoe / 15 经典 安装切换 + 微调工具|gui" \
@@ -29,6 +31,7 @@ sub_appearance() {
             "list|7. 查看当前所有配置|打印可调项清单" \
             "back|← 返回主菜单|") || return 0
         [ "$c" = back ] && return 0
+        [ "$c" = __quit ] && exit 0
         case "$c" in
             kde)
                 bash "$APPEARANCE/kde-scheme.sh" ;;
@@ -61,6 +64,7 @@ sub_appearance() {
 # ---------------------------------------------------------------------------
 sub_network() {
     while true; do
+        dt_quit_pending && exit 0
         local c
         c=$(dt_menu "网络工具" "网络相关脚本：" \
             "mirror|1. GitHub 国内镜像一键配置|对大陆网络下 github 慢/不通的场景" \
@@ -69,6 +73,7 @@ sub_network() {
             "netmanager|4. 网络连接管理|nmcli 状态/连接/Wi-Fi 开关" \
             "back|← 返回主菜单|") || return 0
         [ "$c" = back ] && return 0
+        [ "$c" = __quit ] && exit 0
         case "$c" in
             mirror)
                 local action
@@ -76,6 +81,7 @@ sub_network() {
                     "on|1. 启用镜像|把 github.com 重写到国内镜像（全局 git）" \
                     "off|2. 关闭镜像|移除重写" \
                     "status|3. 查看状态|") || return 0
+                [ "$action" = __quit ] && exit 0
                 bash "$DT_ROOT/modules/network/github-mirror.sh" "$action"
                 dt_info "完成。查看/修改: 换 GH_PROXY 前缀后重跑 on。"
                 ;;
@@ -85,6 +91,7 @@ sub_network() {
                     "on|1. 配置代理|写入 git/dnf/pip/npm/cargo + 环境变量" \
                     "off|2. 移除代理|清除上述全部代理" \
                     "status|3. 查看状态|") || return 0
+                [ "$action" = __quit ] && exit 0
                 if [ "$action" = on ]; then
                     url=$(dt_ask_text "代理地址" "代理 URL（含协议）" "http://127.0.0.1:7890") || url="http://127.0.0.1:7890"
                     [ -n "$url" ] || url="http://127.0.0.1:7890"
@@ -104,6 +111,7 @@ sub_network() {
 # ---------------------------------------------------------------------------
 sub_wm() {
     while true; do
+        dt_quit_pending && exit 0
         local c
         c=$(dt_menu "窗口管理器 / 桌面方案" "平铺 Wayland 合成器与桌面外壳方案：" \
             "niri-dms|1. 一键安装 niri + DMS|滚动平铺 niri + Dux Modular Shell(DMS) 桌面外壳" \
@@ -120,6 +128,7 @@ sub_wm() {
             "de-installer|12. 一键安装 KDE/GNOME|依赖级清单(必须+可选, 逐项勾选)" \
             "back|← 返回主菜单|") || return 0
         [ "$c" = back ] && return 0
+        [ "$c" = __quit ] && exit 0
         case "$c" in
             niri-dms)
                 if dt_confirm "一键安装 niri + DMS（Dux Modular Shell）？\n需要网络 + sudo 密码，安装几分钟。"; then
@@ -180,6 +189,7 @@ sub_system() {
     [ "${#files[@]}" -eq 0 ] && { sub_placeholder system system; return 0; }
 
     while true; do
+        dt_quit_pending && exit 0
         local -a rows=()
         for f in "${files[@]}"; do
             rows+=("$(basename "$f" .sh)|$(basename "$f")")
@@ -188,6 +198,7 @@ sub_system() {
         c=$(dt_menu "系统诊断" "诊断环境并按需一键修复：" \
             "${rows[@]}" "back|← 返回主菜单|") || return 0
         [ "$c" = back ] && return 0
+        [ "$c" = __quit ] && exit 0
         for f in "${files[@]}"; do
             [ "$(basename "$f" .sh)" = "$c" ] && bash "$f"
         done
@@ -199,6 +210,7 @@ sub_system() {
 # ---------------------------------------------------------------------------
 sub_apps() {
     while true; do
+        dt_quit_pending && exit 0
         local c
         c=$(dt_menu "应用安装" "应用级一键安装（镜像下载，适配受限网络）：" \
             "uu-remote|1. UU 远程 Linux 被控端|社区开源实现，官方客户端远程控制本机" \
@@ -208,6 +220,7 @@ sub_apps() {
             "windows-games|5. Windows 游戏运行环境|Wine/Lutris/Steam 平台(勾选装)" \
             "back|← 返回主菜单|") || return 0
         [ "$c" = back ] && return 0
+        [ "$c" = __quit ] && exit 0
         case "$c" in
             uu-remote)
                 bash "$DT_ROOT/modules/apps/uu-remote.sh" ;;
@@ -228,12 +241,14 @@ sub_apps() {
 # ---------------------------------------------------------------------------
 sub_dev() {
     while true; do
+        dt_quit_pending && exit 0
         local c
         c=$(dt_menu "开发环境" "git 配置与常用开发工具：" \
             "setup|1. 开发环境配置|git 身份/默认分支 + 工具安装（需 sudo）" \
             "fonts|2. 字体安装|Nerd Fonts / 中文 CJK（终端/顶栏图标）" \
             "back|← 返回主菜单|") || return 0
         [ "$c" = back ] && return 0
+        [ "$c" = __quit ] && exit 0
         case "$c" in
             setup) bash "$DT_ROOT/modules/dev/setup-dev.sh" ;;
             fonts) bash "$DT_ROOT/modules/dev/install-fonts.sh" ;;
@@ -246,11 +261,13 @@ sub_dev() {
 # ---------------------------------------------------------------------------
 sub_backup() {
     while true; do
+        dt_quit_pending && exit 0
         local c
         c=$(dt_menu "备份与恢复" "用户级配置备份/恢复（无需 sudo）：" \
             "backup|1. 配置备份|打包 fcitx5/uuremote/niri/git 等配置" \
             "back|← 返回主菜单|") || return 0
         [ "$c" = back ] && return 0
+        [ "$c" = __quit ] && exit 0
         case "$c" in
             backup) bash "$DT_ROOT/modules/backup/backup-config.sh" ;;
         esac
@@ -348,10 +365,9 @@ main() {
             "apps|5. 应用安装|UU 远程 等应用一键安装（受限网络镜像）" \
             "dev|6. 开发环境|开发工具与环境配置（待扩展）" \
             "backup|7. 备份与恢复|配置备份/还原（待扩展）" \
-            "about|8. 关于 / 使用说明|查看仓库结构与用法" \
-            "exit|9. 退出|") || exit 0
+            "about|8. 关于 / 使用说明|查看仓库结构与用法") || exit 0
         case "$c" in
-            exit) exit 0 ;;
+            __quit) exit 0 ;;
             appearance) sub_appearance ;;
             wm) sub_wm ;;
             network) sub_network ;;

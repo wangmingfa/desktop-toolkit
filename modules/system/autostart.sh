@@ -80,6 +80,7 @@ au_menu() {
             list) au_list ;;
             enable) au_enable ;;
             disable) au_disable ;;
+            __quit) exit 0 ;;
             back) return 0 ;;
         esac
     done

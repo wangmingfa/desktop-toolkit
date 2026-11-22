@@ -76,6 +76,7 @@ up_menu() {
             check) up_check ;;
             upgrade) up_upgrade ;;
             status) up_status ;;
+            __quit) exit 0 ;;
             back) return 0 ;;
         esac
     done

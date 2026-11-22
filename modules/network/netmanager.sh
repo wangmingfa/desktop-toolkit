@@ -112,6 +112,7 @@ nm_menu() {
             wifi-off) nm_wifi off ;;
             up) nm_up ;;
             down) nm_down ;;
+            __quit) exit 0 ;;
             back) return 0 ;;
         esac
     done

@@ -102,6 +102,7 @@ rd_menu() {
             vnc) rd_vnc ;;
             status) rd_status ;;
             off) rd_off ;;
+            __quit) exit 0 ;;
             back) return 0 ;;
         esac
     done

@@ -225,6 +225,7 @@ dt_menu_monitor() {
         rows+=("all-on|⚡ 全部开启|CPU/内存/磁盘/温度/网速/电池" "all-off|○ 全部关闭|移除所有监控组件" "back|← 返回|")
         c=$(dt_menu "DMS 顶栏监控组件" "点击切换某个组件（改后需重启 dms）：" "${rows[@]}") || return 0
         case "$c" in
+            __quit) exit 0 ;;
             back) return 0 ;;
             all-on)
                 for wid in cpuUsage memUsage diskUsage cpuTemp gpuTemp network_speed_monitor battery; do dt_add "$wid" right; done ;;
@@ -253,6 +254,7 @@ dt_menu() {
                 wid=$(dt_ask_text "添加组件" "组件 id（dms-topbar list 查看可用）" "") || continue
                 [ -n "$wid" ] || continue
                 sec=$(dt_menu "位置" "添加到哪个位置：" "left|左侧|" "center|中间|" "right|右侧(推荐)|") || continue
+                [ "$sec" = __quit ] && exit 0
                 dt_add "$wid" "$sec" ;;
             remove)
                 local wid
@@ -261,6 +263,7 @@ dt_menu() {
                 dt_remove "$wid" ;;
             reset)
                 if dt_confirm "恢复默认顶栏？（会移除你添加的所有组件）"; then dt_reset; fi ;;
+            __quit) exit 0 ;;
             back) return 0 ;;
         esac
     done

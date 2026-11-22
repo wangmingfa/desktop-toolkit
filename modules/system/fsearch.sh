@@ -126,6 +126,7 @@ fs_menu() {
             big) fs_big ;;
             install) fs_install ;;
             status) fs_status ;;
+            __quit) exit 0 ;;
             back) return 0 ;;
         esac
     done

@@ -35,6 +35,7 @@ main() {
             "buttons|8. 窗口按钮位置|macOS 红黄绿在左 / GNOME 默认在右" \
             "back|← 返回|") || return 0
         [ "$c" = back ] && return 0
+        [ "$c" = __quit ] && exit 0
         case "$c" in
             install26|install15|installfluent)
                 local v
@@ -64,6 +65,7 @@ main() {
                     "left|左侧 (macOS)|红黄绿 close,minimize,maximize 在左上角" \
                     "right|右侧 (GNOME)|appmenu:minimize,maximize,close 在右上角" \
                     "back|← 返回|") || continue
+                [ "$choice" = __quit ] && exit 0
                 [ -z "$choice" ] || [ "$choice" = back ] && continue
                 gn_set_button_layout "$choice"
                 dt_info "窗口按钮已设为$([ "$choice" = left ] && echo '左侧 (macOS 红黄绿)' || echo '右侧 (GNOME 默认)')。\n已打开的窗口需重开或注销重登后生效。"

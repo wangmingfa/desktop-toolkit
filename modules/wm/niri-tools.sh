@@ -112,6 +112,7 @@ menu() {
             install) install_tools ;;
             status) status_tools ;;
             uninstall) uninstall_tools ;;
+            __quit) exit 0 ;;
             back) return 0 ;;
         esac
     done

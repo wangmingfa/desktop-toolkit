@@ -191,6 +191,7 @@ app_menu() {
             office) app_pick office ;;
             container) app_pick container ;;
             matrix) app_matrix ;;
+            __quit) exit 0 ;;
             back) return 0 ;;
         esac
     done

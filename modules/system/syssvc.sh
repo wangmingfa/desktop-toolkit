@@ -57,6 +57,7 @@ sv_op() { # <svc> <start|stop|restart|enable|disable>
         "enable|4. 开机自启|enable（下次开机启用）" \
         "disable|5. 取消自启|disable（下次开机停用）" \
         "status|6. 查看状态|") || return 0
+    [ "$op" = __quit ] && exit 0
     if [ "$op" = status ]; then
         systemctl status "$svc" --no-pager 2>/dev/null | head -12 || sv_err "查看失败"
         return 0
@@ -92,6 +93,7 @@ sv_menu() {
             op) sv_op ;;
             failed) sv_failed ;;
             status) sv_status ;;
+            __quit) exit 0 ;;
             back) return 0 ;;
         esac
     done

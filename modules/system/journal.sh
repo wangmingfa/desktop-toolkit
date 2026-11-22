@@ -73,6 +73,7 @@ jn_menu() {
             kernel) jn_kernel ;;
             blame) jn_blame ;;
             clean) jn_clean ;;
+            __quit) exit 0 ;;
             back) return 0 ;;
         esac
     done

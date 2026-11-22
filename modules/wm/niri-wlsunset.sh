@@ -111,6 +111,7 @@ menu() {
             off) do_off ;;
             cfg) menu_cfg ;;
             status) sun_status ;;
+            __quit) exit 0 ;;
             back) return 0 ;;
         esac
     done
@@ -129,6 +130,7 @@ menu_cfg() {
         lon) v=$(dt_ask_text "经度" "东正西负，如 116.4" "$ST_LON") || return 0; ST_LON="$v" ;;
         night) v=$(dt_ask_num "夜间温度" "3000-6500 K（越低越暖）" "$ST_NIGHT" 3000 6500 100) || return 0; ST_NIGHT="$v" ;;
         day) v=$(dt_ask_num "白天温度" "4000-6500 K（越高越接近日光）" "$ST_DAY" 4000 6500 100) || return 0; ST_DAY="$v" ;;
+        __quit) exit 0 ;;
         back) return 0 ;;
     esac
     log "已更新参数。如需生效请重新执行1.或2.。"

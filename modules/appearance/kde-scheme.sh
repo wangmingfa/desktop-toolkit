@@ -40,6 +40,7 @@ main() {
             "list|9. 查看当前所有可调项|打印清单" \
             "back|← 返回|") || return 0
         [ "$c" = back ] && return 0
+        [ "$c" = __quit ] && exit 0
         case "$c" in
             install26)
                 if dt_confirm "安装 macOS 26 (Tahoe Liquid KDE)？需要 sudo，跳过 SDDM/Plymouth。"; then

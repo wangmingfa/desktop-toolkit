@@ -182,6 +182,7 @@ de_menu_select() { # <gnome|kde>
             "共 $nreq 必须 + $nopt 可选；可选默认全勾，点击取消。" \
             "${rows[@]}") || return 0
         case "$c" in
+            __quit) exit 0 ;;
             back) return 0 ;;
             __install) de_do_install "$de" "${sel[@]}"; return 0 ;;
             req-*) : ;;  # 必须依赖不可取消
@@ -237,6 +238,7 @@ de_menu() {
             kde) de_menu_select kde ;;
             help-gnome) de_help gnome ;;
             help-kde) de_help kde ;;
+            __quit) exit 0 ;;
             back) return 0 ;;
         esac
     done

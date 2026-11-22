@@ -364,6 +364,7 @@ wt_menu() {
             "remove|4. 卸载|删除软件包（保留 fcitx5）" \
             "back|← 返回|") || return 0
         case "$c" in
+            __quit) exit 0 ;;
             back) return 0 ;;
             install) wt_install ;;
             status) wt_status ;;

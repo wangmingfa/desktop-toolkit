@@ -103,6 +103,7 @@ fc5_menu() {
             font) menu_font ;;
             status) fc5_status ;;
             reload) fc5_reload ;;
+            __quit) exit 0 ;;
             back) return 0 ;;
         esac
     done
@@ -132,6 +133,7 @@ menu_dl() {
         mc) fc5_install_repo "https://github.com/fcitx5/fcitx5-material-color" ;;
         nord) fc5_install_repo "https://github.com/fcitx5/fcitx5-nord" ;;
         gruvbox) fc5_install_repo "https://github.com/fcitx5/fcitx5-gruvbox" ;;
+        __quit) exit 0 ;;
         back) return 0 ;;
     esac
 }
@@ -155,6 +157,7 @@ menu_font() {
         reset)
             awk '!/^Font=/{print}' "$FC5_CONF" > "$FC5_CONF.tmp" && mv "$FC5_CONF.tmp" "$FC5_CONF"
             log "已恢复默认字体"; fc5_reload ;;
+        __quit) exit 0 ;;
         back) return 0 ;;
     esac
 }

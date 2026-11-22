@@ -95,6 +95,7 @@ bt_menu() {
             on) bt_on ;;
             off) bt_off ;;
             scan) bt_scan ;;
+            __quit) exit 0 ;;
             back) return 0 ;;
         esac
     done

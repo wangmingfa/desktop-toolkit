@@ -88,6 +88,7 @@ tu_menu() {
             recommend) tu_recommend ;;
             set) tu_set ;;
             list) tu_list ;;
+            __quit) exit 0 ;;
             back) return 0 ;;
         esac
     done

@@ -97,6 +97,7 @@ pp_menu() {
             saver) pp_set power-saver ;;
             install) pp_install ;;
             status) pp_status ;;
+            __quit) exit 0 ;;
             back) return 0 ;;
         esac
     done
