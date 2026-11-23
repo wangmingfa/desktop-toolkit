@@ -63,6 +63,9 @@ gn_state_next() { # -> 下一步骤号(无状态则 1)
 }
 
 gn_state_write() { # n
+    # 首次安装时 $GN_SRC_DIR 还不存在(要等步骤 1 的 gn_clone 才建),
+    # 直接重定向写状态文件会报 "没有那个文件或目录", 所以这里自己建父目录。
+    mkdir -p "$(dirname "$GN_STATE_FILE")"
     printf 'version=%s\nnext_step=%s\n' "$VERSION" "$1" > "$GN_STATE_FILE"
 }
 
@@ -87,7 +90,7 @@ gn_resume_confirm() { # saved_next -> 0 继续, 1 重头
 }
 
 # ---------------------------------------------------------------------------
-# 各步骤(函数内各自打印 [n/5] 头部)
+# 各步骤(函数内各自打印 [n/6] 头部)
 # ---------------------------------------------------------------------------
 step_gtk() {
     echo "==> [1/6] 安装 GTK 主题 ($GTK_REPO)"
@@ -115,7 +118,7 @@ step_apply() {
 }
 
 step_ext() {
-    echo "==> [5/6] 安装 GNOME 扩展 (user-themes / dash-to-dock / blur-my-shell)"
+    echo "==> [5/6] 安装并启用扩展 (user-themes / dash-to-dock / blur-my-shell) + 应用 Shell 主题"
     gn_install_extensions "$VERSION"
 }
 
@@ -140,10 +143,10 @@ if [ "$SAVED_NEXT" -gt 1 ]; then
     if [ "${GN_FORCE_RESUME:-0}" = 1 ]; then
         # main.sh 已让用户确认过恢复, 这里不再重复询问
         START_STEP="$SAVED_NEXT"
-        echo "==> 继续上次进度：从步骤 $START_STEP/5（$(gn_step_label "$START_STEP")）开始"
+        echo "==> 继续上次进度：从步骤 $START_STEP/6（$(gn_step_label "$START_STEP")）开始"
     elif gn_resume_confirm "$SAVED_NEXT"; then
         START_STEP="$SAVED_NEXT"
-        echo "==> 继续上次进度：从步骤 $START_STEP/5（$(gn_step_label "$START_STEP")）开始"
+        echo "==> 继续上次进度：从步骤 $START_STEP/6（$(gn_step_label "$START_STEP")）开始"
     else
         echo "==> 重新开始安装（清除上次进度）"
         gn_state_clear
@@ -165,11 +168,15 @@ for (( n = START_STEP; n <= 6; n++ )); do
 done
 gn_state_clear
 
+# 收尾校验：读回 gsettings/扩展状态，把"装了但没生效"的项明确列出来
+gn_verify_themes "$VERSION" || true
+
 GREEN=$'\033[0;32m'; NC=$'\033[0m'
 echo
 echo -e "${GREEN}════════════════════════════════════════════════════════════════${NC}"
 echo -e "${GREEN}✅ 完成！已应用 $(gn_version_label "$VERSION") 风格。${NC}"
 echo -e "${GREEN}════════════════════════════════════════════════════════════════${NC}"
-echo "Shell 主题: 若顶栏/Shell 未变化，注销重登一次即可（user-themes 已由脚本处理）。"
+echo "Shell 主题/Dock/毛玻璃: 若顶栏、Dock 或模糊效果未出现，注销重登一次即可"
+echo "                        （GNOME 只在会话启动时加载扩展与 Shell 主题）。"
 echo "快速打开 : 应用列表搜“GNOME macOS 美化”或桌面图标，无需再进终端。"
 echo "手动重跑: $0 $VERSION"

@@ -31,7 +31,7 @@ main() {
             "status|4. 查看当前应用的主题|gsettings 当前值" \
             "dark|5. 切换深色模式|prefer-dark" \
             "light|6. 切换浅色模式|prefer-light" \
-            "ext|7. 安装 GNOME 扩展|user-themes / dash-to-dock / blur-my-shell" \
+            "ext|7. 安装/启用 GNOME 扩展|user-themes / dash-to-dock / blur-my-shell（自动配置）" \
             "buttons|8. 窗口按钮位置|macOS 红黄绿在左 / GNOME 默认在右" \
             "back|← 返回|") || return 0
         [ "$c" = back ] && return 0

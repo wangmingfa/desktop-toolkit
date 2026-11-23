@@ -201,12 +201,49 @@ gn_resolve_theme_name() { # base [dark|light]
     echo "$base"
 }
 
+# 解析实际存在的图标主题名：图标安装器可能只生成变体目录(如 xxx-dark)，
+# 把不存在的基础名写进 gsettings 会让图标回退默认，故先探测真实目录。
+gn_resolve_icon_name() { # base [dark|light]
+    local base="$1" pref="${2:-dark}" d root
+    for d in "$HOME/.local/share/icons/$base" "$HOME/.icons/$base" "/usr/share/icons/$base"; do
+        [ -d "$d" ] && { echo "$base"; return 0; }
+    done
+    local -a cands=()
+    if [ "$pref" = light ]; then cands=("$base-Light" "$base-light"); else cands=("$base-Dark" "$base-dark"); fi
+    for d in "${cands[@]}"; do
+        for root in "$HOME/.local/share/icons" "$HOME/.icons"; do
+            [ -d "$root/$d" ] && { echo "$d"; return 0; }
+        done
+    done
+    # 任意变体（排除 htop 之类同名干扰）
+    for root in "$HOME/.local/share/icons" "$HOME/.icons"; do
+        for d in "$root/$base"*; do
+            [ -d "$d" ] || continue
+            case "$(basename "$d")" in *htop*|*cursor*|*Cursor*) continue ;; esac
+            echo "$(basename "$d")"; return 0
+        done
+    done
+    echo "$base"
+}
+
+# 解析实际安装的光标主题名（仓库名与实际目录名常有 -cursors 后缀差异）
+gn_resolve_cursor_name() { # 期望名(可带 owner 前缀)
+    local want="${1##*/}" d
+    for d in "$HOME/.local/share/icons/$want" "$HOME/.icons/$want" "/usr/share/icons/$want"; do
+        [ -d "$d" ] && { echo "$want"; return 0; }
+    done
+    d=$(ls -d "$HOME/.local/share/icons/"*"$want"* 2>/dev/null | head -1 || true)
+    [ -z "$d" ] && d=$(ls -d "$HOME/.local/share/icons/"*[Cc]ursor* 2>/dev/null | head -1 || true)
+    [ -n "$d" ] && { basename "$d"; return 0; }
+    echo "$want"
+}
+
 # 切换主题深浅色：同时切换 color-scheme 与实际的 GTK/Shell 主题变体。
 # 依据当前 gtk-theme 解析基础名，再解析出对应深/浅变体（存在才切）。
 gn_switch_color_scheme() { # dark|light
     local mode="$1"
     local cur base target=""
-    cur=$(gsettings get org.gnome.desktop.interface gtk-theme 2>/dev/null | tr -d "'")
+    cur=$(gsettings get org.gnome.desktop.interface gtk-theme 2>/dev/null | tr -d "'" || true)
     [ -z "$cur" ] && return 0
     base="$(gn_theme_base "$cur")"
     target="$(gn_resolve_theme_name "$base" "$mode")"
@@ -287,35 +324,108 @@ gn_apply() { # version
     local version="$1"
     local gtk_theme icon_theme cursor_theme
     read -r _ _ gtk_theme _ _ icon_theme cursor_theme < <(gn_version_info "$version")
-    local cursor_actual="$cursor_theme"
-    # 光标实际安装名可能带 -cursors 后缀差异，自动探测
-    local found; found=$(ls -d "$HOME/.local/share/icons/"*[Cc]ursor* 2>/dev/null | head -1 || true)
-    [ -n "$found" ] && cursor_actual="$(basename "$found")"
+    # 图标/光标实际安装名可能与基础名不同，解析真实目录名，避免写进不存在的名字
+    local icon_actual cursor_actual
+    icon_actual="$(gn_resolve_icon_name "$icon_theme" dark)"
+    cursor_actual="$(gn_resolve_cursor_name "$cursor_theme")"
     # GTK/Shell 主题目录实际带变体后缀，须用真实存在的名字（默认深色）
     local theme_actual
     theme_actual="$(gn_resolve_theme_name "$gtk_theme" dark)"
 
     echo "  [apply] 应用 GTK/图标/光标/Shell 主题…"
     gn_gs org.gnome.desktop.interface gtk-theme   "$theme_actual" || true
-    gn_gs org.gnome.desktop.interface icon-theme  "$icon_theme" || true
+    gn_gs org.gnome.desktop.interface icon-theme  "$icon_actual" || true
     gn_gs org.gnome.desktop.interface cursor-theme "$cursor_actual" || true
     # GNOME Shell 主题（需要 user-themes 扩展）
     gn_gs org.gnome.shell.extensions.user-theme name "$theme_actual" || true
     # 深浅色
     gn_gs org.gnome.desktop.interface color-scheme prefer-dark || true
-    echo "  [apply] 完成（主题名=$theme_actual；Shell 主题需启用 user-themes 扩展才生效）"
+    echo "  [apply] 完成（GTK=$theme_actual 图标=$icon_actual 光标=$cursor_actual）"
 }
 
-# 下载并安装 GNOME 扩展 zip（尽力而为，成功返回 0）
-gn_ext_install_zip() { # url name
-    local url="$1" name="$2" tmp
-    tmp=$(mktemp --suffix="-$name.zip")
-    if curl -fsSL -m 60 -o "$tmp" "$url" 2>/dev/null && [ -s "$tmp" ]; then
-        if gnome-extensions install "$tmp" 2>/dev/null; then
-            rm -f "$tmp"; return 0
-        fi
+# ---------------------------------------------------------------------------
+# GNOME 扩展：安装 / 启用 / 配置（extensions.gnome.org，尽力而为）
+#
+# 约定（踩过的坑）：
+#  - 下载地址必须按"当前 Shell 版本"向 EGO API 现问，别硬编码 pk/zip 路径
+#    （旧代码写死的 .../extension-data/307/dash-to-dock.zip 早已 404）。
+#  - 装完必须 enable，否则 Dash 永远不出现；运行中的 Shell 不认识新扩展时，
+#    写 org.gnome.shell enabled-extensions 兜底（注销重登生效），
+#    并清掉 disabled-extensions 里的同名项（disabled 优先于 enabled）。
+#  - 用户目录安装的扩展 schema 在扩展自己的 schemas/ 下，gsettings 默认看不到，
+#    需 GSETTINGS_SCHEMA_DIR 指向它（gnome-extensions install 已顺带编译），
+#    拿不到 schema 时退回 dconf 按路径写。
+# ---------------------------------------------------------------------------
+
+# 当前 GNOME Shell 主版本号（如 51）
+gn_shell_major() {
+    local v
+    v=$(gnome-shell --version 2>/dev/null | awk '{print $3}' || true)
+    echo "${v%%.*}"
+}
+
+# 扩展是否已安装（用户目录 / 系统目录 / gnome-extensions 列表）
+gn_ext_installed() { # uuid
+    local uuid="$1" list
+    [ -d "$HOME/.local/share/gnome-shell/extensions/$uuid" ] && return 0
+    [ -d "/usr/share/gnome-shell/extensions/$uuid" ] && return 0
+    list=$(gnome-extensions list 2>/dev/null || true)
+    case "$list" in *"$uuid"*) return 0 ;; esac
+    return 1
+}
+
+# 已安装扩展的目录（用户级优先）
+gn_ext_dir() { # uuid
+    local uuid="$1" d
+    for d in "$HOME/.local/share/gnome-shell/extensions/$uuid" \
+             "/usr/share/gnome-shell/extensions/$uuid"; do
+        [ -d "$d" ] && { echo "$d"; return 0; }
+    done
+    return 1
+}
+
+# 向 EGO 问"与当前 Shell 版本匹配"的下载地址；取不到返回 1
+gn_ext_download_url() { # uuid
+    local uuid="$1" major json url
+    major=$(gn_shell_major)
+    json=$(curl -fsSL --max-time 20 \
+        "https://extensions.gnome.org/extension-info/?uuid=$uuid${major:+&shell_version=$major}" 2>/dev/null || true)
+    url=$(printf '%s' "$json" \
+        | sed -n 's/.*"download_url"[[:space:]]*:[[:space:]]*"\([^"]*\)".*/\1/p' \
+        | head -1 || true)
+    case "$url" in
+        /download-extension/*) echo "https://extensions.gnome.org$url" ;;
+        "") return 1 ;;
+        *) echo "$url" ;;
+    esac
+}
+
+# 从 extensions.gnome.org 安装扩展（已装则跳过）
+gn_ext_install_ego() { # uuid
+    local uuid="$1" url tmp
+    if gn_ext_installed "$uuid"; then
+        echo "  [ext] $uuid 已安装，跳过下载"
+        return 0
     fi
-    rm -f "$tmp"; return 1
+    url=$(gn_ext_download_url "$uuid" || true)
+    if [ -z "$url" ]; then
+        echo "  [ext] $uuid：取不到与 GNOME $(gn_shell_major) 匹配的下载地址（网络不通或该扩展不支持此版本）" >&2
+        return 1
+    fi
+    tmp=$(mktemp --suffix="-$uuid.zip")
+    if ! curl -fsSL --max-time 120 -o "$tmp" "$url" 2>/dev/null || [ ! -s "$tmp" ]; then
+        rm -f "$tmp"
+        echo "  [ext] $uuid 下载失败（$url）" >&2
+        return 1
+    fi
+    if gnome-extensions install --force "$tmp" >/dev/null 2>&1; then
+        rm -f "$tmp"
+        echo "  [ext] $uuid 已安装 ✅"
+        return 0
+    fi
+    rm -f "$tmp"
+    echo "  [ext] $uuid 安装失败（$url）" >&2
+    return 1
 }
 
 # 把扩展 UUID 写入 org.gnome.shell enabled-extensions(保留现有)。
@@ -339,13 +449,175 @@ gn_ext_force_enable() { # uuid
     gsettings set org.gnome.shell enabled-extensions "[$joined]" 2>/dev/null
 }
 
-# 安装 GNOME 扩展（user-themes / dash-to-dock / blur-my-shell）
-# user-themes 是 GNOME 自带的系统扩展(gnome-shell-extensions 包)，无需联网下载；
-# dash-to-dock / blur-my-shell 需联网从 extensions.gnome.org 下载，尽力而为。
+# 从 org.gnome.shell disabled-extensions 里移除 uuid（disabled 优先于 enabled，
+# 用户以前手动关过的扩展不清掉就永远起不来）
+gn_ext_force_unblock() { # uuid
+    local uuid="$1" cur u joined=""
+    cur=$(gsettings get org.gnome.shell disabled-extensions 2>/dev/null || true)
+    case "$cur" in *"$uuid"*) ;; *) return 0 ;; esac
+    while IFS= read -r u; do
+        [ -n "$u" ] || continue
+        [ "$u" = "$uuid" ] && continue
+        [ -n "$joined" ] && joined="$joined, "
+        joined="$joined'$u'"
+    done < <(printf '%s' "$cur" | tr -d "[]'" | tr ',' '\n' | sed 's/^ *//; s/ *$//' || true)
+    gsettings set org.gnome.shell disabled-extensions "[$joined]" 2>/dev/null || true
+}
+
+# 启用扩展：先走运行中 Shell 的 D-Bus，失败则登记为启用（注销重登生效）
+gn_ext_enable() { # uuid
+    local uuid="$1"
+    if ! gn_ext_installed "$uuid"; then
+        echo "  [ext] $uuid 未安装，无法启用" >&2
+        return 1
+    fi
+    gn_ext_force_unblock "$uuid"
+    if gnome-extensions enable "$uuid" 2>/dev/null; then
+        echo "  [ext] $uuid 已启用 ✅"
+        return 0
+    fi
+    if gn_ext_force_enable "$uuid"; then
+        echo "  [ext] $uuid 已登记启用（注销重登一次后生效）"
+        return 0
+    fi
+    echo "  [ext] $uuid 启用失败" >&2
+    return 1
+}
+
+# 扩展是否已被本会话加载（gnome-extensions list --enabled）
+gn_ext_enabled() { # uuid
+    local uuid="$1" list
+    list=$(gnome-extensions list --enabled 2>/dev/null || true)
+    case "$list" in *"$uuid"*) return 0 ;; esac
+    return 1
+}
+
+# 让 gsettings 看到扩展自带的 schema（设置 GN_EXT_SCHEMA_DIR，后续 gn_ext_set 用）
+gn_ext_use_schemas() { # uuid
+    local dir
+    dir=$(gn_ext_dir "$1" || true)
+    [ -n "$dir" ] || return 1
+    [ -d "$dir/schemas" ] || { GN_EXT_SCHEMA_DIR="" ; return 1; }
+    if command -v glib-compile-schemas >/dev/null 2>&1; then
+        glib-compile-schemas "$dir/schemas" 2>/dev/null || true
+    fi
+    GN_EXT_SCHEMA_DIR="$dir/schemas"
+    export GN_EXT_SCHEMA_DIR
+}
+
+# 写扩展设置：优先 GSETTINGS_SCHEMA_DIR+gsettings（能校验键名/枚举），
+# 无 schema 时退回 dconf 按路径写（不依赖 schema 文件）
+gn_ext_set() { # schema key value
+    local schema="$1" key="$2" value="$3" path
+    if [ -n "${GN_EXT_SCHEMA_DIR:-}" ] && [ -d "$GN_EXT_SCHEMA_DIR" ] \
+        && GSETTINGS_SCHEMA_DIR="$GN_EXT_SCHEMA_DIR" gsettings set "$schema" "$key" "$value" 2>/dev/null; then
+        return 0
+    fi
+    path="/$(printf '%s' "$schema" | tr '.' '/')/"
+    case "$value" in
+        true|false) ;;
+        ''|*[!0-9.]*) value="'$value'" ;;
+    esac
+    if command -v dconf >/dev/null 2>&1; then
+        dconf write "$path$key" "$value" 2>/dev/null && return 0
+    fi
+    echo "  [ext] 写设置失败: $schema $key=$value" >&2
+    return 1
+}
+
+# dash-to-dock 观感：macos = 底部悬浮 + 自动隐藏 + 点击最小化 + 圆点指示
+#                    windows = 常驻底部居中任务栏（Fluent/Win11 风格用）
+#
+# ⚠ 别开 unity-backlit-items（Dock 图标高亮）：dash-to-dock 110 在重建图标时
+#   RunningIndicatorBase.update() 拿不到图标容器子节点，直接抛
+#   "Expected type string for argument 'style'" → 图标建到一半中断，
+#   Dock 上只剩一个图标（固定应用"看起来全丢"）。custom-theme-shrink 同理保持默认。
+gn_dtd_apply_style() { # macos|windows
+    local style="${1:-macos}" s=org.gnome.shell.extensions.dash-to-dock
+    gn_ext_set "$s" dock-position BOTTOM || true
+    case "$style" in
+        windows)
+            gn_ext_set "$s" dock-fixed true || true
+            gn_ext_set "$s" autohide false || true
+            gn_ext_set "$s" intellihide false || true
+            gn_ext_set "$s" dash-max-icon-size 40 || true
+            ;;
+        *)
+            gn_ext_set "$s" dock-fixed false || true
+            gn_ext_set "$s" autohide true || true
+            gn_ext_set "$s" intellihide true || true
+            gn_ext_set "$s" intellihide-mode FOCUS_APPLICATION_WINDOWS || true
+            gn_ext_set "$s" dash-max-icon-size 48 || true
+            gn_ext_set "$s" transparency-mode FIXED || true
+            gn_ext_set "$s" background-opacity 0.6 || true
+            # macOS 风格不抢 Super+1..9（交给工作区切换）
+            gn_ext_set "$s" hot-keys false || true
+            ;;
+    esac
+    gn_ext_set "$s" extend-height false || true
+    gn_ext_set "$s" always-center-icons true || true
+    gn_ext_set "$s" running-indicator-style DOTS || true
+    gn_ext_set "$s" click-action minimize || true
+    gn_ext_set "$s" scroll-action cycle-windows || true
+    gn_ext_set "$s" show-apps-at-top true || true
+    gn_ext_set "$s" show-trash true || true
+    gn_ext_set "$s" show-mounts false || true
+    gn_ext_set "$s" multi-monitor true || true
+    gn_ext_set "$s" force-straight-corner false || true
+    gn_ext_set "$s" animation-time 0.2 || true
+    # 显式关掉会触发渲染 bug 的两项（也用于修复早期版本写进去的 true）
+    gn_ext_set "$s" unity-backlit-items false || true
+    gn_ext_set "$s" custom-theme-shrink false || true
+    gn_ext_set "$s" apply-glossy-effect false || true
+}
+
+# 安装 + 配置 + 启用 dash-to-dock（macOS 风格 Dock）
+gn_setup_dash_to_dock() { # macos|windows
+    local style="${1:-macos}" uuid=dash-to-dock@micxgx.gmail.com label="macOS Dock 风格"
+    [ "$style" = windows ] && label="Windows 任务栏风格"
+    echo "  [ext] 配置 dash-to-dock（$label）…"
+    if ! gn_ext_install_ego "$uuid"; then
+        echo "  [ext] dash-to-dock 不可用（网络/兼容性），已跳过 Dock 配置" >&2
+        return 1
+    fi
+    # Ubuntu Dock 与 dash-to-dock 抢同一位置，先禁用
+    if gn_ext_installed ubuntu-dock@ubuntu.com; then
+        gnome-extensions disable ubuntu-dock@ubuntu.com 2>/dev/null || true
+        echo "  [ext] 已禁用 ubuntu-dock（避免与 dash-to-dock 冲突）"
+    fi
+    gn_ext_use_schemas "$uuid" || true
+    gn_dtd_apply_style "$style"
+    GN_EXT_SCHEMA_DIR=""
+    gn_ext_enable "$uuid"
+}
+
+# 安装 + 启用 blur-my-shell（Tahoe 液态玻璃感）
+gn_setup_blur_my_shell() {
+    local uuid=blur-my-shell@aunetx
+    echo "  [ext] 配置 blur-my-shell（顶栏/Dock 毛玻璃）…"
+    if ! gn_ext_install_ego "$uuid"; then
+        echo "  [ext] blur-my-shell 不可用（网络/兼容性），已跳过毛玻璃配置" >&2
+        return 1
+    fi
+    gn_ext_use_schemas "$uuid" || true
+    # 默认 pipeline 已经是合适的模糊；这里只确保"顶栏 + Dock + 概览"开启
+    gn_ext_set "org.gnome.shell.extensions.blur-my-shell.panel" static-blur true || true
+    gn_ext_set "org.gnome.shell.extensions.blur-my-shell.dash-to-dock" blur true || true
+    gn_ext_set "org.gnome.shell.extensions.blur-my-shell.overview" blur true || true
+    GN_EXT_SCHEMA_DIR=""
+    gn_ext_enable "$uuid"
+}
+# ---------------------------------------------------------------------------
+# 安装 GNOME 扩展（全部自动启用 + 关键设置自动写入）
+#   user-themes    : Shell 主题切换基础，系统包提供，不联网
+#   dash-to-dock   : macOS 风格 Dock（装完自动 enable + macOS 观感配置）
+#   blur-my-shell  : 顶栏/Dock 毛玻璃（仅 macos26 液态玻璃风格）
+# ---------------------------------------------------------------------------
 gn_install_extensions() { # version
     local version="$1"
-    local ut_dir ut_uuid=""
-    echo "  [ext] 安装 GNOME 扩展…"
+    local ut_dir ut_uuid="" gtk_theme theme_actual dock_style=macos
+    echo "  [ext] 安装并启用 GNOME 扩展…"
+    [ "$version" = fluent ] && dock_style=windows
 
     # --- user-themes: Shell 主题切换的基础（系统包, 不依赖 extensions.gnome.org）---
     # 不同发行版/版本命名不同: 有 user-themes@...gnome.org, 也有
@@ -357,13 +629,13 @@ gn_install_extensions() { # version
             # Fedora 40+ 把扩展拆成独立包(gnome-shell-extension-user-theme);
             # 老版 Fedora 用聚合包 gnome-shell-extensions。两者都试试。
             sudo dnf install -y gnome-shell-extension-user-theme \
-                || sudo dnf install -y gnome-shell-extensions
+                || sudo dnf install -y gnome-shell-extensions || true
         elif command -v apt-get >/dev/null 2>&1; then
-            sudo apt-get install -y gnome-shell-extensions
+            sudo apt-get install -y gnome-shell-extensions || true
         elif command -v pacman >/dev/null 2>&1; then
-            sudo pacman -S --needed --noconfirm gnome-shell-extensions
+            sudo pacman -S --needed --noconfirm gnome-shell-extensions || true
         elif command -v zypper >/dev/null 2>&1; then
-            sudo zypper in -y gnome-shell-extensions
+            sudo zypper in -y gnome-shell-extensions || true
         else
             echo "  [ext] 未识别的包管理器，请手动安装 gnome-shell-extensions" >&2
         fi
@@ -377,30 +649,127 @@ gn_install_extensions() { # version
         # user-themes 现在存在(架构可用), 重设 Shell 主题。
         # 此前 gn_apply(第4步)设置时 schema 还不存在会静默失败, 这里补上。
         # 主题目录实际带变体后缀, 用真实存在的名字, 否则顶栏回退默认 Adwaita。
-        local gtk_theme theme_actual
         read -r _ _ gtk_theme < <(gn_version_info "$version")
         theme_actual="$(gn_resolve_theme_name "$gtk_theme" dark)"
         gn_gs org.gnome.shell.extensions.user-theme name "$theme_actual" || true
-        if gnome-extensions enable "$ut_uuid" 2>/dev/null; then
-            echo "  [ext] user-themes 已启用 ✅（Shell 主题已设为 $theme_actual）"
-        elif gn_ext_force_enable "$ut_uuid"; then
-            echo "  [ext] user-themes 已登记为启用（注销重登一次后生效，Shell 主题=$theme_actual）"
-        else
-            echo "  [ext] user-themes 已安装，但需注销重登一次才能启用"
-        fi
+        gn_ext_enable "$ut_uuid" || true
     else
         echo "  [ext] 未找到 user-themes 扩展（包未装成功），Shell 主题暂无法切换" >&2
     fi
 
-    # --- dash-to-dock: macOS 风格 Dock（需联网，尽力而为）---
-    if ! gnome-extensions list 2>/dev/null | grep -q dash-to-dock; then
-        gn_ext_install_zip "https://extensions.gnome.org/extension-data/307/dash-to-dock.zip" dash-to-dock \
-            || echo "  [ext] dash-to-dock 下载失败（网络不通，可稍后到 extensions.gnome.org 手动装）"
+    # --- dash-to-dock: macOS Dock / Windows 任务栏（装完自动启用）---
+    gn_setup_dash_to_dock "$dock_style" || true
+
+    # --- blur-my-shell: Tahoe 液态玻璃感（仅 macos26）---
+    if [ "$version" = macos26 ]; then
+        gn_setup_blur_my_shell || true
     fi
-    # --- blur-my-shell: Tahoe 液态玻璃感（仅 macos26，需联网，尽力而为）---
-    if [ "$version" = macos26 ] && ! gnome-extensions list 2>/dev/null | grep -q blur; then
-        gn_ext_install_zip "https://extensions.gnome.org/extension-data/3193/blur-my-shell.zip" blur-my-shell \
-            || echo "  [ext] blur-my-shell 下载失败（网络不通，可稍后到 extensions.gnome.org 手动装）"
+
+    # --- 汇总：哪些本次生效、哪些要注销重登 ---
+    local uuid pending=""
+    for uuid in "$ut_uuid" dash-to-dock@micxgx.gmail.com; do
+        [ -n "$uuid" ] || continue
+        gn_ext_enabled "$uuid" || pending="$pending $uuid"
+    done
+    if [ "$version" = macos26 ]; then
+        gn_ext_enabled blur-my-shell@aunetx || pending="$pending blur-my-shell@aunetx"
     fi
-    echo "  [ext] 完成（dash-to-dock / blur-my-shell 需联网，失败可到 extensions.gnome.org 手动装）"
+    if [ -n "$pending" ]; then
+        echo "  [ext] 已登记但需注销重登才加载：${pending# }"
+    else
+        echo "  [ext] 扩展全部已启用 ✅"
+    fi
+}
+
+# ---------------------------------------------------------------------------
+# 主题/扩展生效校验：读回 gsettings 检查是否真的用上了本次安装的产物。
+# 只做提示，不中断安装（返回 0）。
+# ---------------------------------------------------------------------------
+gn_verify_themes() { # version
+    local version="$1"
+    local gtk_theme icon_theme cursor_theme
+    read -r _ _ gtk_theme _ _ icon_theme cursor_theme < <(gn_version_info "$version")
+    local bad=0 cur dir want
+    echo "  [check] 校验主题生效情况…"
+
+    # GTK: 值必须存在且目录真实存在
+    cur=$(gsettings get org.gnome.desktop.interface gtk-theme 2>/dev/null | tr -d "'")
+    if [ -n "$cur" ] && { [ -d "$HOME/.themes/$cur" ] || [ -d "$HOME/.local/share/themes/$cur" ] || [ -d "/usr/share/themes/$cur" ]; }; then
+        echo "  [check] ✅ GTK 主题: $cur"
+    else
+        echo "  [check] ⚠ GTK 主题未生效（当前='${cur:-空}'，期望 $gtk_theme 的深色变体）"; bad=$((bad+1))
+    fi
+
+    # 图标
+    cur=$(gsettings get org.gnome.desktop.interface icon-theme 2>/dev/null | tr -d "'" || true)
+    dir=""
+    for d in "$HOME/.local/share/icons/$cur" "$HOME/.icons/$cur" "/usr/share/icons/$cur"; do
+        [ -d "$d" ] && { dir="$d"; break; }
+    done
+    if [ -n "$dir" ]; then
+        echo "  [check] ✅ 图标主题: $cur"
+    else
+        echo "  [check] ⚠ 图标主题目录不存在（当前='${cur:-空}'，期望 $icon_theme）"; bad=$((bad+1))
+    fi
+
+    # 光标
+    cur=$(gsettings get org.gnome.desktop.interface cursor-theme 2>/dev/null | tr -d "'" || true)
+    dir=""
+    for d in "$HOME/.local/share/icons/$cur" "$HOME/.icons/$cur" "/usr/share/icons/$cur"; do
+        [ -d "$d" ] && { dir="$d"; break; }
+    done
+    if [ -n "$dir" ]; then
+        echo "  [check] ✅ 光标主题: $cur"
+    else
+        echo "  [check] ⚠ 光标主题目录不存在（当前='${cur:-空}'，期望 $cursor_theme）"; bad=$((bad+1))
+    fi
+
+    # Shell 主题（依赖 user-themes 扩展；schema 不存在时该键读不到）
+    local schemas
+    schemas=$(gsettings list-schemas 2>/dev/null || true)
+    if [[ "$schemas" == *org.gnome.shell.extensions.user-theme* ]]; then
+        cur=$(gsettings get org.gnome.shell.extensions.user-theme name 2>/dev/null | tr -d "'" || true)
+        if [ -n "$cur" ] && { [ -d "$HOME/.themes/$cur" ] || [ -d "/usr/share/themes/$cur" ]; }; then
+            echo "  [check] ✅ Shell 主题: $cur"
+        else
+            # 当前值是无效主题名（目录不存在；旧版本曾写入过错误字符串）→ 自动修正
+            want="$(gn_resolve_theme_name "$gtk_theme" dark)"
+            if { [ -d "$HOME/.themes/$want" ] || [ -d "/usr/share/themes/$want" ]; } \
+                && gn_gs org.gnome.shell.extensions.user-theme name "$want"; then
+                echo "  [check] 🔧 Shell 主题值无效，已修正为: $want"
+            else
+                echo "  [check] ⚠ Shell 主题未生效（当前='${cur:-空}'），注销重登后再看一次"; bad=$((bad+1))
+            fi
+        fi
+    else
+        echo "  [check] ⚠ user-themes 扩展未安装，Shell 主题无法切换（顶栏会保持默认）"; bad=$((bad+1))
+    fi
+
+    # Dock / 毛玻璃扩展是否被会话加载
+    local uuid
+    for uuid in dash-to-dock@micxgx.gmail.com; do
+        gn_ext_installed "$uuid" || { echo "  [check] ⚠ 未安装 $uuid"; bad=$((bad+1)); continue; }
+        if gn_ext_enabled "$uuid"; then
+            echo "  [check] ✅ 扩展已启用: $uuid"
+        else
+            echo "  [check] ⚠ 扩展已装但未加载: $uuid（注销重登生效）"; bad=$((bad+1))
+        fi
+    done
+    if [ "$version" = macos26 ]; then
+        uuid=blur-my-shell@aunetx
+        if gn_ext_installed "$uuid"; then
+            gn_ext_enabled "$uuid" \
+                && echo "  [check] ✅ 扩展已启用: $uuid" \
+                || { echo "  [check] ⚠ 扩展已装但未加载: $uuid（注销重登生效）"; bad=$((bad+1)); }
+        else
+            echo "  [check] ⚠ 未安装 $uuid（毛玻璃效果不可用）"; bad=$((bad+1))
+        fi
+    fi
+
+    if [ "$bad" -eq 0 ]; then
+        echo "  [check] 全部生效 ✅"
+    else
+        echo "  [check] 有 $bad 项待生效：注销重登一次通常即可（Shell 主题/扩展只在会话启动时加载）"
+    fi
+    return 0
 }

@@ -198,6 +198,12 @@ GN_FORCE_RESUME=1 bash modules/appearance/gnome/install.sh macos26   # 跳过"�
 - `main.sh` 启动时会扫描未完成的进度，直接在终端列出来让你一键续装。
 - 依赖走发行版包管理器（`dnf`/`apt-get`/`pacman`/`zypper` 都支持），扩展走 `gnome-extensions`
   真实命令；`extensions.gnome.org` 拉不到的扩展尽力而为、失败只提示。
+- **扩展装完自动启用并配置**：`dash-to-dock` 自动装成 macOS 风格 Dock（底部悬浮 + 自动隐藏 +
+  点击最小化 + 圆点指示；Fluent 风格则为常驻居中任务栏），`blur-my-shell` 仅 macOS 26 自动启用
+  （顶栏/Dock 毛玻璃）；`user-themes` 由系统包提供并自动启用，Shell 主题随风格设置好。
+  下载地址按当前 GNOME Shell 版本向 EGO API 现问，不会因版本升级失效。
+- **装完自动校验**：读回 gsettings 检查 GTK/图标/光标/Shell 主题目录是否真实存在、扩展是否已加载；
+  Shell 主题值失效时自动改回正确主题名。新装的扩展通常需**注销重登**一次才加载。
 - 装完自动创建启动器「GNOME macOS 美化」，并提示**注销重登**（GNOME 45+ 没有 Alt+F2 的 `r`）。
 
 ---

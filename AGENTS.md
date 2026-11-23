@@ -120,7 +120,7 @@ desktop-toolkit/
 
 ### 3.2 别做外部"可达性探测"
 - 主题安装脚本会探测 `iana.org` 等外网，受限网络下探测失败**直接退出**。**预装依赖绕过探测**（如 GNOME 装 `sassc` 跳过 WhiteSur 的 `prepare_deps` 网络探测）。
-- `extensions.gnome.org` 无稳定国内镜像 → 相关扩展（dash-to-dock/blur-my-shell）**尽力而为**：失败只提示、`|| true`，**不能**让整个安装失败。
+- `extensions.gnome.org` 无稳定国内镜像 → 相关扩展（dash-to-dock/blur-my-shell）**尽力而为**：失败只提示、`|| true`，**不能**让整个安装失败（但下载地址/版本要现问 API，见 §7）。
 
 ### 3.3 非关键下载"尽力而为"
 - 返回值约定：成功 `0`，失败 `1`；但调用方对**可选件**（光标、联网扩展）用 `|| echo "提示"` 容错。
@@ -201,7 +201,39 @@ desktop-toolkit/
 - 系统自带扩展（user-themes / user-theme）走**发行版包**（Fedora 40+：`gnome-shell-extension-user-theme`，回退 `gnome-shell-extensions`；Debian/Arch 用 `gnome-shell-extensions`），**不联网下载**。
 - **UUID 从 `metadata.json` 读取**，不要硬编码（不同发行版单复数/命名不同）。
 - 启用：`gnome-extensions enable "$uuid"`；不行则 `gn_ext_force_enable "$uuid"`（写入 `org.gnome.shell enabled-extensions`，**保留现有**项）。
+- **下载地址按 Shell 版本现问 EGO API，不要硬编码 zip/pk 路径**：
+  `https://extensions.gnome.org/extension-info/?uuid=<uuid>&shell_version=<主版本>` 里的
+  `download_url`（返回 `/download-extension/...zip?version_tag=...`，需补 `https://extensions.gnome.org` 前缀）。
+  踩过的坑：写死的 `extension-data/307/dash-to-dock.zip` 早已 **404**，于是 dash-to-dock 从来没装上过，
+  且失败被 `|| true` 吞掉，没有任何提示。
+- **装完必须 enable，否则扩展永远不出现**（旧代码只装不启用）：
+  - `gnome-extensions enable` 对"本次会话里刚拷进目录"的扩展会报"扩展不存在"——运行中的 Shell
+    只在会话启动/扩展刷新时认识新目录，属正常现象，走 `gn_ext_force_enable` 登记后**注销重登生效**。
+  - 登记启用前必须先从 `org.gnome.shell disabled-extensions` 移除同名项（`gn_ext_force_unblock`），
+    **disabled 优先于 enabled**，用户以前手动关过的扩展不清掉就永远起不来。
+- **用户目录扩展的设置要走 `GSETTINGS_SCHEMA_DIR`**：schema 在
+  `~/.local/share/gnome-shell/extensions/<uuid>/schemas/`，`gsettings` 默认看不到（写不进去也不报错）。
+  `gnome-extensions install` 会顺带 `glib-compile-schemas`，设置时用
+  `GSETTINGS_SCHEMA_DIR=<ext>/schemas gsettings set <schema> <key> <value>`；
+  拿不到 schema 时退回 `dconf write /<schema-id 转斜杠>/<key>`（`gn_ext_set` 已封装）。
+  **键名/枚举值必须对着扩展自带 gschema.xml 写**（如 DtD 的图标尺寸键是 `dash-max-icon-size`，
+  不是 `icon-size`；`running-indicator-style` 取值 `DOTS`）。
+- **扩展配置要按风格区分**：macOS 风格 = 底部悬浮 + 自动隐藏 + 点击最小化 + 圆点指示；
+  Fluent(Win11) = 常驻底部居中任务栏（`dnf`/`apt` 装的是同一扩展，只是 gsettings 不同）。
+  装 dash-to-dock 前若存在 `ubuntu-dock@ubuntu.com` 先禁用，否则两个 Dock 抢同一位置。
+- **别开 `unity-backlit-items` / `custom-theme-shrink`（实测会把 Dock 弄残）**：
+  dash-to-dock 110 重建图标时 `RunningIndicatorBase.update()`（appIconIndicators.js:334）
+  在图标容器还没有子节点的情况下就 `set_style()`，抛
+  `JS ERROR: Expected type string for argument 'style' but got type undefined`
+  → `resetAppIcons` 中断，Dock 上固定应用"全部消失"只剩一个图标。
+  两项 schema 默认就是 `false`，跟着默认走；`gn_dtd_apply_style` 显式写 `false`
+  以便修复早期版本误写的 `true`。`hot-keys` 在 macOS 风格下也置 `false`，
+  否则会抢走 `Super+1..9`（日志里一堆 `Overwriting existing binding of keysym`）。
+  排查命令：`journalctl --user -b | grep -A15 'JS ERROR'`。
 - Shell 主题生效依赖扩展加载；提示"注销重登 / Alt+F2+r（GNOME 45+ 已移除 `r`，需注销）"。
+- **收尾要校验并自愈**：`gn_verify_themes` 读回 gsettings 比对（GTK/图标/光标/Shell 主题目录是否真实存在、
+  扩展是否已加载），发现 Shell 主题值指向不存在的目录（旧版本踩过：写入了整串脏字符串）时
+  自动改回解析出的正确主题名。校验只提示、不中断安装。
 
 ---
 
