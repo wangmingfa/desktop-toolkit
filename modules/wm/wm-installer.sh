@@ -207,15 +207,15 @@ wm_finish() { # <id>
     name=$(wm_field "$id" 2); sess=$(wm_field "$id" 7)
     dm_unit=$(niri_dm_unit 2>/dev/null || true)
     echo
-    echo -e "${DT_GREEN}${DT_BOLD}✅ 安装完成：${name}${DT_NC}"
+    echo -e "${DT_GREEN:-}${DT_BOLD:-}✅ 安装完成：${name}${DT_NC:-}"
     echo
-    echo -e "  ${DT_BOLD}切换方法${DT_NC}：注销当前会话，在登录界面【会话切换】选 ${name}。"
+    echo -e "  ${DT_BOLD:-}切换方法${DT_NC:-}：注销当前会话，在登录界面【会话切换】选 ${name}。"
     echo "    - GDM：登录框左下角齿轮 ⚙️"
     echo "    - SDDM：登录框右下角"
     echo "    - 部分 DM：登录框上方/侧面会话菜单"
     if [ -n "$dm_unit" ]; then
         echo
-        echo -e "  ${DT_YELLOW}如果登录界面看不到 ${name} 会话（$sess）：${DT_NC}"
+        echo -e "  ${DT_YELLOW:-}如果登录界面看不到 ${name} 会话（$sess）：${DT_NC:-}"
         echo "    ${dm_unit} 只在【启动时】扫一次会话文件，单纯注销不会重新扫描。"
         echo "    手动执行: sudo systemctl restart ${dm_unit}"
     fi

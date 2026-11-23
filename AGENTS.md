@@ -35,6 +35,7 @@ desktop-toolkit/
     │   └── env-doctor.sh        # 通用环境体检(磁盘/内存/服务/更新/输入法)
     ├── apps/                # 应用安装(由 main.sh 的 sub_apps 列出)
     │   ├── uu-remote.sh         # UU 远程 Linux 被控端 安装/登录/体检/卸载
+    │   ├── shells.sh            # Shell 安装器(fish/nushell/zsh/elvish…，勾选装 + 设默认)
     │   └── wowtype.sh           # WowType 输入法(fcitx5 插件) 安装/体检/卸载
     ├── dev/                 # 开发环境(由 main.sh 的 sub_dev 列出)
     │   └── setup-dev.sh         # git 配置 + 常用开发工具安装
@@ -351,6 +352,26 @@ desktop-toolkit/
 - 安装分发 `dnf` / `apt`（含 `apt-get update`）/ `pacman --needed`；`wg_distro()` 读 `/etc/os-release` 的 `ID`。
 - `usage` 按发行版提示：Ubuntu/Debian 32 位需 `dpkg --add-architecture i386` + wine32；Arch 老 32 位游戏需 multilib + `lib32-*`；Fedora steam 走 rpmfusion-nonfree-steam。
 - **游戏本体需 Steam 账户/购买，脚本只装环境**（本机 VMware 虚拟显卡 → 3D 跑不动，2D 轻量可行，诚实标注）。
+
+### 9.1c Shell 安装器（`modules/apps/shells.sh`）的发行版矩阵
+
+| shell | 可执行名 | Fedora | Ubuntu | Debian | Arch | 备注 |
+|---|---|---|---|---|---|---|
+| fish | `fish` | ✅ | ✅ | ✅ | ✅ | 全源都有 |
+| nushell | `nu` | ✅ `nushell` | ❌ 源里没有 → 官方二进制 | ❌ 同左 | ✅ `nushell` | 装到 `~/.local/bin/nu` |
+| zsh / elvish / xonsh / tcsh / ksh / dash | 同名 | ✅ | ✅ | ✅ | ✅ | 包名与命令同名 |
+| powershell | `pwsh` | ❌ | ❌ | ❌ | ❌（AUR） | 需微软源，脚本**不自动装**，菜单给手动方法 |
+
+- **包名≠命令名**：nushell 的包叫 `nushell`、命令是 `nu`（`sh_installed` 按命令探测，别按包名）；
+  判断"已装"要看命令在 `PATH` 或 `~/.local/bin`。
+- **官方 tarball 解出来是一层嵌套目录** `nu-<ver>-<target>/nu`（`nu_plugin_*` 也在里面），
+  不是根目录下的 `nu`。早期写成 `[ -x "$dir/nu" ]` 会判"解压失败"。
+  用 `find "$dir" -maxdepth 2 -name nu -print -quit`（`-print -quit` 避免 `| head` 在
+  `pipefail` 下收 SIGPIPE）。
+- **设默认登录 shell 必须先登记 `/etc/shells`**：`chsh` 只接受列在里面的路径，
+  而 `~/.local/bin/nu` 一般不在（`grep -qxF` 判断后 `sudo` 追加，幂等）。
+- 各发行版"源里有没有"用 `dnf repoquery --available` / `apt-cache show` / `pacman -Si` 现问，
+  别硬编码清单（nushell 会随发行版更新进源，届时自动改走包管理器）。
 
 ### 9.2 配置切换/卸载类脚本的三条铁律（`niri-shell-switch.sh` / `--uninstall` 踩过）
 

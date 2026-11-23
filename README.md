@@ -343,6 +343,30 @@ bash modules/apps/wowtype.sh remove         # 卸载
 两个应用脚本都支持：`UU_VERSION` / `WT_VERSION` 指定版本，`UU_MIRROR` / `WT_MIRROR`
 切换下载镜像策略（`auto|ghproxy|ghfast|off`）。
 
+### 5.3 Shell 安装器（fish / nushell / zsh 等）
+
+```bash
+bash modules/apps/shells.sh                 # 菜单（勾选安装 / 设默认 shell / 看状态）
+bash modules/apps/shells.sh list            # 本机各 shell 的包名与状态
+bash modules/apps/shells.sh install fish zsh
+bash modules/apps/shells.sh default fish    # 设为默认登录 shell（chsh，下次登录生效）
+```
+
+| shell | Fedora | Ubuntu | Debian | Arch | 说明 |
+|---|---|---|---|---|---|
+| fish | `fish` | `fish` | `fish` | `fish` | 交互体验最省心 |
+| nushell (`nu`) | `nushell` | 无包 → 官方二进制 | 无包 → 官方二进制 | `nushell` | Debian/Ubuntu 自动下 GitHub 二进制到 `~/.local/bin/nu` |
+| zsh | `zsh` | `zsh` | `zsh` | `zsh` | oh-my-zsh 生态 |
+| elvish | `elvish` | `elvish` | `elvish` | `elvish` | 结构化管道 |
+| xonsh | `xonsh` | `xonsh` | `xonsh` | `xonsh` | Python 语法 |
+| tcsh / ksh / dash | 同名 | 同名 | 同名 | 同名 | 老牌 / POSIX |
+| powershell (`pwsh`) | 第三方源 | 第三方 `.deb` | 第三方 `.deb` | AUR | **不自动装**，菜单里给手动方法 |
+
+- 勾选式安装：每行 `[x]` 已勾选、`[✓]` 已装、`⚠` 需第三方源；只装勾选项。
+- 设默认登录 shell 会先校验/登记 `/etc/shells`（nushell 的 `~/.local/bin/nu` 通常不在里面），
+  再 `chsh`，**下次登录生效**；当前终端可用 `fish` / `nu` 直接试用。
+- 装不上时明确列在"未完成"里（网络/第三方源原因），不会假装成功。
+
 ---
 
 ## 6. 待扩展分类
