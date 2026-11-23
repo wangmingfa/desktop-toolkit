@@ -227,11 +227,25 @@ ime_ensure_config() {
 # ---------------------------------------------------------------------------
 # 热重载 + 启动输入法
 # ---------------------------------------------------------------------------
+ime_ibus_cleanup() {
+    # 切换合成器后会留下过期 ibus bus 文件（如旧 GNOME 会话的 -unix-wayland-0），
+    # 客户端按 WAYLAND_DISPLAY 选文件时可能挑到指向已死 pid 的地址 → "无法连接 IBus"。
+    local f pid
+    for f in "$HOME"/.config/ibus/bus/*-unix-wayland-*; do
+        [ -f "$f" ] || continue
+        pid=$(sed -n 's/^IBUS_DAEMON_PID=//p' "$f" 2>/dev/null || true)
+        if [ -n "$pid" ] && ! kill -0 "$pid" 2>/dev/null; then
+            rm -f "$f" && log "清理过期 ibus bus 文件: $(basename "$f")"
+        fi
+    done
+}
+
 ime_apply() {
     niri_reload_config && log "已触发热重载（niri msg action load-config-file）" \
         || log "未能在本会话热重载（可能不在 niri 会话里）；重新登录即可生效"
     local bin
     bin=$(ime_backend_bin)
+    [ "$IME_IM" = ibus ] && ime_ibus_cleanup
     if ! ime_backend_running; then
         if command -v niri >/dev/null 2>&1 \
             && timeout 5 niri msg action spawn "$bin" >/dev/null 2>&1; then
