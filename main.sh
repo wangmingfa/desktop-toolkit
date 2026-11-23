@@ -223,7 +223,7 @@ sub_apps() {
             "flatpak-mgr|4. Flatpak 应用管理|隔离运行 GUI 应用(装/卸/更新)" \
             "windows-games|5. Windows 游戏运行环境|Wine/Lutris/Steam 平台(勾选装)" \
             "qemu-installer|6. QEMU/KVM 虚拟机|QEMU+libvirt+UEFI+建虚拟机(装完直接加VM)" \
-            "shells|7. Shell 安装器|fish/nushell/zsh/elvish 等(勾选装, 可设为默认)" \
+            "shells|7. Shell 安装器|fish/nushell/zsh 等(勾选装 / 切换 / 设默认)" \
             "back|← 返回主菜单|") || return 0
         [ "$c" = back ] && return 0
         [ "$c" = __quit ] && exit 0

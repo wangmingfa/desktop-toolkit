@@ -372,6 +372,14 @@ desktop-toolkit/
   而 `~/.local/bin/nu` 一般不在（`grep -qxF` 判断后 `sudo` 追加，幂等）。
 - 各发行版"源里有没有"用 `dnf repoquery --available` / `apt-cache show` / `pacman -Si` 现问，
   别硬编码清单（nushell 会随发行版更新进源，届时自动改走包管理器）。
+- **"切换 shell"要分清两个语义**，别混成一个菜单项：
+  - **切当前终端**：`sh_available_shells()` 列出已装的（`/etc/shells` + `PATH` + `~/.local/bin`，
+    按 `readlink -f` 去重），选中 `exec "$path"`；`exec` 替换的是模块进程本身，
+    所以用户 `exit` 后正好回到 `main.sh` 的上级菜单，不留嵌套壳。
+  - **切默认登录 shell**：`chsh`，下次登录生效（`sh_set_default_path`）。
+  - **`/etc/shells` 不是"已装 shell 列表"**：本机实测只有 `sh`/`bash`/`tmux`（包的 %post
+    大多不登记），且可能含 `tmux` 这种能 `-c` 但并非 shell 的条目 —— 所以"是不是 shell"
+    用 `"$p" -c true` 试跑判断，`nologin`/`false` 直接排除。
 
 ### 9.2 配置切换/卸载类脚本的三条铁律（`niri-shell-switch.sh` / `--uninstall` 踩过）
 

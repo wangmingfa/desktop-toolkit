@@ -346,9 +346,10 @@ bash modules/apps/wowtype.sh remove         # 卸载
 ### 5.3 Shell 安装器（fish / nushell / zsh 等）
 
 ```bash
-bash modules/apps/shells.sh                 # 菜单（勾选安装 / 设默认 shell / 看状态）
+bash modules/apps/shells.sh                 # 菜单（安装 / 切换 / 设默认 / 看状态）
 bash modules/apps/shells.sh list            # 本机各 shell 的包名与状态
 bash modules/apps/shells.sh install fish zsh
+bash modules/apps/shells.sh switch          # 列出本机已有 shell，选中即进入（当前终端，exit 返回）
 bash modules/apps/shells.sh default fish    # 设为默认登录 shell（chsh，下次登录生效）
 ```
 
@@ -363,8 +364,11 @@ bash modules/apps/shells.sh default fish    # 设为默认登录 shell（chsh，
 | powershell (`pwsh`) | 第三方源 | 第三方 `.deb` | 第三方 `.deb` | AUR | **不自动装**，菜单里给手动方法 |
 
 - 勾选式安装：每行 `[x]` 已勾选、`[✓]` 已装、`⚠` 需第三方源；只装勾选项。
-- 设默认登录 shell 会先校验/登记 `/etc/shells`（nushell 的 `~/.local/bin/nu` 通常不在里面），
-  再 `chsh`，**下次登录生效**；当前终端可用 `fish` / `nu` 直接试用。
+- **切换 shell**（菜单第 2 项）列出本机**已装**的 shell（`/etc/shells` + `PATH` + `~/.local/bin`，
+  按真实路径去重，并用 `-c` 试跑筛掉 `nologin`/`tmux` 这类伪条目），选中即 `exec` 进入，
+  只影响**当前终端**，`exit` 回菜单；不改 `/etc/passwd`。
+- **设默认登录 shell**（菜单第 3 项）会先校验/登记 `/etc/shells`（fish/zsh/nushell 的包
+  大多**不会**自动登记，本机实测只有 `sh`/`bash`/`tmux`），再 `chsh`，**下次登录生效**。
 - 装不上时明确列在"未完成"里（网络/第三方源原因），不会假装成功。
 
 ---

@@ -12,7 +12,8 @@
 #   bash shells.sh                 # 图形/文本菜单
 #   bash shells.sh list            # 列出各 shell 在本机的状态
 #   bash shells.sh install fish zsh
-#   bash shells.sh default fish    # 设为默认登录 shell
+#   bash shells.sh switch          # 列出本机已有 shell，选中即进入（当前终端）
+#   bash shells.sh default fish    # 设为默认登录 shell（chsh，下次登录生效）
 # =============================================================================
 set -euo pipefail
 
@@ -264,7 +265,7 @@ sh_do_install() { # <id>...
         done
         body+="\n网络/第三方源受限时可稍后重跑本脚本。"
     fi
-    body+="\n\n立即试用: 直接输入命令（如 fish、nu、zsh）。\n设为默认登录 shell: 菜单第 2 项（下次登录生效）。"
+    body+="\n\n立即切换: 菜单第 2 项（当前终端生效，exit 返回）。\n设为默认登录 shell: 菜单第 3 项（下次登录生效）。"
     dt_info "Shell 安装结果\n\n$body"
 
     if [ "${#SH_FAIL[@]}" -eq 0 ]; then
@@ -275,29 +276,139 @@ sh_do_install() { # <id>...
 }
 
 # ---------------------------------------------------------------------------
-# 设为默认登录 shell
+# 切换当前终端的 shell（列出本机已有 → 选中即进入）
+#
+# 说明：这里只切【当前终端/当前会话】，不碰 /etc/passwd，退出(exit)就回到上级菜单。
+#       想永久换掉登录 shell 用下面「设为默认登录 shell」(chsh，下次登录生效)。
 # ---------------------------------------------------------------------------
 sh_current_shell() {
     getent passwd "${USER:-$(id -un)}" 2>/dev/null | cut -d: -f7 || true
 }
 
-sh_set_default() { # <id>
-    local id="$1" name path cur
-    name=$(sh_field "$id" 2)
-    if ! sh_installed "$id"; then
-        dt_info "$name 尚未安装。\n请先在菜单第 1 项安装。"
-        return 1
+# 单个 shell 的版本号（只取 x.y[.z]，取不到回退首行截断，再取不到留空）
+# 各家 --version 文案差别很大（"GNU bash，版本 5.3.15(1)-release (x86_64-…)"
+# / "fish, version 4.6.0" / "0.117.0"），直接截断首行会切在括号中间很难看。
+sh_shell_version() { # <path>
+    local out
+    [ -x "$1" ] || { echo ""; return 0; }
+    # 先收集再处理，不要 `| head -1`：pipefail 下上游会吃 SIGPIPE 让整条管道非零
+    out=$("$1" --version 2>/dev/null || true)
+    if [ -z "$out" ]; then out=$("$1" -V 2>/dev/null || true); fi
+    out=${out%%$'\n'*}
+    if [[ $out =~ ([0-9]+\.[0-9]+(\.[0-9]+)?) ]]; then
+        printf '%s' "${BASH_REMATCH[1]}"
+    else
+        printf '%s' "${out:0:48}"
     fi
-    path=$(sh_bin_path "$id")
+}
+
+# 判断"确实是个能用的 shell"：能用 -c 跑命令。tmux 之类被 /etc/shells 塞进来的
+# 伪条目没有 -c，会被这里筛掉（别只看 /etc/shells，它不代表都是 shell）。
+sh_is_shell() { # <path>
+    [ -x "$1" ] || return 1
+    case "$(basename "$1")" in nologin|false) return 1 ;; esac
+    "$1" -c true >/dev/null 2>&1
+}
+
+# 本机已有的 shell（去重后一行一个 [绝对路径]）
+# 来源: /etc/shells(权威登录 shell 列表) + PATH 里的常见 shell + ~/.local/bin(nushell 二进制)
+sh_available_shells() {
+    local -a cand=()
+    local line p n
+    if [ -r /etc/shells ]; then
+        while IFS= read -r line; do
+            case "$line" in ''|'#'*) continue ;; esac
+            cand+=("$line")
+        done < /etc/shells
+    fi
+    for n in bash sh zsh fish nu elvish xonsh tcsh ksh mksh dash; do
+        p=$(command -v "$n" 2>/dev/null || true)
+        [ -n "$p" ] && cand+=("$p")
+    done
+    for n in nu elvish xonsh fish; do
+        [ -x "$HOME/.local/bin/$n" ] && cand+=("$HOME/.local/bin/$n")
+    done
+
+    local seen="" real
+    for p in "${cand[@]}"; do
+        sh_is_shell "$p" || continue
+        real=$(readlink -f "$p" 2>/dev/null || echo "$p")
+        case " $seen " in *" $real "*) continue ;; esac
+        seen="$seen $real"
+        echo "$real"
+    done
+}
+
+sh_shell_label() { # <path> → 菜单显示名
+    case "$(basename "$1")" in
+        nu) echo "nu（Nushell）" ;;
+        elvish) echo "elvish" ;;
+        *) echo "$(basename "$1")" ;;
+    esac
+}
+
+# 进入所选 shell：exec 替换本进程，所以 exit 后直接回到上级菜单，不留嵌套壳
+sh_switch_to() { # <path>
+    local path="$1" name
+    name=$(sh_shell_label "$path")
+    echo
+    echo "  ▶ 正在进入 $name（$path）…"
+    echo "    输入 exit 即可返回上一级菜单（不会改默认登录 shell）"
+    echo
+    exec "$path"
+}
+
+sh_menu_switch() {
+    local -a rows=()
+    local s name ver cur cur_real
     cur=$(sh_current_shell)
-    if [ "$cur" = "$path" ]; then
+    cur_real=$(readlink -f "$cur" 2>/dev/null || echo "$cur")
+    while IFS= read -r s; do
+        [ -n "$s" ] || continue
+        name=$(sh_shell_label "$s")
+        ver=$(sh_shell_version "$s")
+        local mark="" desc
+        [ "$s" = "$cur_real" ] && mark="（默认登录 shell）"
+        if [ -n "$ver" ]; then desc="$ver$mark"; else desc="$s$mark"; fi
+        rows+=("$s|$name|$desc")
+    done < <(sh_available_shells)
+
+    if [ "${#rows[@]}" -eq 0 ]; then
+        dt_info "没有找到可用的 shell。\n请先用菜单第 1 项安装一个（fish / zsh / nushell …）。"
+        return 0
+    fi
+    local n=${#rows[@]}
+    rows+=("back|← 返回|")
+
+    local c
+    c=$(dt_menu "切换到某个 shell（本终端立即生效）" \
+        "本机已有 ${n} 个 shell；选中即进入，输入 exit 返回。当前默认登录 shell: ${cur:-未知}" \
+        "${rows[@]}") || return 0
+    case "$c" in
+        __quit) exit 0 ;;
+        back) return 0 ;;
+        *) sh_switch_to "$c" ;;
+    esac
+}
+
+# ---------------------------------------------------------------------------
+# 设为默认登录 shell（chsh，下次登录生效）
+# ---------------------------------------------------------------------------
+
+sh_set_default_path() { # <path>
+    local path="$1" name cur cur_real
+    name=$(sh_shell_label "$path")
+    cur=$(sh_current_shell)
+    cur_real=$(readlink -f "$cur" 2>/dev/null || echo "$cur")
+    if [ "$cur_real" = "$path" ]; then
         dt_info "默认登录 shell 已经是 $name（$path），无需修改。"
         return 0
     fi
-    dt_info "即将把默认登录 shell 改成：\n\n$name\n$path\n\n当前: ${cur:-未知}\n\n（只影响下次登录后的新会话；当前终端不受影响）"
+    dt_info "即将把默认登录 shell 改成：\n\n$name\n$path\n\n当前: ${cur:-未知}\n\n（只影响下次登录后的新会话；当前终端不受影响）\n想立刻体验用菜单第 2 项「切换 shell」。"
     dt_confirm "确认修改默认登录 shell？" || return 0
 
-    # 必须登记到 /etc/shells（chsh 会校验；nushell 的 ~/.local/bin/nu 一般不在里面）
+    # 必须登记到 /etc/shells（chsh 会校验；fish/zsh/nushell 的包大多不自动登记，
+    # 本机实测 /etc/shells 里只有 sh/bash/tmux）
     if ! grep -qxF "$path" /etc/shells 2>/dev/null; then
         log "$path 不在 /etc/shells，先登记（需要 sudo）"
         if ! sudo sh -c "grep -qxF '$path' /etc/shells || echo '$path' >> /etc/shells"; then
@@ -311,13 +422,27 @@ sh_set_default() { # <id>
         return 1
     fi
     cur=$(sh_current_shell)
-    if [ "$cur" = "$path" ]; then
+    cur_real=$(readlink -f "$cur" 2>/dev/null || echo "$cur")
+    if [ "$cur_real" = "$path" ]; then
         echo "  ✅ 默认登录 shell 已改为 $path（下次登录生效）"
-        log "当前终端仍是旧 shell；想立即体验请输入: $(sh_bin "$id")"
+        log "当前终端仍是旧 shell；想立即体验用菜单第 2 项，或直接输入: $(basename "$path")"
         return 0
     fi
     err "修改后仍为 ${cur:-未知}，请手动检查 /etc/shells 与 chsh"
     return 1
+}
+
+# 兼容 CLI 的 id 形式: shells.sh default fish / nu
+sh_set_default() { # <id>
+    local id="$1" name path
+    name=$(sh_field "$id" 2)
+    if ! sh_installed "$id"; then
+        dt_info "$name 尚未安装。\n请先在菜单第 1 项安装。"
+        return 1
+    fi
+    path=$(sh_bin_path "$id")
+    path=$(readlink -f "$path" 2>/dev/null || echo "$path")
+    sh_set_default_path "$path"
 }
 
 # ---------------------------------------------------------------------------
@@ -398,24 +523,27 @@ sh_menu_select() {
 
 sh_menu_default() {
     local -a rows=()
-    local c id name cur
+    local c s name cur cur_real ver
     cur=$(sh_current_shell)
-    while IFS='|' read -r id name desc _ _ _ _ bin note; do
-        sh_installed "$id" || continue
+    cur_real=$(readlink -f "$cur" 2>/dev/null || echo "$cur")
+    while IFS= read -r s; do
+        [ -n "$s" ] || continue
+        name=$(sh_shell_label "$s")
+        ver=$(sh_shell_version "$s")
         local mark=""
-        [ "$(sh_bin_path "$id")" = "$cur" ] && mark="（当前）"
-        rows+=("$id|$name|$(sh_bin_path "$id")$mark")
-    done < <(sh_catalog)
+        [ "$s" = "$cur_real" ] && mark="（当前默认）" && continue   # 已经是默认的没必要再选
+        rows+=("$s|$name|$ver")
+    done < <(sh_available_shells)
     if [ "${#rows[@]}" -eq 0 ]; then
-        dt_info "本机还没有通过本工具安装的 shell。\n请先在菜单第 1 项安装。"
+        dt_info "没有找到可切换的 shell。\n当前默认: ${cur:-未知}\n先用菜单第 1 项安装一个（fish / zsh / nushell …）。"
         return 0
     fi
     rows+=("back|← 返回|")
-    c=$(dt_menu "设为默认登录 shell" "当前: ${cur:-未知}；只影响下次登录" "${rows[@]}") || return 0
+    c=$(dt_menu "设为默认登录 shell" "当前: ${cur:-未知}；chsh，只影响下次登录（当前终端想换用第 2 项）" "${rows[@]}") || return 0
     case "$c" in
         __quit) exit 0 ;;
         back) return 0 ;;
-        *) sh_set_default "$c" || true ;;
+        *) sh_set_default_path "$c" || true ;;
     esac
 }
 
@@ -423,15 +551,17 @@ sh_menu() {
     while true; do
         local c
         c=$(dt_menu "Shell 安装器" \
-            "发行版: $(sh_distro)｜默认 shell: $(sh_current_shell)" \
+            "发行版: $(sh_distro)｜默认登录 shell: $(sh_current_shell)" \
             "install|1. 安装 Shell（勾选）|fish / nushell / zsh / elvish / xonsh / tcsh / ksh / dash" \
-            "default|2. 设为默认登录 shell|从已安装的 shell 里选（chsh，下次登录生效）" \
-            "list|3. 查看状态与版本|本机已装/未装、包名、版本" \
+            "switch|2. 切换 shell（当前终端）|列出本机已有 shell，选中即进入，exit 返回" \
+            "default|3. 设为默认登录 shell|chsh，下次登录生效（不动当前终端）" \
+            "list|4. 查看状态与版本|本机已装/未装、包名、版本" \
             "back|← 返回|") || return 0
         case "$c" in
             __quit) exit 0 ;;
             back) return 0 ;;
             install) sh_menu_select ;;
+            switch) sh_menu_switch ;;
             default) sh_menu_default ;;
             list) sh_list ;;
         esac
@@ -441,7 +571,8 @@ sh_menu() {
 case "${1:-}" in
     list) sh_list ;;
     install) shift; sh_do_install "$@" ;;
+    switch) sh_menu_switch ;;
     default) [ -n "${2:-}" ] && sh_set_default "$2" || err "用法: shells.sh default <id>" ;;
     "") sh_menu ;;
-    *) err "未知参数: $1（可用: list | install <id...> | default <id>）"; exit 1 ;;
+    *) err "未知参数: $1（可用: list | install <id...> | switch | default <id>）"; exit 1 ;;
 esac
