@@ -126,6 +126,7 @@ sub_wm() {
             "wlsunset|10. niri 护眼色温|夜间屏幕调暖(wlsunset, 自动日落)" \
             "dms-topbar|11. DMS 顶栏监控|CPU/内存/磁盘/温度/网速/电池 组件开关" \
             "de-installer|12. 一键安装 KDE/GNOME|依赖级清单(必须+可选, 逐项勾选)" \
+            "niri-keybinds|13. niri 快捷键可视化配置|预设开关/自定义绑定/浏览搜索/导出 HTML" \
             "back|← 返回主菜单|") || return 0
         [ "$c" = back ] && return 0
         [ "$c" = __quit ] && exit 0
@@ -169,6 +170,9 @@ sub_wm() {
                 ;;
             wlsunset)
                 bash "$DT_ROOT/modules/wm/niri-wlsunset.sh"
+                ;;
+            niri-keybinds)
+                bash "$DT_ROOT/modules/wm/niri-keybinds.sh"
                 ;;
         esac
     done
