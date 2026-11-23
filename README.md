@@ -267,16 +267,18 @@ bash modules/wm/niri-config.sh --uninstall  # 移除 include 与本工具生成�
 ### 2.5 Niri 输入法（fcitx5 + 拼音）
 
 ```bash
-bash modules/wm/niri-ime.sh            # 安装 fcitx5+拼音 + 写环境/自启 + 热重载
-bash modules/wm/niri-ime.sh status     # fcitx5 / profile / config include 状态
-bash modules/wm/niri-ime.sh remove     # 停 fcitx5、撤 ime.kdl（保留包）
+bash modules/wm/niri-ime.sh                  # 安装 fcitx5+拼音 + 写环境/自启 + 热重载
+bash modules/wm/niri-ime.sh --ime ibus       # 用系统已有的 IBus（不装 fcitx5）
+bash modules/wm/niri-ime.sh status           # 输入法 / profile / config include 状态
+bash modules/wm/niri-ime.sh remove           # 停输入法、撤 ime.kdl（保留包）
 ```
 
-**为什么装完 niri 切不出中文**：niri 不跑 XDG autostart，fcitx5 必须由 niri 的
+**为什么装完 niri 切不出中文**：niri 不跑 XDG autostart，输入法必须由 niri 的
 `spawn-at-startup` 拉起；环境变量要走 niri 的 `environment{}`（不是 `~/.bashrc`）。
-本脚本生成 `~/.config/niri/ime.kdl`（含 `GTK_IM_MODULE=fcitx` 等 + 自启），主配置只加一行
-`include optional=true "ime.kdl"`。装完**重开终端/应用**，按 `Ctrl+空格` 切换中/英，
-`fcitx5-configtool` 调细节。
+本脚本生成 `~/.config/niri/ime.kdl`（含 `GTK_IM_MODULE` 等 + 自启），主配置只加一行
+`include optional=true "ime.kdl"`。默认 fcitx5（装 fcitx5+拼音引擎）；
+`--ime ibus` 用系统已有的 IBus（启用 libpinyin，无需装 fcitx5）。
+装完**重开终端/应用**，按 `Ctrl+空格` 切换中/英，`fcitx5-configtool` / `ibus-setup` 调细节。
 
 ---
 

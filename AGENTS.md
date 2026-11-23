@@ -421,11 +421,13 @@ desktop-toolkit/
   `niri msg reload-config` 都报 `unrecognized subcommand`（库函数 `niri_reload_config`
   自动试三种写法）。
 - **niri 不跑 XDG autostart，输入法要自己 spawn**：装完 niri 发现 Ctrl+空格切不出中文，
-  十有八九是 fcitx5 没被 niri 拉起、且环境变量没走 `environment{}`。
-  `niri-ime.sh`（或 `niri_ensure_ime`）做四件事：装 fcitx5+拼音引擎（发行版感知）、
-  写 `~/.config/fcitx5/profile` 启用 pinyin、生成 `~/.config/niri/ime.kdl`
-  （`environment { GTK_IM_MODULE "fcitx"; … }` + `spawn-at-startup "fcitx5"`）、
-  加 `include optional=true "ime.kdl"`。改完 **重开终端/应用** 才继承新环境。
+  十有八九是输入法没被 niri 拉起、且环境变量没走 `environment{}`。
+  `niri-ime.sh` 支持两个后端（`--ime fcitx5|ibus`）：装引擎（发行版感知）、启用引擎
+  （fcitx5 写 `~/.config/fcitx5/profile`；IBus 设 `preload-engines=['libpinyin']`）、
+  生成 `~/.config/niri/ime.kdl`（`environment { GTK_IM_MODULE …; }` +
+  `spawn-at-startup "fcitx5"` / `"ibus-daemon" "-dr"`）、加 `include optional=true "ime.kdl"`。
+  **IBus 也能用**（ibus-daemon 走 D-Bus 转换，不依赖 compositor 的 input-method 协议），
+  只是 niri 圈里更常推 fcitx5。改完 **重开终端/应用** 才继承新环境。
 
 **多工具各自用独立 include 文件（避免互相覆盖）：**
 - niri-config 独占 `dt-settings.kdl`、niri-tools 用 `tools.kdl`、niri-wallpaper 用 `wallpaper.kdl`，各自在主配置末尾加 `include optional=true "xxx.kdl"`（awk 幂等，别拼 sed 引号）。
