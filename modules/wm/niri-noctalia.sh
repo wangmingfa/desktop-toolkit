@@ -114,9 +114,12 @@ preflight() {
     # Noctalia 官方 RPM Fusion 只给 Fedora 45 做了包（rpmfusion.net 页面标注
     # "Version: Fedora 45"）。老版本直接查不到包, 与其重试三次再失败, 不如提前说明。
     if [ -r /etc/fedora-release ] || [ -r /etc/redhat-release ]; then
-        local major
-        major=$(grep -oE 'Fedora (Linux )?[0-9]+' /etc/fedora-release /etc/redhat-release 2>/dev/null \
-            | grep -oE '[0-9]+' | sort -n | tail -1)
+        local major=""
+        # Fedora 的 release 文件是 "Fedora release 45 (Forty Five)"，
+        # 别写成 'Fedora [0-9]+'：匹配不到时 grep 退出 1，pipefail + set -e
+        # 会让整个脚本在这里【静默退出】（踩过：跑 main.sh 选完就什么都没有了）。
+        major=$(grep -hoE 'release [0-9]+' /etc/fedora-release /etc/redhat-release 2>/dev/null \
+            | grep -oE '[0-9]+' | sort -n | tail -1 || true)
         if [ -n "$major" ] && [ "$major" -lt 45 ]; then
             err "检测到 Fedora ${major}。Noctalia 的发行版包目前只做给 Fedora 45，"
             err "这个版本的官方源里没有 noctalia 包，dnf 会查不到而失败。"
@@ -137,19 +140,32 @@ install_pkgs() {
     if ! command -v noctalia >/dev/null 2>&1 || [ "$NEED_NIRI" = 1 ]; then
         echo "==> 安装 niri + Noctalia + 终端($TERMINAL)…"
         local -a pkgs=(niri noctalia "$TERMINAL")
+        # 注意: 本函数是在 `if ! install_pkgs` 条件里被调用的，bash 在这种上下文里
+        # 会关掉 set -e，所以每个失败都必须显式 `|| return 1`，否则包没装上
+        # 也会一路走到"✅ 完成"（踩过：dnf 失败后仍生成配置并显示成功）。
         if command -v dnf >/dev/null 2>&1; then
             dnf_install_retry "${pkgs[@]}" \
-                || dnf_install_resumable "${pkgs[@]}"
+                || dnf_install_resumable "${pkgs[@]}" \
+                || return 1
         elif command -v pacman >/dev/null 2>&1; then
-            sudo pacman -S --needed --noconfirm "${pkgs[@]}"
+            sudo pacman -S --needed --noconfirm "${pkgs[@]}" || return 1
         else
             err "未识别的包管理器。请手动安装 noctalia，例如:"
             err "  sudo dnf install niri noctalia $TERMINAL"
             return 1
         fi
-        # niri 是刚装的: 登录界面还没有 niri 会话项, 必须补上
-        # (系统级目录 + X-GDM-CanRunHeadless=true, 细节见 lib/niri.sh)
+        # 复核: 包管理器返回成功不代表包真的到位，按命令是否可用来确认
+        if ! command -v noctalia >/dev/null 2>&1; then
+            err "noctalia 未安装成功（命令仍不存在）"
+            return 1
+        fi
         if [ "$NEED_NIRI" = 1 ]; then
+            if ! command -v niri >/dev/null 2>&1; then
+                err "niri 未安装成功（命令仍不存在）"
+                return 1
+            fi
+            # niri 是刚装的: 登录界面还没有 niri 会话项, 必须补上
+            # (系统级目录 + X-GDM-CanRunHeadless=true, 细节见 lib/niri.sh)
             niri_ensure_dm_session
         fi
     else

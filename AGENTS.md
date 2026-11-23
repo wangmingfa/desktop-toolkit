@@ -162,6 +162,13 @@ desktop-toolkit/
 - **用进程替换取函数输出**：`read -r a b < <(func)`，避免命令替换在 `set -e` 下的隐性问题。
 - **`local` 只在函数内用**；数组用 `local -a`。
 - **函数返回非零要显式处理**：`"$fn"` 或 `|| return 1`，别让 `set -e` 在中间步意外中止。
+- **`if ! func` / `while func` 这种条件上下文会关掉函数体里的 `set -e`**：函数内部每个
+  可能失败的关键步骤都要显式 `|| return 1`，否则包没装上、命令失败了也照样往下走，
+  最后还打印"✅ 完成"（`niri-noctalia.sh` 踩过：dnf 失败后仍生成配置并显示成功）。
+- **解析发行版版本号的正则要对着真实 release 文件写**：Fedora 是
+  `Fedora release 45 (Forty Five)`，写成 `'Fedora [0-9]+'` 匹配不到 → `grep` 退出 1 →
+  `pipefail` 下命令替换非零 → `set -e` 让整个脚本**静默退出**（跑 `main.sh` 选完就没了）。
+  正确写法：`grep -hoE 'release [0-9]+' /etc/fedora-release /etc/redhat-release 2>/dev/null | ... || true`。
 - **systemctl 状态判断的非零陷阱**：`systemctl --user is-enabled/is-active` 对 masked/inactive/未启用返回非零，`if systemctl ... is-active; then` 会**误判**（masked 服务被判为"未运行"）。用 `$( )` 收集 + 字符串比较：`[ "$(systemctl --user is-active x 2>/dev/null)" = active ]`。
   - **`is-active` 对 inactive 会输出 "inactive" 且退出非零**：`x=$(systemctl is-active x 2>/dev/null || echo inactive)` 会**双写**（输出+追加 echo 各一个 "inactive"）。正确：`x=$(systemctl is-active x 2>/dev/null || true); echo "${x:-inactive}"`（`|| true` 保留输出不追加，再 `${x:-...}` 兜底空值）。
   - **`systemctl list-units` 的 UNIT 列有前导空格**：`grep '^[a-z0-9@_.-]+\.service'` 匹配不到（行首是空格）→ pipefail 下报"读取失败"。用 `grep -E '^\s+[a-z0-9@_.-]+\.service'` 或 awk 跳过含表头行。
