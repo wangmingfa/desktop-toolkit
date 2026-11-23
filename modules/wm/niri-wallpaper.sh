@@ -89,7 +89,7 @@ set_wallpaper() {
     mkdir -p "$NIRI_DIR"
     gen_wallpaper_kdl "$p"
     ensure_include
-    log "壁纸已设置: $p（需 niri msg reload-config 生效）"
+    log "壁纸已设置: $p（需 niri msg action load-config-file 生效）"
 }
 
 clear_wallpaper() {
@@ -117,7 +117,7 @@ rotate_once() { # 随机选一张, 写 wallpaper.kdl + reload
     mkdir -p "$NIRI_DIR"
     gen_wallpaper_kdl "$p"
     ensure_include
-    command -v niri >/dev/null 2>&1 && timeout 5 niri msg reload-config 2>/dev/null || true
+    command -v niri >/dev/null 2>&1 && timeout 5 niri msg action load-config-file 2>/dev/null || true
     log "已轮换壁纸: $(basename "$p")"
 }
 
@@ -235,7 +235,7 @@ dl_wallpaper() { # [url] —— 输入 URL → 下载到 WP_DIR，可设为壁�
         if dt_confirm "下载完成。立即设为壁纸？"; then
             gen_wallpaper_kdl "$WP_DIR/$name"
             ensure_include
-            command -v niri >/dev/null 2>&1 && timeout 5 niri msg reload-config 2>/dev/null || true
+            command -v niri >/dev/null 2>&1 && timeout 5 niri msg action load-config-file 2>/dev/null || true
             log "已设为壁纸"
         fi
     else

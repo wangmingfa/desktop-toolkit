@@ -188,7 +188,7 @@ setup_module() {
 
     cat > "$NMOD" <<EOF
 # 由 desktop-toolkit (niri-noctalia.sh) 生成
-# 修改后执行 \`niri msg action config-reload\` 即时生效
+# 修改后执行 \`niri msg action load-config-file\` 即时生效
 # 回退: 删掉 config.kdl 里的 \`include "noctalia.kdl"\` 与本文件即可
 #
 # 快捷键说明(Noctalia IPC):
@@ -325,11 +325,15 @@ EOF
     # ---- 与 Noctalia 无关但推荐: 光标环境变量(供 systemd 启动的应用继承) ----
     cat >> "$NMOD" <<'EOF'
 
-# Noctalia 若用 systemd 服务启动, 应用可能拿不到光标主题; 加这两行修好
-autostart {
-    commands "systemctl" "--user" "import-environment" "XCURSOR_THEME" "XCURSOR_SIZE"
-}
+# Noctalia 若用 systemd 服务启动, 应用可能拿不到光标主题; 让 niri 启动时导入即可
+spawn-at-startup "systemctl" "--user" "import-environment" "XCURSOR_THEME" "XCURSOR_SIZE"
 EOF
+
+    # 生成的 .kdl 洗成 niri 能吃的格式:
+    #   * niri 的 KDL 解析器【不认 # 注释】(KDL 注释是 //)，# 行会让整个配置不加载
+    #     (niri validate 报 identifiers cannot be used as arguments)
+    #   * 没有 autostart{} 节点, 启动命令要用 spawn-at-startup
+    niri_kdl_sanitize "$NMOD"
 }
 
 # ---------------------------------------------------------------------------
@@ -366,6 +370,8 @@ EOF
     fi
     add_line 'spawn-at-startup "noctalia"'
     add_line 'include "noctalia.kdl"'
+    # 用户已有配置里的 # 注释同样是 niri 不认的(会让整份失效), 顺手转 //
+    niri_kdl_sanitize "$NCFG"
 
     log "已接入: spawn-at-startup \"noctalia\" + include \"noctalia.kdl\"(放在末尾以覆盖内置绑定)"
 }
@@ -416,8 +422,8 @@ reload_now() {
         return 0
     fi
     # niri 已起但 msg 通道不通时, reload 会非零返回, 用 || true 兜住
-    if niri msg action config-reload 2>/dev/null; then
-        log "已下发 config-reload，Noctalia 配置即时生效"
+    if niri_reload_config; then
+        log "已热重载 niri 配置（niri msg action load-config-file），Noctalia 配置即时生效"
     else
         log "当前 niri 会话未就绪，配置将在下次登录后生效"
     fi
@@ -459,12 +465,12 @@ if [ "$NEED_NIRI" = 1 ]; then
         "2) 外壳自启: spawn-at-startup \"noctalia\" + systemd 用户服务" \
         "3) 快捷键: Super+Space 启动器 · Super+S 控制中心 · Super+Shift+Comma 设置" \
         "4) 音量/亮度 OSD 走 Noctalia; Alt+Tab 用 Noctalia 窗口切换器" \
-        "5) 壁纸/模糊想调整: 编辑 $NMOD 后跑 niri msg action config-reload"
+        "5) 壁纸/模糊想调整: 编辑 $NMOD 后跑 niri msg action load-config-file"
 else
     niri_finish_banner "niri + Noctalia 已配置。" \
         "1) 外壳自启: 已在 $NCFG 加 spawn-at-startup \"noctalia\"（systemd 服务也已启用）" \
         "2) 快捷键: Super+Space 启动器 · Super+S 控制中心 · Super+Shift+Comma 设置" \
         "3) 音量/亮度 OSD 走 Noctalia; Alt+Tab 用 Noctalia 窗口切换器(想换回原生见 noctalia.kdl 注释)" \
-        "4) 壁纸/模糊想调整: 编辑 $NMOD 后跑 niri msg action config-reload" \
+        "4) 壁纸/模糊想调整: 编辑 $NMOD 后跑 niri msg action load-config-file" \
         "5) 日志: ~/.cache/noctalia/noctalia.log；排查层规则: niri msg layers"
 fi

@@ -185,4 +185,4 @@ apply "$TARGET"
 echo
 echo -e "  切换完成。生效方式(任选其一):"
 echo -e "    • 注销后重新登录"
-echo -e "    • 立即重载配置: ${DT_CYAN:-}niri msg action config-reload${DT_NC:-}"
+echo -e "    • 立即重载配置: ${DT_CYAN:-}niri msg action load-config-file${DT_NC:-}"

@@ -293,3 +293,47 @@ niri_finish_banner() { # 完成标题 [额外提示行...]
         fi
     fi
 }
+# ---------------------------------------------------------------------------
+# niri 配置辅助（26.04 实测，别想当然）
+#   * niri 的 KDL 解析器【不认 `#` 注释】（KDL 规范注释是 `//`）。生成 .kdl 若用
+#     `#` 行做注释，niri validate 报 `identifiers cannot be used as arguments`，
+#     会话拿默认配置跑、自定义全失效（niri-noctalia 踩过：config 完全没加载）。
+#   * niri【没有 autostart{} 节点】—— 启动命令一律 `spawn-at-startup`。
+#     `autostart { commands ... }` 在 26.04 报 `unexpected node autostart`。
+#   * 热重载动作是 `niri msg action load-config-file`；`reload-config`/
+#     `config-reload` 都报 unrecognized subcommand（26.04 实测）。
+#   * 校验用 `niri validate -c <file>`（26.04 起不接受位置参数、也不读 stdin）。
+# ---------------------------------------------------------------------------
+
+# 把生成的 .kdl 洗成 niri 能吃的：`#` 注释 → `//`；`autostart { commands … }`
+# → `spawn-at-startup …`。任何生成 .kdl 的脚本写完都要过一遍再 validate。
+niri_kdl_sanitize() { # <file>
+    local f="$1"
+    [ -f "$f" ] || return 0
+    awk '
+        /^[ \t]*autostart[ \t]*\{/ { inauto=1; next }
+        inauto && /^[ \t]*commands[ \t]+/ { sub(/^[ \t]*commands[ \t]+/, "spawn-at-startup "); print; next }
+        inauto && /^[ \t]*\}/ { inauto=0; next }
+        inauto { next }
+        { if (match($0, /^[ \t]*#/)) sub(/#/, "//"); print }
+    ' "$f" > "$f.san" && mv "$f.san" "$f"
+}
+
+niri_validate_cfg() { # <file> → 0 有效
+    [ -f "$1" ] || return 1
+    niri validate -c "$1" >/dev/null 2>&1
+}
+
+# 热重载 niri 配置（自动试遍 26.04 与历史写法）
+niri_reload_config() {
+    local -a tries=(
+        "niri msg action load-config-file"
+        "niri msg action reload-config"
+        "niri msg reload-config"
+    )
+    local t
+    for t in "${tries[@]}"; do
+        timeout 5 bash -c "$t" >/dev/null 2>&1 && return 0
+    done
+    return 1
+}

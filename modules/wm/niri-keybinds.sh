@@ -279,7 +279,7 @@ niri_validate() { # file
     niri validate -c "$1" >/tmp/dt-nk-verify.$$ 2>&1
 }
 do_reload() {
-    niri msg action reload-config >/dev/null 2>&1 && log "已触发热重载" || log "热重载未成功（请手动: niri msg action reload-config）"
+    niri msg action load-config-file >/dev/null 2>&1 && log "已触发热重载" || log "热重载未成功（请手动: niri msg action load-config-file）"
 }
 apply() {
     gen_keybinds

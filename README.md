@@ -249,7 +249,7 @@ bash modules/wm/niri-shell-switch.sh            # 交互选择
 两个都是完整桌面壳，同时开会抢顶栏/程序坞/Alt+Tab。切换 = 关一个的自启、开另一个的自启；
 首次切换会把**原始配置**存到固定路径 `config.kdl.orig-shellswitch`，之后每次都从它整体重建，
 所以来回切多少次都不会丢配置。`none` 只留 niri 本体。生效：注销重登，或
-`niri msg action config-reload`。
+`niri msg action load-config-file`。
 
 ### 2.4 Niri 可视化配置
 
@@ -263,6 +263,20 @@ bash modules/wm/niri-config.sh --uninstall  # 移除 include 与本工具生成�
 菜单覆盖：搜索配置项、布局与外观（间距/焦点列居中/背景/焦点环/边框/阴影/窗口装饰）、
 输入与焦点（键盘/触摸板/鼠标/焦点跟随）、光标与杂项（光标/截图/概览/模糊）、显示器输出（缩放/旋转/开关）。
 本工具**独占** `~/.config/niri/dt-settings.kdl`，只写你显式改过的项，不动主配置里其它设置。
+
+### 2.5 Niri 输入法（fcitx5 + 拼音）
+
+```bash
+bash modules/wm/niri-ime.sh            # 安装 fcitx5+拼音 + 写环境/自启 + 热重载
+bash modules/wm/niri-ime.sh status     # fcitx5 / profile / config include 状态
+bash modules/wm/niri-ime.sh remove     # 停 fcitx5、撤 ime.kdl（保留包）
+```
+
+**为什么装完 niri 切不出中文**：niri 不跑 XDG autostart，fcitx5 必须由 niri 的
+`spawn-at-startup` 拉起；环境变量要走 niri 的 `environment{}`（不是 `~/.bashrc`）。
+本脚本生成 `~/.config/niri/ime.kdl`（含 `GTK_IM_MODULE=fcitx` 等 + 自启），主配置只加一行
+`include optional=true "ime.kdl"`。装完**重开终端/应用**，按 `Ctrl+空格` 切换中/英，
+`fcitx5-configtool` 调细节。
 
 ---
 
@@ -584,7 +598,7 @@ bash modules/system/niri-doctor.sh          # 或 --fix 自动修
 
 **改了配置中心 / 主题设置后没生效？**
 KWin 配置（圆角、玻璃、动画、按钮布局）通常**注销重登**后完全生效；niri 配置可以
-`niri msg action config-reload` 热重载。
+`niri msg action load-config-file` 热重载。
 
 ---
 

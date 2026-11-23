@@ -80,7 +80,7 @@ install_tools() {
     gen_tools_kdl
     ensure_include
     log "截图/录屏/剪贴板快捷键已写入 tools.kdl"
-    log "生效: 重启 niri 或 niri msg reload-config（Print/Super+P/Super+V）"
+    log "生效: 重启 niri 或 niri msg action load-config-file（Print/Super+P/Super+V）"
 }
 
 uninstall_tools() {

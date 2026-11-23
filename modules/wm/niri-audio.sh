@@ -75,7 +75,7 @@ do_install() {
     install_pkgs || return 1
     gen_audio
     ensure_include
-    command -v niri >/dev/null 2>&1 && niri msg reload-config 2>/dev/null \
+    command -v niri >/dev/null 2>&1 && niri msg action load-config-file 2>/dev/null \
         && log "已热重载 niri（音量/媒体键立即生效）" \
         || log "niri 未运行或重载失败，下次启动生效"
     log "完成。音量键(XF86Audio*)/媒体键(play/next/prev)已绑定。"
@@ -84,7 +84,7 @@ do_install() {
 do_uninstall() {
     rm -f "$AUDIO"
     remove_include
-    command -v niri >/dev/null 2>&1 && niri msg reload-config 2>/dev/null || true
+    command -v niri >/dev/null 2>&1 && niri msg action load-config-file 2>/dev/null || true
     log "已移除 audio.kdl 与 include（pamixer 保留，如需卸载: sudo dnf remove pamixer）"
 }
 

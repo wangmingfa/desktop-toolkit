@@ -395,7 +395,7 @@ remove_include() {
     rm -f "$tmp"
 }
 
-do_reload() { niri msg action reload-config >/dev/null 2>&1 || true; }
+do_reload() { niri msg action load-config-file >/dev/null 2>&1 || true; }
 
 apply() {
     ensure_main_exists || return 1

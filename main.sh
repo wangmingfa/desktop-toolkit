@@ -127,6 +127,7 @@ sub_wm() {
             "dms-topbar|11. DMS 顶栏监控|CPU/内存/磁盘/温度/网速/电池 组件开关" \
             "de-installer|12. 一键安装 KDE/GNOME|依赖级清单(必须+可选, 逐项勾选)" \
             "niri-keybinds|13. niri 快捷键可视化配置|预设开关/自定义绑定/浏览搜索/导出 HTML" \
+            "niri-ime|14. niri 输入法(fcitx5)|中文/日文/韩文输入法一键配置(拼音引擎+环境+自启动)" \
             "back|← 返回主菜单|") || return 0
         [ "$c" = back ] && return 0
         [ "$c" = __quit ] && exit 0
@@ -173,6 +174,9 @@ sub_wm() {
                 ;;
             niri-keybinds)
                 bash "$DT_ROOT/modules/wm/niri-keybinds.sh"
+                ;;
+            niri-ime)
+                bash "$DT_ROOT/modules/wm/niri-ime.sh"
                 ;;
         esac
     done

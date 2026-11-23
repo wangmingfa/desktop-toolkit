@@ -75,7 +75,7 @@ do_on() {
     # 立即生效（杀掉旧的再启动新的）
     pkill -x wlsunset 2>/dev/null || true
     nohup wlsunset -L "$ST_LAT" -l "$ST_LON" -t "$ST_NIGHT" -T "$ST_DAY" >/dev/null 2>&1 &
-    command -v niri >/dev/null 2>&1 && niri msg reload-config 2>/dev/null || true
+    command -v niri >/dev/null 2>&1 && niri msg action load-config-file 2>/dev/null || true
     log "色温已开启（坐标 $ST_LAT,$ST_LON  夜 $ST_NIGHT K / 日 $ST_DAY K）"
 }
 
@@ -84,7 +84,7 @@ do_off() {
     rm -f "$SUN"
     remove_include
     st_set off
-    command -v niri >/dev/null 2>&1 && niri msg reload-config 2>/dev/null || true
+    command -v niri >/dev/null 2>&1 && niri msg action load-config-file 2>/dev/null || true
     log "已移除 sun.kdl 与 include"
 }
 

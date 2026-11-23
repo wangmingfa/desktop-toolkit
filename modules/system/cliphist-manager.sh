@@ -76,7 +76,7 @@ KDL
     else
         ch_log "cliphist store 已在运行"
     fi
-    command -v niri >/dev/null 2>&1 && timeout 5 niri msg reload-config 2>/dev/null || true
+    command -v niri >/dev/null 2>&1 && timeout 5 niri msg action load-config-file 2>/dev/null || true
     ch_log "历史记录已开启（niri 启动时自动加载）"
 }
 
@@ -84,7 +84,7 @@ ch_store_off() {
     pkill -x cliphist 2>/dev/null && ch_log "已停止 cliphist" || ch_log "cliphist 未运行"
     rm -f "$CLIP"
     remove_include
-    command -v niri >/dev/null 2>&1 && timeout 5 niri msg reload-config 2>/dev/null || true
+    command -v niri >/dev/null 2>&1 && timeout 5 niri msg action load-config-file 2>/dev/null || true
     ch_log "历史记录已关闭"
 }
 

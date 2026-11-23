@@ -29,6 +29,7 @@ desktop-toolkit/
     ├── wm/                  # 窗口管理器 / 桌面方案
     │   ├── niri-dms.sh          # 一键安装 Niri + DMS (Dux Modular Shell)
     │   ├── niri-noctalia.sh     # 一键配置 Niri + Noctalia 桌面外壳
+    │   ├── niri-ime.sh          # niri 输入法(fcitx5+拼音)：环境+自启+profile
     │   └── niri-shell-switch.sh # DMS ↔ Noctalia 外壳切换(避免双壳抢顶栏)
     ├── system/              # 系统诊断(由 main.sh 的 sub_system 自动扫描)
     │   ├── niri-doctor.sh       # Niri 环境体检 + 一键修复
@@ -408,7 +409,23 @@ desktop-toolkit/
 - `binds { Print { screenshot-ui-open; } }` / `{ screenshot; }`：**截图动作内置**，`screenshot-ui-open` 开截图 UI（区域/全屏/窗口），`screenshot` 全屏；配 `screenshot-path "~/Pictures/..."`。
 - **无名字 `output { background-image "<path>" }` = 应用到所有输出**，**无需 swaybg/swww 额外进程**（per-output 才要写 `output "名字" {}`）。
 - `animation { window-movement|window-open|window-close|workspace-switch { spring damping-ratio=… stiffness=… epsilon=… } }`：内联 spring 语法，字段可 `niri validate` 验证。
-- **`niri validate` 从 stdin 读**，**不接受文件位置参数**（`niri validate < file`，写 `niri validate file` 会报 `unexpected argument`）；片段（仅 binds/output 等）也能 validate，不必拼完整配置。
+- **`niri validate` 用 `-c <file>`**（26.04 起**不接受文件位置参数、也不读 stdin**：`niri validate file` / `niri validate < file` 都会去读 `$XDG_CONFIG_HOME/niri/config.kdl`）；片段（仅 binds/output 等）也能 validate，不必拼完整配置。
+- **`#` 注释是无效的（niri 只认 `//`）**：KDL 规范注释是 `//`，`#` 行会让 niri
+  **整份配置不加载**（报 `identifiers cannot be used as arguments`，然后拿默认配置跑，
+  你的绑定/自启/环境全失效，且**没有任何明显报错**——`niri-noctalia` 踩过：用户以为
+  配置好了，实际一行都没生效）。任何生成 `.kdl` 的脚本写完都要过
+  `niri_kdl_sanitize`（`#`→`//`，幂等）。
+- **没有 `autostart {}` 节点**：26.04 报 `unexpected node autostart`。启动命令一律
+  `spawn-at-startup`（可带参数列表：`spawn-at-startup "cmd" "arg1" "arg2"`）。
+- **热重载是 `niri msg action load-config-file`**；`reload-config`/`config-reload`/
+  `niri msg reload-config` 都报 `unrecognized subcommand`（库函数 `niri_reload_config`
+  自动试三种写法）。
+- **niri 不跑 XDG autostart，输入法要自己 spawn**：装完 niri 发现 Ctrl+空格切不出中文，
+  十有八九是 fcitx5 没被 niri 拉起、且环境变量没走 `environment{}`。
+  `niri-ime.sh`（或 `niri_ensure_ime`）做四件事：装 fcitx5+拼音引擎（发行版感知）、
+  写 `~/.config/fcitx5/profile` 启用 pinyin、生成 `~/.config/niri/ime.kdl`
+  （`environment { GTK_IM_MODULE "fcitx"; … }` + `spawn-at-startup "fcitx5"`）、
+  加 `include optional=true "ime.kdl"`。改完 **重开终端/应用** 才继承新环境。
 
 **多工具各自用独立 include 文件（避免互相覆盖）：**
 - niri-config 独占 `dt-settings.kdl`、niri-tools 用 `tools.kdl`、niri-wallpaper 用 `wallpaper.kdl`，各自在主配置末尾加 `include optional=true "xxx.kdl"`（awk 幂等，别拼 sed 引号）。
