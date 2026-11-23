@@ -66,7 +66,10 @@ desktop-toolkit/
      - 安装只装**必须 + 勾选的可选**，`dnf install -y`；装完提示注销登录界面选会话。
    - **取消语义**：TUI 下回车/无效/EOF 返回**非零**（与 GUI 分支 zenity 取消一致），调用方用 `|| return 0`（回上级）/ `|| exit 0`（退出）；`|| continue` 在 `while true` 菜单循环里会死循环，**不要用**。
 4. **注册入口**：在 `main.sh` 对应分类菜单加一个选项；需要自动扫描的放对应目录。
-5. **可执行**：`chmod +x`（`.desktop` 启动器/`main.sh` 调用需要）。
+5. **调用一律 `bash xxx.sh`，可执行位仅建议**（`.desktop` 启动器写 `Exec=/bin/bash <脚本>`）。
+   仓库内任何地方都不直接执行 `./xxx.sh`（否则可执行位丢了的机器/CI 上会挂）；
+   `chmod +x` 只方便手动 `./xxx.sh`，**不是硬性依赖**。外部主题仓库的 `install.sh`
+   （`lib-gnome.sh` 里 `[ -x "$dir/install.sh" ]`）是克隆来的、上游保证 mode，照旧用 `-x`。
 6. **自检后再提交**：`bash -n <file>` 语法通过，且跑一次关键路径验证，再 `git commit` + `push`。
 7. **发行版感知（默认强规则）**：新功能**必须支持各 Linux 发行版**（Fedora / Ubuntu / Debian / Arch），除非**明确无法支持**（如某包只在特定发行版、需要第三方源/编译、包名无对应）。做法：`wg_distro()` 读 `/etc/os-release` 的 `ID` 映射发行版；包名按发行版列进目录（参考 `app-installer.sh`/`windows-games.sh` 的 `id|...|fedora|ubuntu|debian|arch` 矩阵）；安装用 `dnf`/`apt`/`pacman` 分发。**不支持的情况要在菜单/说明里诚实标注原因**（不能静默失败或硬编码单一发行版）。
 

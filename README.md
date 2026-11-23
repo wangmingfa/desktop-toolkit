@@ -13,7 +13,8 @@ git clone https://github.com/wangmingfa/desktop-toolkit.git ~/code/desktop-toolk
 cd ~/code/desktop-toolkit
 
 # 唯一入口：图形菜单，选择对应选项即可（无 GUI 时自动转为命令行 TUI）
-./main.sh
+bash main.sh
+# （仓库里保留了可执行位，想直接跑也行：./main.sh；若同步工具把 mode 弄丢，仍用 bash 即可）
 ```
 
 脚本会自动识别 GUI 工具：**容器里用 zenity，宿主机 KDE 上用 kdialog**。
@@ -27,7 +28,7 @@ cd ~/code/desktop-toolkit
 
 > 配置中心现在默认打开**单窗口版（GTK4）**：左侧分类、右侧内容，切换分类只换页面，
 > 窗口不会关闭重开，Dock 上始终只有一个图标。GTK4 不可用时自动退回 zenity/kdialog 菜单版
-> （想强制用旧版：`DT_CONFIG_CLI=1 ./main.sh`）。
+> （想强制用旧版：`DT_CONFIG_CLI=1 bash main.sh`）。
 
 > 首次部署建议顺序（KDE）：
 > 1. `主菜单 → 外观美化 → ① KDE 外观美化 → ① 安装 macOS 26 (Tahoe 液态玻璃)`

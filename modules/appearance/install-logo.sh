@@ -18,6 +18,6 @@ done
 # 应用为顶部菜单图标
 SRC="$HOME/.config/plasma-org.kde.plasma.desktop-appletsrc"
 [ -f "$SRC" ] && cp -a "$SRC" "${SRC}.bak-dt-logo"
-"$DT_ROOT/modules/appearance/adjust-window.sh" logo cachy
+bash "$DT_ROOT/modules/appearance/adjust-window.sh" logo cachy
 
 echo "完成。若图标未刷新，注销重登一次即可。"

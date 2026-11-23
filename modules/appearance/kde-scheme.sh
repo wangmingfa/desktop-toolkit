@@ -15,7 +15,7 @@ source "$DT_ROOT/lib/ui.sh"
 APPEARANCE="$DT_ROOT/modules/appearance"
 
 kde_show_list() {
-    "$APPEARANCE/adjust-window.sh" list > /tmp/dt-config-list.txt 2>&1 || true
+    bash "$APPEARANCE/adjust-window.sh" list > /tmp/dt-config-list.txt 2>&1 || true
     if [ "$GUI" = zenity ]; then
         zenity --text-info --title="当前配置" --filename=/tmp/dt-config-list.txt \
             --width=760 --height=640 2>/dev/null || true
@@ -58,7 +58,7 @@ main() {
                     dt_info "Fluent 安装流程已结束。去 系统设置->外观 选择 Fluent 应用。"
                 fi ;;
             config)
-                [ -x "$APPEARANCE/config-center.sh" ] && "$APPEARANCE/config-center.sh" \
+                [ -f "$APPEARANCE/config-center.sh" ] && bash "$APPEARANCE/config-center.sh" \
                     || dt_err_gui "缺少 $APPEARANCE/config-center.sh" ;;
             mode-perf|mode-full)
                 local mode=$([ "$c" = mode-perf ] && echo perf || echo full)
@@ -67,7 +67,7 @@ main() {
                     dt_info "已切换。KWin 配置通常重新登录一次后完全生效。"
                 fi ;;
             window-gui)
-                "$APPEARANCE/adjust-window.sh" gui ;;
+                bash "$APPEARANCE/adjust-window.sh" gui ;;
             logo)
                 bash "$APPEARANCE/install-logo.sh"
                 dt_info "白色 CachyOS Logo 已安装并应用。" ;;

@@ -12,11 +12,11 @@ TOGGLE="$SCRIPT_DIR/toggle-glass.sh"
 KWINRC="$HOME/.config/kwinrc"
 DBUS_ENV="DBUS_SESSION_BUS_ADDRESS=unix:path=/run/user/1000/bus XDG_RUNTIME_DIR=/run/user/1000"
 
-[ -x "$ADJUST" ] || { echo "缺少 $ADJUST" >&2; exit 1; }
+[ -f "$ADJUST" ] || { echo "缺少 $ADJUST" >&2; exit 1; }
 
 # 修复 GTK 主题在 GTK 4.14 下的 @media/@import 与 color-mix 兼容问题
 # （否则 GTK4 应用窗口会完全透明）
-[ -x "$SCRIPT_DIR/fix-gtk-theme.sh" ] && "$SCRIPT_DIR/fix-gtk-theme.sh" fix >/dev/null 2>&1 || true
+[ -f "$SCRIPT_DIR/fix-gtk-theme.sh" ] && bash "$SCRIPT_DIR/fix-gtk-theme.sh" fix >/dev/null 2>&1 || true
 
 # ---------------------------------------------------------------------------
 # 优先使用 GTK 单窗口版：切换分类只换页面，不会关窗/开新窗，
@@ -33,7 +33,7 @@ install_desktop_entry() {
 Type=Application
 Name=桌面外观配置中心
 Comment=macOS 风格桌面设置（圆角 / 透明度 / Dock / 窗口动画）
-Exec="$SCRIPT_DIR/config-center.sh"
+Exec=/bin/bash "$SCRIPT_DIR/config-center.sh"
 Icon=preferences-desktop-theme
 Terminal=false
 Categories=Settings;DesktopSettings;
@@ -48,7 +48,7 @@ if [ "${DT_CONFIG_CLI:-0}" != "1" ] \
     && python3 -c 'import gi; gi.require_version("Gtk", "4.0")' >/dev/null 2>&1; then
     install_desktop_entry
     # 旧版 zenity 菜单的窗口规则（新窗口不再需要，但保留可消除其它弹窗的 Dock 图标）
-    [ -x "$SCRIPT_DIR/kwin-rule.sh" ] && "$SCRIPT_DIR/kwin-rule.sh" install >/dev/null 2>&1 || true
+    [ -f "$SCRIPT_DIR/kwin-rule.sh" ] && bash "$SCRIPT_DIR/kwin-rule.sh" install >/dev/null 2>&1 || true
     exec python3 "$SCRIPT_DIR/config-center-gtk.py" "$@"
 fi
 
@@ -199,7 +199,7 @@ sub_corner() {
             all)
                 local v; v=$(ask_num "窗口圆角" "常用圆角半径 (建议 12-28)：" \
                     "$(kw_get 'Round-Corners' 'Size')" 0 40 1) || continue
-                "$ADJUST" corner "$v"; info "圆角已设为 ${v}px（实时生效）" ;;
+                bash "$ADJUST" corner "$v"; info "圆角已设为 ${v}px（实时生效）" ;;
             win|size|inactive|dock|popup)
                 local key grp label cur v
                 case "$c" in
@@ -230,7 +230,7 @@ PY
 )
     while true; do
         local c tr_cur
-        tr_cur=$("$ADJUST" launcher-transparency get 2>/dev/null | sed -n 's/.*透明度 \([0-9][0-9]*\)%.*/\1/p' | head -1 || true)
+        tr_cur=$(bash "$ADJUST" launcher-transparency get 2>/dev/null | sed -n 's/.*透明度 \([0-9][0-9]*\)%.*/\1/p' | head -1 || true)
         c=$(menu "透明度" "0 = 完全不透明，100 = 完全透明。选择组件调整：" \
             "dock|1. Dock 栏透明度|当前 $(mat_val dock)% (已调低40%→58.5)" \
             "all|全部组件统一|当前常规窗口: ${mats_cur}" \
@@ -251,13 +251,13 @@ PY
             __quit) exit 0 ;;
             back) return 0 ;;
             default)
-                "$ADJUST" transparency default; info "已恢复主题默认透明度" ;;
+                bash "$ADJUST" transparency default; info "已恢复主题默认透明度" ;;
             all|global)
                 local cur v
                 [ "$c" = all ] && cur="$mats_cur" || cur=$(kw_get 'Effect-liquidglass' 'SurfaceTransparencyLight')
                 v=$(ask_num "透明度" "设置透明度 (0-100，建议 40-70)：" "$cur" 0 100 5) || continue
                 if [ "$c" = all ]; then
-                    "$ADJUST" transparency all "$v"
+                    bash "$ADJUST" transparency all "$v"
                 else
                     kw_set 'Effect-liquidglass' 'SurfaceTransparencyLight' "$v"
                     kw_set 'Effect-liquidglass' 'SurfaceTransparencyDark' "$v"
@@ -265,10 +265,10 @@ PY
                 info "透明度已设为 $v" ;;
             launcher)
                 local v; v=$(ask_num "启动器/弹窗透明度" "0=完全不透明, 100=完全透明 (建议 0-20)：" "${tr_cur:-10}" 0 100 1) || continue
-                "$ADJUST" launcher-transparency "$v"; info "启动器/弹窗透明度 = ${v}% (100=透明)" ;;
+                bash "$ADJUST" launcher-transparency "$v"; info "启动器/弹窗透明度 = ${v}% (100=透明)" ;;
             *)
                 local v; v=$(ask_num "透明度 - $c" "组件 [$c] 透明度 (0-100)：" "$(mat_val "$c")" 0 100 5) || continue
-                "$ADJUST" transparency "$c" "$v"; info "组件 [$c] 透明度 = $v" ;;
+                bash "$ADJUST" transparency "$c" "$v"; info "组件 [$c] 透明度 = $v" ;;
         esac
     done
 }
@@ -309,7 +309,7 @@ sub_glass() {
             IFS='|' read -r key label min max step desc <<< "$p"
             if [ "$c" = "$key" ]; then
                 local v; v=$(ask_num "$label" "$label —— $desc" "$(kw_get 'Effect-liquidglass' "$key")" "$min" "$max" "$step") || continue 2
-                "$ADJUST" glass "$key" "$v"
+                bash "$ADJUST" glass "$key" "$v"
                 if [ "$(kw_get 'Plugins' 'liquidglassEnabled')" = "true" ]; then reload_effect liquidglass; fi
                 info "$label = $v（完整模式下生效）"
             fi
@@ -369,14 +369,14 @@ sub_gradient() {
             local cur v
             cur=$(kw_get 'Effect-liquidglass' "$c"); [ "$cur" != true ] && cur=false
             v=$(ask_bool "$c" "是否启用 $c？" "$cur") || continue
-            "$ADJUST" set 'Effect-liquidglass' "$c" "$v"
+            bash "$ADJUST" set 'Effect-liquidglass' "$c" "$v"
             info "$c = $v"
         else
             for p in "${GRAD_PARAMS[@]}"; do
                 IFS='|' read -r key label min max step <<< "$p"
                 if [ "$c" = "$key" ]; then
                     local v; v=$(ask_num "$label" "$label (0-1)：" "$(kw_get 'Effect-liquidglass' "$key")" "$min" "$max" "$step") || continue 2
-                    "$ADJUST" set 'Effect-liquidglass' "$key" "$v"
+                    bash "$ADJUST" set 'Effect-liquidglass' "$key" "$v"
                     if [ "$(kw_get 'Plugins' 'liquidglassEnabled')" = "true" ]; then reload_effect liquidglass; fi
                     info "$label = $v"
                 fi
@@ -478,10 +478,10 @@ PY
         [ "$c" = back ] && return 0
         if [ "$c" = height ]; then
             local v; v=$(ask_num "Dock 栏高度" "Dock 栏高度 px（默认68, 建议 56-96）：" "$cur_h" 40 140 4) || continue
-            "$ADJUST" dock-height "$v"; info "Dock 高度已设为 ${v}px，桌面重启中"
+            bash "$ADJUST" dock-height "$v"; info "Dock 高度已设为 ${v}px，桌面重启中"
         elif [ "$c" = zoom ]; then
             local v; v=$(ask_num "图标悬停放大" "鼠标悬停时的放大倍数 %（100=不放大, 建议 110-135）：" "$cur_z" 100 150 5) || continue
-            "$ADJUST" dock-zoom "$v"; info "图标悬停放大已设为 ${v}%，桌面重启中"
+            bash "$ADJUST" dock-zoom "$v"; info "图标悬停放大已设为 ${v}%，桌面重启中"
         fi
     done
 }
@@ -500,7 +500,7 @@ PY
 )
     local cur label
     while true; do
-        cur=$("$ADJUST" list 2>/dev/null | sed -n 's/.*左上角菜单图标 (menuIcon) = //p' | head -1)
+        cur=$(bash "$ADJUST" list 2>/dev/null | sed -n 's/.*左上角菜单图标 (menuIcon) = //p' | head -1)
         case "$cur" in
             cachyos-logo-symbolic)       label="CachyOS" ;;
             start-here-kde-symbolic)     label="苹果 (原版)" ;;
@@ -518,12 +518,12 @@ PY
             __quit) exit 0 ;;
             back) return 0 ;;
             cachy|apple|plasma)
-                "$ADJUST" logo "$c"
+                bash "$ADJUST" logo "$c"
                 info "顶部 Logo 已切换为 $label，桌面重启中" ;;
             custom)
                 local v; v=$(ask_text "自定义 Logo" "输入图标名 (在图标主题 places/scalable 下，不含 .svg)：" "$cur") || continue
                 [ -n "$v" ] || continue
-                "$ADJUST" logo "$v"
+                bash "$ADJUST" logo "$v"
                 info "顶部 Logo 已设为 $v，桌面重启中" ;;
         esac
     done
@@ -533,7 +533,7 @@ PY
 sub_winanimi() {
     while true; do
         local st genie glide slide speed
-        st=$("$ADJUST" winanim status 2>/dev/null)
+        st=$(bash "$ADJUST" winanim status 2>/dev/null)
         genie=$(echo "$st"  | sed -n 's/.*magiclamp) = //p' | head -1)
         glide=$(echo "$st"  | sed -n 's/.*(glide)     = //p' | head -1)
         slide=$(echo "$st"  | sed -n 's/.*(slide)     = //p' | head -1)
@@ -552,21 +552,21 @@ sub_winanimi() {
             "back|← 返回主菜单|") || return 0
         [ "$c" = back ] && return 0
         case "$c" in
-            preset-macos)    "$ADJUST" winanim preset macos; info "已应用 macOS 风格动画（神灯最小化已开启）" ;;
-            preset-windows)  "$ADJUST" winanim preset windows; info "已应用 Windows 11 动画（无神灯, 保留滑入）" ;;
-            preset-balanced) "$ADJUST" winanim preset balanced; info "已应用均衡动画" ;;
-            preset-fast)     "$ADJUST" winanim preset fast; info "已应用快速动画" ;;
-            preset-off)      "$ADJUST" winanim preset off; info "已关闭所有窗口动画" ;;
+            preset-macos)    bash "$ADJUST" winanim preset macos; info "已应用 macOS 风格动画（神灯最小化已开启）" ;;
+            preset-windows)  bash "$ADJUST" winanim preset windows; info "已应用 Windows 11 动画（无神灯, 保留滑入）" ;;
+            preset-balanced) bash "$ADJUST" winanim preset balanced; info "已应用均衡动画" ;;
+            preset-fast)     bash "$ADJUST" winanim preset fast; info "已应用快速动画" ;;
+            preset-off)      bash "$ADJUST" winanim preset off; info "已关闭所有窗口动画" ;;
             genie|glide|slide)
                 local cur v
                 case "$c" in genie) cur=$genie;; glide) cur=$glide;; slide) cur=$slide;; esac
                 local label; case "$c" in genie) label="最小化神灯 genie";; glide) label="窗口滑入 glide";; slide) label="桌面滑动 slide";; esac
                 v=$(ask_bool "$label" "$label 当前为 $cur，是否开启？" "$cur") || continue
-                "$ADJUST" winanim "$c" "$([ "$v" = true ] && echo on || echo off)"
+                bash "$ADJUST" winanim "$c" "$([ "$v" = true ] && echo on || echo off)"
                 info "$label = $v" ;;
             speed)
                 local v; v=$(ask_num "动画速度" "全局动画速度（0.25=快, 1.0=标准, 2.0=慢）：" "$speed" 0.25 2.0 0.05) || continue
-                "$ADJUST" winanim speed "$v"; info "动画速度 = ${v}x" ;;
+                bash "$ADJUST" winanim speed "$v"; info "动画速度 = ${v}x" ;;
         esac
     done
 }
@@ -629,20 +629,20 @@ main() {
             winanim)      sub_winanimi ;;
             list)
                 if [ "$GUI" = zenity ]; then
-                    "$ADJUST" list | zenity --text-info --title="当前配置" --width=760 --height=640 2>/dev/null || true
+                    bash "$ADJUST" list | zenity --text-info --title="当前配置" --width=760 --height=640 2>/dev/null || true
                 elif [ "$GUI" = kdialog ]; then
-                    "$ADJUST" list | kdialog --title "当前配置" --textbox - 760 640 2>/dev/null || true
+                    bash "$ADJUST" list | kdialog --title "当前配置" --textbox - 760 640 2>/dev/null || true
                 fi ;;
             reset)
-                confirm "恢复圆角与透明度为默认值？" && { "$ADJUST" reset; info "已恢复默认"; } ;;
+                confirm "恢复圆角与透明度为默认值？" && { bash "$ADJUST" reset; info "已恢复默认"; } ;;
             mode)
                 local cur new
                 cur=$(kw_get 'Plugins' 'liquidglassEnabled')
                 if [ "$cur" = true ]; then new="性能模式(流畅)"; extra=perf; else new="完整模式(液态玻璃,可能卡)"; extra=full; fi
-                if confirm "当前 $([ "$cur" = true ] && echo 完整 || echo 性能) 模式，切换到 $new ？" && [ -x "$TOGGLE" ]; then
-                    "$TOGGLE" "$extra"
+                if confirm "当前 $([ "$cur" = true ] && echo 完整 || echo 性能) 模式，切换到 $new ？" && [ -f "$TOGGLE" ]; then
+                    bash "$TOGGLE" "$extra"
                     info "已切换到 $new。KWin 配置需重新登录才完全生效。"
-                elif [ ! -x "$TOGGLE" ]; then
+                elif [ ! -f "$TOGGLE" ]; then
                     err "找不到 $TOGGLE"
                 fi ;;
         esac

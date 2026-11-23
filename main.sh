@@ -46,7 +46,7 @@ sub_appearance() {
             font-manager)
                 bash "$APPEARANCE/font-manager.sh" ;;
             list)
-                "$APPEARANCE/adjust-window.sh" list > /tmp/dt-config-list.txt 2>&1 || true
+                bash "$APPEARANCE/adjust-window.sh" list > /tmp/dt-config-list.txt 2>&1 || true
                 if [ "$GUI" = zenity ]; then
                     zenity --text-info --title="当前配置" --filename=/tmp/dt-config-list.txt \
                         --width=760 --height=640 2>/dev/null || true
