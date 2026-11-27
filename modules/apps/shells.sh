@@ -552,10 +552,10 @@ sh_menu() {
         local c
         c=$(dt_menu "Shell 安装器" \
             "发行版: $(sh_distro)｜默认登录 shell: $(sh_current_shell)" \
-            "install|1. 安装 Shell（勾选）|fish / nushell / zsh / elvish / xonsh / tcsh / ksh / dash" \
-            "switch|2. 切换 shell（当前终端）|列出本机已有 shell，选中即进入，exit 返回" \
-            "default|3. 设为默认登录 shell|chsh，下次登录生效（不动当前终端）" \
-            "list|4. 查看状态与版本|本机已装/未装、包名、版本" \
+            "install|安装 Shell（勾选）|fish / nushell / zsh / elvish / xonsh / tcsh / ksh / dash" \
+            "switch|切换 shell（当前终端）|列出本机已有 shell，选中即进入，exit 返回" \
+            "default|设为默认登录 shell|chsh，下次登录生效（不动当前终端）" \
+            "list|查看状态与版本|本机已装/未装、包名、版本" \
             "back|← 返回|") || return 0
         case "$c" in
             __quit) exit 0 ;;

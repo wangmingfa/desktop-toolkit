@@ -124,12 +124,12 @@ ch_menu() {
     while true; do
         local c
         c=$(dt_menu "剪贴板历史管理" "cliphist 历史（niri-tools 的 Super+V 用于查看）：" \
-            "install|1. 安装 cliphist|cliphist + wl-clipboard（需 sudo）" \
-            "store-on|2. 启动历史记录|spawn-at-startup cliphist store + 立即启动" \
-            "view|3. 查看/复制|fuzzel 选择历史项复制回剪贴板" \
-            "wipe|4. 清空历史|cliphist wipe" \
-            "store-off|5. 关闭历史记录|停 store + 移除自启" \
-            "status|6. 状态|工具/store/条数/include" \
+            "install|安装 cliphist|cliphist + wl-clipboard（需 sudo）" \
+            "store-on|启动历史记录|spawn-at-startup cliphist store + 立即启动" \
+            "view|查看/复制|fuzzel 选择历史项复制回剪贴板" \
+            "wipe|清空历史|cliphist wipe" \
+            "store-off|关闭历史记录|停 store + 移除自启" \
+            "status|状态|工具/store/条数/include" \
             "back|← 返回|") || return 0
         case "$c" in
             install) ch_install ;;

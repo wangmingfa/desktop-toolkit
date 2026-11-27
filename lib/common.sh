@@ -187,3 +187,34 @@ dt_download() {
         return 1
     fi
 }
+
+# =============================================================================
+# 现问 GitHub API 解析"最新 release 的资产 URL"（版本会变，别硬编码 tag）。
+#   用法: dt_github_latest_asset <owner/repo> <资产URL正则> [兜底URL]
+#   - 直连 api.github.com（限 10s），失败自动重试一次（瞬断容忍）；
+#     api.github.com 无稳定镜像，路径式镜像(gh-proxy 等)只代理 github.com 文件。
+#   - 解析失败时若给了兜底URL则用它（用一个已知稳定的硬编码 tag），
+#     兜底URL 仍会被 dt_download 的镜像回退覆盖到弱网场景。
+#   - stdout 只输出 URL（常被 $( ) 捕获）；探测过程/错误全走 stderr。
+#   - 用法参考 §3.0b：管道尾必须 || true（grep 无匹配时 pipefail 静默失败）。
+# 示例: url=$(dt_github_latest_asset "neovim/neovim" 'nvim-linux-x86_64\.tar\.gz' \
+#          "https://github.com/neovim/neovim/releases/download/v0.11.3/nvim-linux-x86_64.tar.gz")
+# =============================================================================
+dt_github_latest_asset() { # <owner/repo> <资产URL正则> [fallback_url]
+    local repo="$1" regex="$2" fallback="${3:-}"
+    local api="https://api.github.com/repos/$repo/releases/latest"
+    local try url=""
+    for try in 1 2; do
+        url=$(timeout 10 curl -fsSL --http1.1 --max-time 10 "$api" 2>/dev/null |
+            grep -oE "https://[^\"]*$regex" | head -1 || true)
+        # head 收到 SIGPIPE 退出码非零属正常，管道整体已被 || true 兜住
+        [ -n "$url" ] && { echo "$url"; return 0; }
+        echo "  [download] GitHub API 解析失败(第 ${try} 次): $repo" >&2
+    done
+    if [ -n "$fallback" ]; then
+        echo "  [download] 使用硬编码兜底 URL: $fallback" >&2
+        echo "$fallback"
+        return 0
+    fi
+    return 1
+}

@@ -340,13 +340,13 @@ q_manage() {
     while true; do
         local c
         c=$(dt_menu "虚拟机管理" "对已建好的虚拟机操作：" \
-            "list|1. 列出虚拟机|virsh list --all" \
-            "start|2. 开机|" \
-            "shutdown|3. 关机|优雅关机 ACPI" \
-            "reboot|4. 重启|优雅重启" \
-            "destroy|5. 强制断电|等同拔电源，会丢未保存数据" \
-            "snap|6. 快照备份|保存当前状态，可随时回退" \
-            "revert|7. 恢复快照|回退到某个快照" \
+            "list|列出虚拟机|virsh list --all" \
+            "start|开机|" \
+            "shutdown|关机|优雅关机 ACPI" \
+            "reboot|重启|优雅重启" \
+            "destroy|强制断电|等同拔电源，会丢未保存数据" \
+            "snap|快照备份|保存当前状态，可随时回退" \
+            "revert|恢复快照|回退到某个快照" \
             "back|← 返回|") || return 0
         [ "$c" = __quit ] && exit 0
         case "$c" in
@@ -376,14 +376,8 @@ q_manage() {
 VIRTIO_SLIM_FALLBACK="https://github.com/qemus/virtiso/releases/download/v0.1.302-1/virtio-win-0.1.302.iso"
 VIRTIO_FULL_URL="https://fedorapeople.org/groups/virt/virtio-win/direct-downloads/latest-virtio/virtio-win.iso"
 
-q_virtio_slim_url() { # 先解析最新 release 资产(10s 超时)，失败回退稳定 tag
-    local url=""
-    if command -v curl >/dev/null 2>&1; then
-        url=$(curl -sS --max-time 10 "https://api.github.com/repos/qemus/virtiso/releases/latest" 2>/dev/null \
-            | grep -o 'https://[^"]*\.iso' | head -1 || true)
-    fi
-    [ -z "$url" ] && url="$VIRTIO_SLIM_FALLBACK"
-    echo "$url"
+q_virtio_slim_url() { # 先解析最新 release 资产(公共函数, 10s 超时+重试)，失败回退稳定 tag
+    dt_github_latest_asset "qemus/virtiso" '\.iso$' "$VIRTIO_SLIM_FALLBACK"
 }
 
 q_virtio() {
@@ -391,8 +385,8 @@ q_virtio() {
     if ! mkdir -p "$dir" 2>/dev/null; then dir="$HOME"; fi
     local c url file dest dtkill
     c=$(dt_menu "virtio 驱动 ISO" "Windows 客户机需 virtio 驱动（网卡/磁盘/显卡），下载后作为安装盘挂载：" \
-        "slim|1. 精简版（约 25MB）|常用驱动，下载快（推荐）" \
-        "full|2. 官方完整版（约 700MB）|全部驱动 + 更老系统支持" \
+        "slim|精简版（约 25MB）|常用驱动，下载快（推荐）" \
+        "full|官方完整版（约 700MB）|全部驱动 + 更老系统支持" \
         "back|← 返回|") || return 0
     [ "$c" = __quit ] && exit 0
     [ "$c" = back ] && return 0
@@ -505,12 +499,12 @@ q_menu() {
     while true; do
         local c
         c=$(dt_menu "QEMU 虚拟化工具链" "一键装好即可添加虚拟机（本机为虚拟机，KVM 可能受限）：" \
-            "install|1. 一键安装全部|QEMU+libvirt+UEFI+virt-install+网络+用户组（勾选可选件）" \
-            "create|2. 建虚拟机向导|virt-install 参数向导（名/内存/CPU/磁盘/ISO）" \
-            "manage|3. 虚拟机管理|开机/关机/重启/断电 + 快照备份与恢复" \
-            "virtio|4. virtio 驱动下载|Windows 客户机驱动 ISO（精简/官方完整）" \
-            "doctor|5. 环境体检|KVM/组件/UEFI/用户组/默认网络" \
-            "usage|6. 使用说明|怎么添加虚拟机 + 组件作用 + 常见坑" \
+            "install|一键安装全部|QEMU+libvirt+UEFI+virt-install+网络+用户组（勾选可选件）" \
+            "create|建虚拟机向导|virt-install 参数向导（名/内存/CPU/磁盘/ISO）" \
+            "manage|虚拟机管理|开机/关机/重启/断电 + 快照备份与恢复" \
+            "virtio|virtio 驱动下载|Windows 客户机驱动 ISO（精简/官方完整）" \
+            "doctor|环境体检|KVM/组件/UEFI/用户组/默认网络" \
+            "usage|使用说明|怎么添加虚拟机 + 组件作用 + 常见坑" \
             "back|← 返回|") || return 0
         [ "$c" = __quit ] && exit 0
         case "$c" in

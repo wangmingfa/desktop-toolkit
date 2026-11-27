@@ -104,12 +104,12 @@ fp_menu() {
     while true; do
         local c
         c=$(dt_menu "Flatpak 应用管理" "隔离运行 GUI 应用（装应用用户级，不需 sudo）：" \
-            "init|1. 安装 Flatpak+Flathub|flatpak 包需 sudo，Flathub 源用户级" \
-            "list|2. 已装应用|flatpak list" \
-            "search|3. 搜索并安装|按词搜 Flathub，选一个装" \
-            "uninstall|4. 卸载|输入应用 ID" \
-            "update|5. 更新|flatpak update -y" \
-            "clean|6. 清理|移除未使用的运行时" \
+            "init|安装 Flatpak+Flathub|flatpak 包需 sudo，Flathub 源用户级" \
+            "list|已装应用|flatpak list" \
+            "search|搜索并安装|按词搜 Flathub，选一个装" \
+            "uninstall|卸载|输入应用 ID" \
+            "update|更新|flatpak update -y" \
+            "clean|清理|移除未使用的运行时" \
             "back|← 返回|") || return 0
         case "$c" in
             init) fp_init ;;

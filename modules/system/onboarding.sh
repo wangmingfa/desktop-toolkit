@@ -27,18 +27,18 @@ ob_err() { echo -e "  ${DT_RED}[onboarding] 错误:${DT_NC} $*" >&2; }
 # 清单：id|名称|说明
 ob_catalog() {
     cat <<'EOF'
-update|1. 系统更新|dnf 升级到最新（新系统先更新）
-proxy|2. 网络代理/镜像|受限网络走镜像/代理
-git|3. git 配置|user.name/email/默认分支
-tools|4. 基础开发工具|git/python/node/gcc/cmake 等
-apps|5. 常用应用|浏览器/办公/媒体
-de|6. 桌面环境/WM|GNOME/KDE/niri 选一个
-fcitx|7. 中文输入法|fcitx5 + 主题
-font|8. 字体|中文/编程 Nerd Font
-monitor|9. 系统监控工具|btop/inxi/duf 等
-power|10. 电源/性能|power-profiles/tuned 方案
-backup|11. 定时备份|配置自动备份
-cleanup|12. 系统维护|清缓存/旧内核/journal
+update|系统更新|dnf 升级到最新（新系统先更新）
+proxy|网络代理/镜像|受限网络走镜像/代理
+git|git 配置|user.name/email/默认分支
+tools|基础开发工具|git/python/node/gcc/cmake 等
+apps|常用应用|浏览器/办公/媒体
+de|桌面环境/WM|GNOME/KDE/niri 选一个
+fcitx|中文输入法|fcitx5 + 主题
+font|字体|中文/编程 Nerd Font
+monitor|系统监控工具|btop/inxi/duf 等
+power|电源/性能|power-profiles/tuned 方案
+backup|定时备份|配置自动备份
+cleanup|系统维护|清缓存/旧内核/journal
 EOF
 }
 

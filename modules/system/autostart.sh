@@ -72,9 +72,9 @@ au_menu() {
     while true; do
         local c
         c=$(dt_menu "自启动管理" "systemd 用户服务 + niri spawn-at-startup：" \
-            "list|1. 列出自启动|enabled 用户服务 + niri spawn" \
-            "enable|2. 启用服务|输入服务名 enable --now" \
-            "disable|3. 停用服务|输入服务名 disable --now" \
+            "list|列出自启动|enabled 用户服务 + niri spawn" \
+            "enable|启用服务|输入服务名 enable --now" \
+            "disable|停用服务|输入服务名 disable --now" \
             "back|← 返回|") || return 0
         case "$c" in
             list) au_list ;;

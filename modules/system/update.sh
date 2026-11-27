@@ -68,9 +68,9 @@ up_menu() {
     while true; do
         local c
         c=$(dt_menu "系统更新管理" "检查 / 升级 Fedora 系统包（dnf）：" \
-            "check|1. 检查更新|只读列出待更新包" \
-            "upgrade|2. 升级全部|dnf upgrade（需 sudo，大下载）" \
-            "status|3. 状态|可用更新数 / 包管理器" \
+            "check|检查更新|只读列出待更新包" \
+            "upgrade|升级全部|dnf upgrade（需 sudo，大下载）" \
+            "status|状态|可用更新数 / 包管理器" \
             "back|← 返回|") || return 0
         case "$c" in
             check) up_check ;;

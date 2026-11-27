@@ -247,11 +247,11 @@ menu_rotate() {
     while true; do
         local c
         c=$(dt_menu "随机壁纸轮换" "立即换一张或 systemd 定时轮换（图片放 $WP_DIR）：" \
-            "once|1. 立即换一张|随机选一张 + 热重载" \
-            "30|2. 开启轮换(30 分钟)|systemd 用户 timer" \
-            "60|3. 开启轮换(60 分钟)|systemd 用户 timer" \
-            "off|4. 关闭轮换|停 timer + 删单元" \
-            "status|5. 状态|timer/图片数量" \
+            "once|立即换一张|随机选一张 + 热重载" \
+            "30|开启轮换(30 分钟)|systemd 用户 timer" \
+            "60|开启轮换(60 分钟)|systemd 用户 timer" \
+            "off|关闭轮换|停 timer + 删单元" \
+            "status|状态|timer/图片数量" \
             "back|← 返回|") || return 0
         case "$c" in
             once) rotate_once ;;
@@ -269,13 +269,13 @@ menu() {
     while true; do
         local c
         c=$(dt_menu "niri 壁纸 / 锁屏" "壁纸用 niri 原生 background-image; 锁屏 swaylock 样式" \
-            "set|1. 设置壁纸|从 ~/Pictures/Wallpapers 选或输入路径" \
-            "lock|2. 锁屏样式|swaylock 预设(极简/磨砂玻璃/默认)" \
-            "rotate|3. 随机壁纸轮换|立即换一张 / 定时轮换" \
-            "download|4. 下载壁纸|URL 下载到 Wallpapers(镜像回退)" \
-            "status|5. 查看状态|壁纸 + 锁屏配置" \
-            "clear|6. 清除壁纸|移除 wallpaper.kdl 与 include" \
-            "uninstall|7. 卸载|清壁纸 + 锁屏样式恢复默认" \
+            "set|设置壁纸|从 ~/Pictures/Wallpapers 选或输入路径" \
+            "lock|锁屏样式|swaylock 预设(极简/磨砂玻璃/默认)" \
+            "rotate|随机壁纸轮换|立即换一张 / 定时轮换" \
+            "download|下载壁纸|URL 下载到 Wallpapers(镜像回退)" \
+            "status|查看状态|壁纸 + 锁屏配置" \
+            "clear|清除壁纸|移除 wallpaper.kdl 与 include" \
+            "uninstall|卸载|清壁纸 + 锁屏样式恢复默认" \
             "back|← 返回|") || return 0
         case "$c" in
             set) set_wallpaper ;;

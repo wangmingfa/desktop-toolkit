@@ -25,14 +25,14 @@ main() {
         local c
         c=$(dt_menu "GNOME macOS 外观配置中心" \
             "选择要执行的操作（本模块支持 macOS 26 Tahoe 与 macOS 15 经典两套）：" \
-            "install26|1. 安装 macOS 26 (Tahoe 液态玻璃)|最新液态玻璃风格 (MacTahoe-gtk-theme)" \
-            "install15|2. 安装 macOS 15 (经典 Sequoia 风格)|经典大苏尔/索诺玛风格 (WhiteSur-gtk-theme)" \
-            "installfluent|3. 安装 Windows 11 (Fluent 风格)|非 macOS 圆角/Mica 质感 (Fluent-gtk-theme)" \
-            "status|4. 查看当前应用的主题|gsettings 当前值" \
-            "dark|5. 切换深色模式|prefer-dark" \
-            "light|6. 切换浅色模式|prefer-light" \
-            "ext|7. 安装/启用 GNOME 扩展|user-themes / dash-to-dock / blur-my-shell（自动配置）" \
-            "buttons|8. 窗口按钮位置|macOS 红黄绿在左 / GNOME 默认在右" \
+            "install26|安装 macOS 26 (Tahoe 液态玻璃)|最新液态玻璃风格 (MacTahoe-gtk-theme)" \
+            "install15|安装 macOS 15 (经典 Sequoia 风格)|经典大苏尔/索诺玛风格 (WhiteSur-gtk-theme)" \
+            "installfluent|安装 Windows 11 (Fluent 风格)|非 macOS 圆角/Mica 质感 (Fluent-gtk-theme)" \
+            "status|查看当前应用的主题|gsettings 当前值" \
+            "dark|切换深色模式|prefer-dark" \
+            "light|切换浅色模式|prefer-light" \
+            "ext|安装/启用 GNOME 扩展|user-themes / dash-to-dock / blur-my-shell（自动配置）" \
+            "buttons|窗口按钮位置|macOS 红黄绿在左 / GNOME 默认在右" \
             "back|← 返回|") || return 0
         [ "$c" = back ] && return 0
         [ "$c" = __quit ] && exit 0

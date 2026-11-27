@@ -323,11 +323,11 @@ ime_menu() {
         local c
         c=$(dt_menu "niri 输入法" \
             "后端: $IME_IM｜$(ime_backend_bin): $(command -v "$(ime_backend_bin)" >/dev/null 2>&1 && echo 已装 || echo 未装)｜运行: $(ime_backend_running && echo 是 || echo 否)" \
-            "setup|1. 安装并配置（$IME_IM）|装包 + 启用引擎 + 生成 ime.kdl + 热重载" \
-            "ibus|2. 切换到 IBus（不装 fcitx5）|使用系统已有的 IBus(libpinyin 等)" \
-            "fcitx|3. 切换到 fcitx5|拼音引擎 fcitx5-chinese-addons" \
-            "status|4. 查看状态|输入法 / 环境变量 / config include" \
-            "remove|5. 移除 niri 侧配置|停输入法、撤 ime.kdl（保留包）" \
+            "setup|安装并配置（$IME_IM）|装包 + 启用引擎 + 生成 ime.kdl + 热重载" \
+            "ibus|切换到 IBus（不装 fcitx5）|使用系统已有的 IBus(libpinyin 等)" \
+            "fcitx|切换到 fcitx5|拼音引擎 fcitx5-chinese-addons" \
+            "status|查看状态|输入法 / 环境变量 / config include" \
+            "remove|移除 niri 侧配置|停输入法、撤 ime.kdl（保留包）" \
             "back|← 返回|") || return 0
         case "$c" in
             __quit) exit 0 ;;

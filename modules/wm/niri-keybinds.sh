@@ -471,8 +471,8 @@ custom_menu() {
     while true; do
         local c
         c=$(dt_menu "自定义快捷键" "添加/管理本模块创建的自定义绑定（写入 dt-keybinds.kdl）：" \
-            "add|1. 添加绑定|内置 action 或自定义命令" \
-            "del|2. 删除绑定|从 dt-keybinds.kdl 移除" \
+            "add|添加绑定|内置 action 或自定义命令" \
+            "del|删除绑定|从 dt-keybinds.kdl 移除" \
             "back|← 返回|" \
         ) || return 0
         [ "$c" = __quit ] && exit 0
@@ -487,12 +487,12 @@ custom_menu() {
 custom_add() {
     local c
     c=$(dt_menu "选择动作类型" "常用内置动作或自定义命令：" \
-        "spawn|1. 启动程序|spawn \"命令\"（如 nautilus、firefox）" \
-        "spawn-sh|2. 启动 Shell 命令|spawn-sh \"sh -c 命令\"" \
-        "focus-ws|3. 切换工作区|focus-workspace N" \
-        "close-w|4. 关闭窗口|close-window" \
-        "overview|5. 总览切换|toggle-overview" \
-        "alt-tab|6. Alt-Tab|alt-tab-overlay" \
+        "spawn|启动程序|spawn \"命令\"（如 nautilus、firefox）" \
+        "spawn-sh|启动 Shell 命令|spawn-sh \"sh -c 命令\"" \
+        "focus-ws|切换工作区|focus-workspace N" \
+        "close-w|关闭窗口|close-window" \
+        "overview|总览切换|toggle-overview" \
+        "alt-tab|Alt-Tab|alt-tab-overlay" \
         "back|← 返回|" \
     ) || return 0
     [ "$c" = __quit ] && exit 0
@@ -588,9 +588,9 @@ custom_del() {
 browse_menu() {
     local c
     c=$(dt_menu "浏览快捷键" "查看当前生效的所有快捷键，或按关键词搜索：" \
-        "all|1. 显示全部绑定|扫描主配置 + dt-keybinds.kdl" \
-        "search|2. 搜索绑定|按关键词（动作名/键位）" \
-        "export|3. 导出 HTML 快捷键表|保存为网页便于查阅" \
+        "all|显示全部绑定|扫描主配置 + dt-keybinds.kdl" \
+        "search|搜索绑定|按关键词（动作名/键位）" \
+        "export|导出 HTML 快捷键表|保存为网页便于查阅" \
         "back|← 返回|" \
     ) || return 0
     [ "$c" = __quit ] && exit 0
@@ -758,12 +758,12 @@ main_menu() {
     while true; do
         local c
         c=$(dt_menu "niri 快捷键可视化配置" "预设开关 / 自定义绑定 / 浏览搜索 / 导出 HTML 快捷键表：" \
-            "browse|1. 浏览与搜索|显示当前所有快捷键，支持关键词过滤" \
-            "presets|2. 预设快捷键|按分类启用/关闭内置快捷键（可改键位）" \
-            "custom|3. 自定义绑定|添加/删除自定义快捷键（写入 dt-keybinds.kdl）" \
-            "export|4. 导出 HTML 快捷键表|生成网页版快捷键总表便于查阅" \
-            "status|5. 状态总览|显示已启用预设 / 被注释行数" \
-            "uninstall|6. 卸载|移除 include + 删除本模块文件" \
+            "browse|浏览与搜索|显示当前所有快捷键，支持关键词过滤" \
+            "presets|预设快捷键|按分类启用/关闭内置快捷键（可改键位）" \
+            "custom|自定义绑定|添加/删除自定义快捷键（写入 dt-keybinds.kdl）" \
+            "export|导出 HTML 快捷键表|生成网页版快捷键总表便于查阅" \
+            "status|状态总览|显示已启用预设 / 被注释行数" \
+            "uninstall|卸载|移除 include + 删除本模块文件" \
             "back|← 返回|" \
         ) || return 0
         case "$c" in

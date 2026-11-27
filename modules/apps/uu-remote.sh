@@ -385,12 +385,12 @@ uu_menu() {
     while true; do
         local c
         c=$(dt_menu "UU 远程（Linux 被控端）" "社区开源实现，官方客户端可远程控制本机：" \
-            "install|1. 安装 / 更新|镜像下载 + 校验 + ffmpeg + 服务（需 sudo 装 ffmpeg）" \
-            "login|2. 扫码登录|手机 UU 远程 App 扫码（需终端）" \
-            "status|3. 查看状态|程序/编码器/服务/设备连接" \
-            "doctor|4. 体检修复|一键检测并修复常见问题" \
-            "logs|5. 实时日志|journalctl 跟踪（需终端）" \
-            "remove|6. 卸载|删除程序与用户服务（保留 ffmpeg）" \
+            "install|安装 / 更新|镜像下载 + 校验 + ffmpeg + 服务（需 sudo 装 ffmpeg）" \
+            "login|扫码登录|手机 UU 远程 App 扫码（需终端）" \
+            "status|查看状态|程序/编码器/服务/设备连接" \
+            "doctor|体检修复|一键检测并修复常见问题" \
+            "logs|实时日志|journalctl 跟踪（需终端）" \
+            "remove|卸载|删除程序与用户服务（保留 ffmpeg）" \
             "back|← 返回|") || return 0
         case "$c" in
             __quit) exit 0 ;;

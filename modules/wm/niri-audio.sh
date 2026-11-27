@@ -108,13 +108,13 @@ menu() {
     while true; do
         local c
         c=$(dt_menu "niri 音频控制" "音量/静音/媒体键快捷键（pamixer + playerctl）：" \
-            "install|1. 安装/修复|装 pamixer + 生成快捷键(audio.kdl)" \
-            "up|2. 音量 +5|调大当前输出" \
-            "down|3. 音量 -5|调小当前输出" \
-            "mute|4. 静音切换|开/关静音" \
-            "play|5. 播放/暂停|playerctl play-pause" \
-            "status|6. 状态|工具/快捷键/音量" \
-            "uninstall|7. 卸载快捷键|移除 audio.kdl 与 include(保留 pamixer)" \
+            "install|安装/修复|装 pamixer + 生成快捷键(audio.kdl)" \
+            "up|音量 +5|调大当前输出" \
+            "down|音量 -5|调小当前输出" \
+            "mute|静音切换|开/关静音" \
+            "play|播放/暂停|playerctl play-pause" \
+            "status|状态|工具/快捷键/音量" \
+            "uninstall|卸载快捷键|移除 audio.kdl 与 include(保留 pamixer)" \
             "back|← 返回|") || return 0
         case "$c" in
             install) do_install ;;

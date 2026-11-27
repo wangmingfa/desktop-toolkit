@@ -199,11 +199,11 @@ bk_menu_timer() {
     while true; do
         local c
         c=$(dt_menu "定时备份" "systemd 用户 timer 自动备份配置到 ~/backups：" \
-            "hourly|1. 每小时|OnCalendar=hourly" \
-            "daily|2. 每天|OnCalendar=daily（推荐）" \
-            "weekly|3. 每周|OnCalendar=weekly" \
-            "off|4. 关闭定时备份|停 timer + 删单元" \
-            "status|5. 状态|timer 启用情况" \
+            "hourly|每小时|OnCalendar=hourly" \
+            "daily|每天|OnCalendar=daily（推荐）" \
+            "weekly|每周|OnCalendar=weekly" \
+            "off|关闭定时备份|停 timer + 删单元" \
+            "status|状态|timer 启用情况" \
             "back|← 返回|") || return 0
         case "$c" in
             hourly) bk_timer_setup hourly ;;
@@ -221,11 +221,11 @@ bk_menu() {
     while true; do
         local c
         c=$(dt_menu "配置备份 / 恢复" "用户级配置打包备份（无需 sudo）：" \
-            "backup|1. 创建备份|打包 fcitx5/uuremote/niri/git 等配置" \
-            "list|2. 列出备份|显示 ~/backups 下的备份" \
-            "restore|3. 恢复|选择备份并覆盖还原" \
-            "prune|4. 清理旧备份|只保留最近 N 份（默认 10）" \
-            "timer|5. 定时备份|systemd timer 自动备份（每小时/每天/每周）" \
+            "backup|创建备份|打包 fcitx5/uuremote/niri/git 等配置" \
+            "list|列出备份|显示 ~/backups 下的备份" \
+            "restore|恢复|选择备份并覆盖还原" \
+            "prune|清理旧备份|只保留最近 N 份（默认 10）" \
+            "timer|定时备份|systemd timer 自动备份（每小时/每天/每周）" \
             "back|← 返回|") || return 0
         case "$c" in
             __quit) exit 0 ;;

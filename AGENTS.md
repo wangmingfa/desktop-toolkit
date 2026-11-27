@@ -38,6 +38,7 @@ desktop-toolkit/
     │   ├── uu-remote.sh         # UU 远程 Linux 被控端 安装/登录/体检/卸载
     │   ├── shells.sh            # Shell 安装器(fish/nushell/zsh/elvish…，勾选装 + 设默认)
     │   └── wowtype.sh           # WowType 输入法(fcitx5 插件) 安装/体检/卸载
+    │   └── lazyvim.sh          # LazyVim 一键安装(依赖预检+版本达标检查+可选件勾选)
     ├── dev/                 # 开发环境(由 main.sh 的 sub_dev 列出)
     │   └── setup-dev.sh         # git 配置 + 常用开发工具安装
     └── backup/              # 备份与恢复(由 main.sh 的 sub_backup 列出)
@@ -57,6 +58,7 @@ desktop-toolkit/
 2. **取公共能力**：开头 `source "$DT_ROOT/lib/common.sh"` 和 `source "$DT_ROOT/lib/ui.sh"`；如依赖模块内公共库（如 GNOME 的 `lib-gnome.sh`）也要 source。
 3. **GUI 自适应**：交互一律走 `dt_detect_gui` + `dt_menu` / `dt_confirm` / `dt_info` / `dt_ask_num` / `dt_ask_text`；**不要直接调 zenity/kdialog**（容器/宿主机两套工具要通用）。纯终端兜底用 `read -p`。
    - **TUI 兜底已内置**：`dt_detect_gui` 找不到 zenity/kdialog 时（`GUI=none`），`ui.sh` 的 `dt_menu`/`dt_confirm`/`dt_info`/`dt_ask_*` 自动退化为**文本交互**，无需额外 `read -p` 分支。
+   - **运行模式参数**：`main.sh [--gui|--tui]`（默认 gui 自动探测）。`--tui` 在 source ui.sh 前解析并 `export GUI=none`（模块是 bash 子进程，靠环境变量继承，模块内勿再改写 `GUI`）。
    - **菜单行第 4 字段 `|gui`**：表示"需要 GUI 环境"的选项，TUI 下由 `dt_menu` 自动隐藏（如 `main.sh` 的"外观美化"）。新增 GUI 专属菜单项时**必须**加 `|gui` 后缀，否则 headless 机器上会误显示。
    - **`__quit` 直接退出（多级菜单不再逐级退）**：`dt_menu` 自动追加"退出程序"项（返回 `__quit` + 写标志文件）。**每个菜单循环的 `case` 必须加 `__quit) exit 0 ;;`**（嵌套 `xxx=$(dt_menu ...)` 后加 `[ "$xxx" = __quit ] && exit 0`），否则该项无效。`main.sh` 子菜单循环顶用 `dt_quit_pending && exit 0` 让"模块内退出"连带退出主程序（模块是子进程，`exit` 杀不到父进程，靠标志文件传播）。新模块按此约定，勿再自设 `exit|N. 退出` 菜单项（已由 `__quit` 统一）。
    - **stdout/stderr**：TUI 的菜单文本/提示一律走 **stderr**，`dt_menu` 的 stdout 只输出所选 key（它常被 `c=$(dt_menu ...)` 捕获；若提示打到 stdout 会被吞掉，且前导换行会让 `case` 匹配失败）。
@@ -109,11 +111,13 @@ desktop-toolkit/
 - `dt_download <github_asset_url> <dest>` 已实现：与 `dt_clone` 同一套镜像回退（直连 → gh-proxy.com → ghfast.top），单源硬上限用外部 `timeout`（`DT_DL_KILL`，默认 300s，大包慢网可放宽）。
 - 成功 `0` / 失败 `1`；**stdout 不输出**（进度/错误全走 stderr），避免被 `$( )` 捕获污染。
 - 适用：GitHub Release 的 `tar.gz` / `deb` / `rpm` / `.sha256` 等**文件**下载（与克隆仓库的 `dt_clone` 互补）。
-- **取"最新 release 的资产 URL"（版本会变，别硬编码 tag）**：先问 GitHub API，用
-  `grep -o 'https://[^"]*\.iso' | head -1` 从 `releases/latest` 解析 `browser_download_url`；
-  **必须 `--max-time 10` 限时 + 保留一个硬编码稳定 tag 的兜底 URL**（解析失败/无 curl 时用它），
-  且管道尾加 `|| true`（`set -o pipefail` 下 grep 无匹配会让 `$( )` 静默失败）。
-  `qemu-installer.sh` 的 `q_virtio_slim_url` 即此写法。
+- **取"最新 release 的资产 URL"（版本会变，别硬编码 tag）**：统一走公共函数
+  `dt_github_latest_asset <owner/repo> <资产URL正则> [兜底URL]`（lib/common.sh）——
+  直连 api.github.com 限 10s 自动重试一次，失败回退硬编码稳定 tag 的兜底 URL；
+  stdout 只输出 URL（常被 `$( )` 捕获），探测/错误走 stderr；已由 `|| true` 兜住 pipefail。
+  兜底 URL 经 `dt_download` 下载时仍享受镜像回退。
+  注意：api.github.com 无稳定镜像（路径式镜像只代理 github.com 文件），别给它拼 gh-proxy 前缀。
+  旧写法（裸 curl + grep 三连）已在 `lazyvim.sh`、`qemu-installer.sh`（`q_virtio_slim_url`）迁移。
 - **`DT_DL_KILL` 按包体调**：默认 300s 只够小文件；几百 MB 的 ISO 用 `DT_DL_KILL=3600 dt_download …`
   临时放宽（前缀赋值只作用于这一次调用，不改全局）。
 

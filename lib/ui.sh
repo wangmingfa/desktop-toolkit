@@ -55,6 +55,11 @@ dt_menu() { # title text "key|label|desc[|gui]" ...
     else
         # TUI：编号文本菜单。菜单/提示走 stderr（dt_menu 常被 $( ) 捕获返回值，
         # stdout 只输出所选 key；否则菜单文本会被命令替换吞掉，用户看不到）。
+        # 交互终端先清屏再画菜单：进入子菜单时覆盖上一屏内容，避免层层堆叠；
+        # 仅清可视区(保留回滚历史)；非 tty(测试/管道/CI)不清屏，输出完整保留。
+        if [[ -t 2 ]]; then
+            printf '\033[H\033[2J' >&2
+        fi
         echo >&2
         echo "──────────────── $title ────────────────" >&2
         [ -n "$text" ] && echo "$text" >&2

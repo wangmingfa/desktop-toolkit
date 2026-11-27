@@ -181,10 +181,10 @@ app_menu() {
         distro=$(app_distro)
         c=$(dt_menu "常用应用安装器" \
             "当前发行版: $distro；安装前探测源里是否有。" \
-            "browser|1. 浏览器/通信|Chromium/Firefox/VS Code/Telegram" \
-            "office|2. 办公/媒体|LibreOffice/VLC/GIMP/Blender/Kdenlive/OBS/Audacity" \
-            "container|3. 容器|Podman/Docker" \
-            "matrix|4. 支持矩阵|各应用在当前发行版的包名与状态" \
+            "browser|浏览器/通信|Chromium/Firefox/VS Code/Telegram" \
+            "office|办公/媒体|LibreOffice/VLC/GIMP/Blender/Kdenlive/OBS/Audacity" \
+            "container|容器|Podman/Docker" \
+            "matrix|支持矩阵|各应用在当前发行版的包名与状态" \
             "back|← 返回|") || return 0
         case "$c" in
             browser) app_pick browser ;;

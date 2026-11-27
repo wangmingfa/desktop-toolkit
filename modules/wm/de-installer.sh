@@ -228,10 +228,10 @@ de_menu() {
     while true; do
         local c
         c=$(dt_menu "一键安装 KDE / GNOME" "依赖级清单安装（必须+可选，逐项勾选）：" \
-            "gnome|1. 安装 GNOME|${DT_GREEN}11 必须 + 17 可选${DT_NC}，GNOME Shell 桌面" \
-            "kde|2. 安装 KDE Plasma|${DT_GREEN}10 必须 + 11 可选${DT_NC}，Plasma 桌面" \
-            "help-gnome|3. GNOME 依赖说明|列出全部依赖作用（必须/可选）" \
-            "help-kde|4. KDE 依赖说明|列出全部依赖作用（必须/可选）" \
+            "gnome|安装 GNOME|${DT_GREEN}11 必须 + 17 可选${DT_NC}，GNOME Shell 桌面" \
+            "kde|安装 KDE Plasma|${DT_GREEN}10 必须 + 11 可选${DT_NC}，Plasma 桌面" \
+            "help-gnome|GNOME 依赖说明|列出全部依赖作用（必须/可选）" \
+            "help-kde|KDE 依赖说明|列出全部依赖作用（必须/可选）" \
             "back|← 返回|") || return 0
         case "$c" in
             gnome) de_menu_select gnome ;;

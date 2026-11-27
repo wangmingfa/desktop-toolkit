@@ -29,15 +29,15 @@ main() {
         local c
         c=$(dt_menu "KDE 外观美化" \
             "KDE Plasma 的 macOS 风格方案。安装前先选版本，两套会互相覆盖（二选一）：" \
-            "install26|1. 安装 macOS 26 (Tahoe 液态玻璃)|MacTahoe Liquid KDE，当前默认方案" \
-            "install15|2. 安装 macOS 15 (经典 Sequoia)|WhiteSur-kde" \
-            "installfluent|3. 安装 Windows 11 (Fluent)|Fluent-kde，非 macOS 风格" \
-            "config|4. 桌面外观配置中心|单窗口界面：圆角/透明度/Dock/Logo/窗口动画" \
-            "mode-perf|5. 切换到性能模式|关闭液态玻璃，软件渲染流畅（VMware 推荐）" \
-            "mode-full|6. 切换到完整模式|恢复液态玻璃特效（需硬件加速）" \
-            "window-gui|7. 窗口调整滑块|单独打开圆角/透明度滑块界面" \
-            "logo|8. 安装白色 CachyOS Logo|macOS 26 Tahoe 的顶栏 Logo" \
-            "list|9. 查看当前所有可调项|打印清单" \
+            "install26|安装 macOS 26 (Tahoe 液态玻璃)|MacTahoe Liquid KDE，当前默认方案" \
+            "install15|安装 macOS 15 (经典 Sequoia)|WhiteSur-kde" \
+            "installfluent|安装 Windows 11 (Fluent)|Fluent-kde，非 macOS 风格" \
+            "config|桌面外观配置中心|单窗口界面：圆角/透明度/Dock/Logo/窗口动画" \
+            "mode-perf|切换到性能模式|关闭液态玻璃，软件渲染流畅（VMware 推荐）" \
+            "mode-full|切换到完整模式|恢复液态玻璃特效（需硬件加速）" \
+            "window-gui|窗口调整滑块|单独打开圆角/透明度滑块界面" \
+            "logo|安装白色 CachyOS Logo|macOS 26 Tahoe 的顶栏 Logo" \
+            "list|查看当前所有可调项|打印清单" \
             "back|← 返回|") || return 0
         [ "$c" = back ] && return 0
         [ "$c" = __quit ] && exit 0

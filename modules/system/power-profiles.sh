@@ -85,11 +85,11 @@ pp_menu() {
         local c
         c=$(dt_menu "电源模式" \
             "基于 power-profiles-daemon。当前: $(pp_label "$cur") ($cur)" \
-            "perf|1. 性能 performance|高性能（性能/散热优先）" \
-            "balanced|2. 平衡 balanced|默认（功耗与性能平衡）" \
-            "saver|3. 节能 power-saver|省电（电池优先）" \
-            "install|4. 安装/修复 power-profiles-daemon|未装时自动安装+启用服务" \
-            "status|5. 查看状态|当前模式 + 可用模式" \
+            "perf|性能 performance|高性能（性能/散热优先）" \
+            "balanced|平衡 balanced|默认（功耗与性能平衡）" \
+            "saver|节能 power-saver|省电（电池优先）" \
+            "install|安装/修复 power-profiles-daemon|未装时自动安装+启用服务" \
+            "status|查看状态|当前模式 + 可用模式" \
             "back|← 返回|") || return 0
         case "$c" in
             perf) pp_set performance ;;

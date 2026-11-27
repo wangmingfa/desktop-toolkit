@@ -78,8 +78,8 @@ fm_menu() {
     while true; do
         local c
         c=$(dt_menu "字体管理" "已装字体列表 + Nerd Font 编程字体（用户级）：" \
-            "list|1. 列出已装字体|fc-list 家族前 30" \
-            "nerd|2. 安装 Nerd Font|下载到 ~/.local/share/fonts(镜像)" \
+            "list|列出已装字体|fc-list 家族前 30" \
+            "nerd|安装 Nerd Font|下载到 ~/.local/share/fonts(镜像)" \
             "back|← 返回|") || return 0
         case "$c" in
             list) fm_list ;;

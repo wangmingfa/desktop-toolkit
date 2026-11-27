@@ -104,11 +104,11 @@ cl_menu() {
     while true; do
         local c
         c=$(dt_menu "系统清理维护" "保守清理：每项先确认。可释放空间：" \
-            "show|1. 查看可清理空间|dnf 缓存/journal/旧内核（只读）" \
-            "dnf|2. 清理 dnf 缓存|dnf clean all" \
-            "journal|3. 清理 journal 日志|vacuum 到 100M" \
-            "kernels|4. 清理旧内核|保留最新 2 个" \
-            "all|5. 全部清理|依次确认 2.3.4." \
+            "show|查看可清理空间|dnf 缓存/journal/旧内核（只读）" \
+            "dnf|清理 dnf 缓存|dnf clean all" \
+            "journal|清理 journal 日志|vacuum 到 100M" \
+            "kernels|清理旧内核|保留最新 2 个" \
+            "all|全部清理|依次确认 2.3.4." \
             "back|← 返回|") || return 0
         case "$c" in
             show) cl_show ;;

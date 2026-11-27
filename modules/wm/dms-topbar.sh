@@ -240,11 +240,11 @@ dt_menu() {
     while true; do
         local c
         c=$(dt_menu "DMS 顶栏监控" "管理 DMS 顶栏组件（CPU/内存/磁盘/温度/网速/电池）：" \
-            "status|1. 查看当前顶栏|各位置组件列表(●=监控)" \
-            "monitor|2. 监控组件开关|逐个开/关 CPU/内存/磁盘/温度/网速/电池" \
-            "add|3. 自定义添加|输入组件 id + 位置(left/center/right)" \
-            "remove|4. 移除组件|输入组件 id" \
-            "reset|5. 恢复默认顶栏|删除 barConfigs 还原默认" \
+            "status|查看当前顶栏|各位置组件列表(●=监控)" \
+            "monitor|监控组件开关|逐个开/关 CPU/内存/磁盘/温度/网速/电池" \
+            "add|自定义添加|输入组件 id + 位置(left/center/right)" \
+            "remove|移除组件|输入组件 id" \
+            "reset|恢复默认顶栏|删除 barConfigs 还原默认" \
             "back|← 返回|") || return 0
         case "$c" in
             status) dt_status ;;

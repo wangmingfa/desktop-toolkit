@@ -201,9 +201,9 @@ wg_menu() {
     while true; do
         local c
         c=$(dt_menu "Windows 游戏运行环境" "装好能玩 Windows 游戏的环境（不装游戏本体）：" \
-            "install|1. 安装运行环境|Wine/Lutris 必须 + Steam/gamescope 等可选（勾选）" \
-            "usage|2. 环境说明|各组件作用 + 怎么用" \
-            "status|3. 状态|wine/lutris/steam 版本" \
+            "install|安装运行环境|Wine/Lutris 必须 + Steam/gamescope 等可选（勾选）" \
+            "usage|环境说明|各组件作用 + 怎么用" \
+            "status|状态|wine/lutris/steam 版本" \
             "back|← 返回|") || return 0
         case "$c" in
             install) wg_install ;;

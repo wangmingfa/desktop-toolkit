@@ -104,9 +104,9 @@ menu() {
     while true; do
         local c
         c=$(dt_menu "niri 日常工具" "截图 / 录屏 / 剪贴板历史 + 快捷键（需 sudo 装工具）" \
-            "install|1. 安装工具+快捷键|grim/slurp/wf-recorder/cliphist + Print/Super+P/Super+V" \
-            "status|2. 查看状态|工具 + 快捷键是否就绪" \
-            "uninstall|3. 卸载快捷键|移除 tools.kdl 与 include(保留工具包)" \
+            "install|安装工具+快捷键|grim/slurp/wf-recorder/cliphist + Print/Super+P/Super+V" \
+            "status|查看状态|工具 + 快捷键是否就绪" \
+            "uninstall|卸载快捷键|移除 tools.kdl 与 include(保留工具包)" \
             "back|← 返回|") || return 0
         case "$c" in
             install) install_tools ;;

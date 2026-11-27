@@ -115,11 +115,11 @@ menu() {
         cur=$(get_layout)
         local c
         c=$(dt_menu "窗口按钮布局" "当前：$cur（作用于所有 GTK/Electron 客户端装饰窗口）" \
-            "macos|1. macOS 左边风格|close,minimize,maximize: 关闭在左（Capy 会重叠，慎用）" \
-            "win|2. Windows 右边风格|:minimize,maximize,close 关闭在最右（推荐，避 Capy 重叠）" \
-            "gnome|3. GNOME 默认|appmenu:minimize,maximize,close" \
-            "custom|4. 自定义布局|输入完整 button-layout 值" \
-            "status|5. 查看当前|打印当前值" \
+            "macos|macOS 左边风格|close,minimize,maximize: 关闭在左（Capy 会重叠，慎用）" \
+            "win|Windows 右边风格|:minimize,maximize,close 关闭在最右（推荐，避 Capy 重叠）" \
+            "gnome|GNOME 默认|appmenu:minimize,maximize,close" \
+            "custom|自定义布局|输入完整 button-layout 值" \
+            "status|查看当前|打印当前值" \
             "back|← 返回|") || return 0
         case "$c" in
             macos) apply_macos ;;
