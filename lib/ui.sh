@@ -53,13 +53,60 @@ dt_menu() { # title text "key|label|desc[|gui]" ...
         [ "$sel" = __quit ] && dt_quit_set
         echo "$sel"
     else
-        # TUI：编号文本菜单。菜单/提示走 stderr（dt_menu 常被 $( ) 捕获返回值，
-        # stdout 只输出所选 key；否则菜单文本会被命令替换吞掉，用户看不到）。
-        # 交互终端先清屏再画菜单：进入子菜单时覆盖上一屏内容，避免层层堆叠；
-        # 仅清可视区(保留回滚历史)；非 tty(测试/管道/CI)不清屏，输出完整保留。
+        # TUI：交互终端用"备用屏幕 + 方向键选择"；非 tty（管道/CI/测试）退化为数字菜单。
+        # 菜单/提示走 stderr（dt_menu 常被 $( ) 捕获返回值，stdout 只输出所选 key）。
         if [[ -t 2 ]]; then
-            printf '\033[H\033[2J' >&2
-        fi
+            # ---- 交互模式：备用屏幕 + 高亮移动 ----
+            local -a labels=()
+            local _k _seq
+            for row in "${rows[@]}"; do
+                IFS='|' read -r _k label desc _ <<< "$row"
+                labels+=("$label"$'\v'"$desc")
+            done
+            local n=${#rows[@]} sel=0 i key pressed=""
+            [ "$n" -eq 0 ] && { echo "  （无可用选项，本菜单在 TUI 模式下为空）" >&2; return 0; }
+            printf '\033[?1049h' >&2          # 进入备用屏幕
+            while true; do
+                printf '\033[H\033[2J' >&2    # 清备用屏并回左上角
+                echo "──────────────── $title ────────────────" >&2
+                [ -n "$text" ] && echo "$text" >&2
+                for (( i = 0; i < n; i++ )); do
+                    IFS=$'\v' read -r label desc <<< "${labels[$i]}"
+                    if (( i == sel )); then
+                        printf '\033[7m ▶ %-28s %s\033[0m\n' "$label" "${desc:+($desc)}" >&2
+                    else
+                        printf '   %-28s %s\n' "$label" "${desc:+($desc)}" >&2
+                    fi
+                done
+                echo "  ↑/↓ 或 j/k 移动，回车确认，q/Esc 取消" >&2
+                read -rsn1 _k || break        # EOF → 取消
+                case "$_k" in
+                    $'\x1b')                  # ESC：可能是方向键序列，也可能单独退出
+                        _seq=""
+                        if IFS= read -rsn2 -t 0.1 _seq && [ "$_seq" = '[A' ]; then
+                            (( sel = (sel + n - 1) % n ))
+                        elif [ "$_seq" = '[B' ]; then
+                            (( sel = (sel + 1) % n ))
+                        else
+                            pressed="cancel"; break
+                        fi
+                        ;;
+                    $'\x0d'|$'\x0a'|'') pressed="ok"; break ;;       # 回车确认
+                    'j') (( sel = (sel + 1) % n )) ;;
+                    'k') (( sel = (sel + n - 1) % n )) ;;
+                    'q'|'Q'|'h'|'H'|$'\x7f') pressed="cancel"; break ;;
+                esac
+            done
+            printf '\033[?1049l' >&2          # 离开备用屏幕，还原主屏
+            if [ "$pressed" = ok ]; then
+                IFS='|' read -r key _ _ _ <<< "${rows[$sel]}"
+                [ "$key" = __quit ] && dt_quit_set
+                echo "$key"
+            else
+                return 1
+            fi
+        else
+            # ---- 非 tty 回退：编号数字菜单（管道/CI/测试） ----
         echo >&2
         echo "──────────────── $title ────────────────" >&2
         [ -n "$text" ] && echo "$text" >&2
@@ -83,6 +130,7 @@ dt_menu() { # title text "key|label|desc[|gui]" ...
         IFS='|' read -r key _ _ _ <<< "${rows[$((choice-1))]}"
         [ "$key" = __quit ] && dt_quit_set
         echo "$key"
+        fi
     fi
 }
 
